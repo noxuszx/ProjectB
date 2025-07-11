@@ -1,0 +1,36 @@
+  17:13:00.175  Chunk-based terrain system starting...  -  Server - ChunkInit:6
+  17:13:00.288  Hello world, from client!  -  Client - Client:1
+  17:13:00.533  Plugin loaded  -  Server
+  17:13:00.784  Plugin loaded  -  Client
+  17:13:02.189  Chunk terrain system initialized!  -  Server - ChunkInit:21
+  17:13:03.197  Initializing custom model spawner...  -  Server - CustomModelSpawner:261
+  17:13:03.197  Scanning for available models...  -  Server - CustomModelSpawner:35
+  17:13:03.197  Found Vegetation model: Shrub  -  Server - CustomModelSpawner:54
+  17:13:03.197  Found Vegetation model: Shrub2  -  Server - CustomModelSpawner:54
+  17:13:03.197   ▶ Found Vegetation model: Cactus (x3)  -  Server - CustomModelSpawner:54
+  17:13:03.197  Found Structures model: Campsite  -  Server - CustomModelSpawner:54
+  17:13:03.197   ▶ Found Rocks model: Rock (x2)  -  Server - CustomModelSpawner:54
+  17:13:03.198  Found Rocks model: LargeRock  -  Server - CustomModelSpawner:54
+  17:13:03.198  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:54
+  17:13:03.198  Found Rocks model: Rock  -  Server - CustomModelSpawner:54
+  17:13:03.198  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:54
+  17:13:03.198  Vegetation models found: 5  -  Server - CustomModelSpawner:62
+  17:13:03.198  Structures models found: 1  -  Server - CustomModelSpawner:62
+  17:13:03.198  Rocks models found: 6  -  Server - CustomModelSpawner:62
+  17:13:03.198  Clearing spawned objects...  -  Server - CustomModelSpawner:247
+  17:13:03.198  Objects cleared!  -  Server - CustomModelSpawner:256
+  17:13:11.662  Custom model spawning complete!  -  Server - CustomModelSpawner:287
+  17:13:11.662  Terrain system initialized! Model spawning enabled.  -  Server - ChunkInit:33
+  17:13:12.680  Initializing day/night cycle...  -  Server - DayNightCycle:173
+  17:13:12.680  Day length: 480 seconds  -  Server - DayNightCycle:174
+  17:13:12.680  Starting time: 6:00 AM  -  Server - DayNightCycle:175
+  17:13:12.680  Day/night cycle initialized!  -  Server - DayNightCycle:194
+  17:13:12.681  Current time: 6:00 AM  -  Server - DayNightCycle:195
+  17:13:12.681  Current period: SUNRISE  -  Server - DayNightCycle:196
+  17:13:12.681  Initializing lighting manager...  -  Server - LightingManager:61
+  17:13:12.681  SunAngularSize is not a valid member of Lighting "Lighting"  -  Server - LightingManager:24
+  17:13:12.681  Stack Begin  -  Studio
+  17:13:12.681  Script 'ServerScriptService.Server.environment.LightingManager', Line 24 - function applyLightingPreset  -  Studio - LightingManager:24
+  17:13:12.681  Script 'ServerScriptService.Server.environment.LightingManager', Line 64 - function init  -  Studio - LightingManager:64
+  17:13:12.681  Script 'ServerScriptService.Server.ChunkInit', Line 42  -  Studio - ChunkInit:42
+  17:13:12.681  Stack End  -  Studio
