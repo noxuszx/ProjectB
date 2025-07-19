@@ -9,15 +9,14 @@ local RunService = game:GetService("RunService")
 local TimeConfig = require(ReplicatedStorage.Shared.config.TimeConfig)
 
 local DayNightCycle = {}
-local currentTime = TimeConfig.START_TIME -- Current game time in hours (0-24)
-local cycleStartTime = tick() -- When the current cycle started
-local timeCallbacks = {} -- Event callbacks for time changes
+local currentTime = TimeConfig.START_TIME
+local cycleStartTime = tick()
+local timeCallbacks = {}
 
 -- Time period tracking
 local currentPeriod = nil
 local lastPeriod = nil
 
--- Convert game time to a readable format
 local function formatTime(gameHours)
 	local hours = math.floor(gameHours) % 24
 	local minutes = math.floor((gameHours % 1) * 60)
@@ -27,7 +26,6 @@ local function formatTime(gameHours)
 	return string.format("%d:%02d %s", displayHours, minutes, period)
 end
 
--- Get current time period based on game time
 local function getTimePeriod(gameHours)
 	local hour = gameHours % 24
 	
@@ -69,21 +67,17 @@ local function updateTime()
 	local currentTick = tick()
 	local elapsedTime = currentTick - cycleStartTime
 	
-	-- Calculate game time based on elapsed real time
 	local gameTimeProgress = (elapsedTime / TimeConfig.DAY_LENGTH) * 24
 	currentTime = (TimeConfig.START_TIME + gameTimeProgress) % 24
 	
-	-- Update Lighting.ClockTime continuously for smooth sun/moon movement
 	local Lighting = game:GetService("Lighting")
 	Lighting.ClockTime = currentTime
 	
-	-- Check for period changes
 	local newPeriod = getTimePeriod(currentTime)
 	if newPeriod ~= currentPeriod then
 		lastPeriod = currentPeriod
 		currentPeriod = newPeriod
 		
-		-- Fire period change event
 		fireTimeEvents("periodChange", {
 			newPeriod = newPeriod,
 			oldPeriod = lastPeriod,
@@ -95,39 +89,32 @@ local function updateTime()
 	end
 end
 
--- Get current game time
 function DayNightCycle.getCurrentTime()
 	return currentTime
 end
 
--- Get current time period
 function DayNightCycle.getCurrentPeriod()
 	return currentPeriod or getTimePeriod(currentTime)
 end
 
--- Get formatted time string
 function DayNightCycle.getFormattedTime()
 	return formatTime(currentTime)
 end
 
--- Get time progress through current period (0-1)
 function DayNightCycle.getTimeProgress()
 	local elapsedTime = tick() - cycleStartTime
 	return (elapsedTime / TimeConfig.DAY_LENGTH) % 1
 end
 
--- Get lighting preset for current time
 function DayNightCycle.getCurrentLightingPreset()
 	local period = DayNightCycle.getCurrentPeriod()
 	return TimeConfig.LIGHTING_PRESETS[period]
 end
 
--- Register a callback for time events
 function DayNightCycle.registerTimeCallback(callback)
 	table.insert(timeCallbacks, callback)
 end
 
--- Remove a callback
 function DayNightCycle.unregisterTimeCallback(callback)
 	for i, cb in ipairs(timeCallbacks) do
 		if cb == callback then
@@ -137,14 +124,12 @@ function DayNightCycle.unregisterTimeCallback(callback)
 	end
 end
 
--- Set time manually (for testing)
 function DayNightCycle.setTime(gameHours)
 	currentTime = gameHours % 24
 	cycleStartTime = tick() - ((currentTime - TimeConfig.START_TIME) / 24) * TimeConfig.DAY_LENGTH
 	updateTime()
 end
 
--- Skip to next period (for testing)
 function DayNightCycle.skipToNextPeriod()
 	local period = DayNightCycle.getCurrentPeriod()
 	local targetTime
@@ -172,23 +157,19 @@ function DayNightCycle.skipToNextPeriod()
 	DayNightCycle.setTime(targetTime)
 end
 
--- Initialize the day/night cycle
 function DayNightCycle.init()
 	print("Initializing day/night cycle...")
 	print("Day length:", TimeConfig.DAY_LENGTH, "seconds")
 	print("Starting time:", formatTime(TimeConfig.START_TIME))
 	
-	-- Set initial values
 	currentTime = TimeConfig.START_TIME
 	cycleStartTime = tick()
 	currentPeriod = getTimePeriod(currentTime)
 	
-	-- Start the update loop
 	RunService.Heartbeat:Connect(function()
 		updateTime()
 	end)
 	
-	-- Fire initial event
 	fireTimeEvents("init", {
 		period = currentPeriod,
 		gameTime = currentTime,
@@ -200,7 +181,6 @@ function DayNightCycle.init()
 	print("Current period:", currentPeriod)
 end
 
--- Get debug info
 function DayNightCycle.getDebugInfo()
 	return {
 		currentTime = currentTime,

@@ -21,31 +21,26 @@ local function lerp(a, b, t)
 	return a + (b - a) * t
 end
 
--- Generate noise value at a given position
 function NoiseGenerator.noise(x, y)
 	local xi = math.floor(x)
 	local yi = math.floor(y)
 	local xf = x - xi
 	local yf = y - yi
 	
-	-- Get noise values at the four corners
 	local a = hash(xi, yi)
 	local b = hash(xi + 1, yi)
 	local c = hash(xi, yi + 1)
 	local d = hash(xi + 1, yi + 1)
 	
-	-- Smooth the interpolation
 	local u = smoothstep(xf)
 	local v = smoothstep(yf)
 	
-	-- Interpolate
 	local x1 = lerp(a, b, u)
 	local x2 = lerp(c, d, u)
 	
 	return lerp(x1, x2, v)
 end
 
--- Generate fractal noise with multiple octaves
 function NoiseGenerator.fractalNoise(x, y, octaves, persistence, scale)
 	local value = 0
 	local amplitude = 1
@@ -62,7 +57,6 @@ function NoiseGenerator.fractalNoise(x, y, octaves, persistence, scale)
 	return value / maxValue
 end
 
--- Generate height value for terrain
 function NoiseGenerator.getTerrainHeight(x, z, config)
 	local noiseValue = NoiseGenerator.fractalNoise(
 		x, z,
@@ -71,7 +65,6 @@ function NoiseGenerator.getTerrainHeight(x, z, config)
 		config.NOISE_SCALE
 	)
 	
-	-- Map noise value (0-1) to height range
 	local heightRange = config.HEIGHT_RANGE.MAX - config.HEIGHT_RANGE.MIN
 	local height = config.BASE_HEIGHT + config.HEIGHT_RANGE.MIN + (noiseValue * heightRange)
 	

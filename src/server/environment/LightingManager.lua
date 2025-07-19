@@ -30,8 +30,6 @@ local function tweenLighting(preset)
 		currentTween:Cancel() -- Cancel existing tween
 	end
 	
-	-- Note: ClockTime is handled continuously by DayNightCycle
-	-- Only tween the color properties smoothly
 	local tweenInfo = TweenInfo.new(TimeConfig.TRANSITION_DURATION, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 	
 	local tween = TweenService:Create(Lighting, tweenInfo, {
@@ -46,7 +44,6 @@ local function tweenLighting(preset)
 	currentTween = tween
 end
 
--- Update lighting on time period change
 local function onTimePeriodChange(eventType, data)
 	if eventType ~= "periodChange" then return end
 	
@@ -55,7 +52,6 @@ local function onTimePeriodChange(eventType, data)
 	tweenLighting(newPreset)
 end
 
--- Initialize lighting manager
 function LightingManager.init()
 	print("Initializing lighting manager...")
 	

@@ -26,6 +26,9 @@
         "environment": {
           "$path": "src/server/environment"
         },
+        "dragdrop": {
+          "$path": "src/server/dragdrop"
+        },
         "$path": "src/server"
       }
     },
@@ -33,6 +36,9 @@
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
+          "dragdrop": {
+            "$path": "src/client/dragdrop"
+          },
           "$path": "src/client"
         }
       }
