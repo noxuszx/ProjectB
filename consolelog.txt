@@ -1,36 +1,31 @@
-  17:13:00.175  Chunk-based terrain system starting...  -  Server - ChunkInit:6
-  17:13:00.288  Hello world, from client!  -  Client - Client:1
-  17:13:00.533  Plugin loaded  -  Server
-  17:13:00.784  Plugin loaded  -  Client
-  17:13:02.189  Chunk terrain system initialized!  -  Server - ChunkInit:21
-  17:13:03.197  Initializing custom model spawner...  -  Server - CustomModelSpawner:261
-  17:13:03.197  Scanning for available models...  -  Server - CustomModelSpawner:35
-  17:13:03.197  Found Vegetation model: Shrub  -  Server - CustomModelSpawner:54
-  17:13:03.197  Found Vegetation model: Shrub2  -  Server - CustomModelSpawner:54
-  17:13:03.197   ▶ Found Vegetation model: Cactus (x3)  -  Server - CustomModelSpawner:54
-  17:13:03.197  Found Structures model: Campsite  -  Server - CustomModelSpawner:54
-  17:13:03.197   ▶ Found Rocks model: Rock (x2)  -  Server - CustomModelSpawner:54
-  17:13:03.198  Found Rocks model: LargeRock  -  Server - CustomModelSpawner:54
-  17:13:03.198  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:54
-  17:13:03.198  Found Rocks model: Rock  -  Server - CustomModelSpawner:54
-  17:13:03.198  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:54
-  17:13:03.198  Vegetation models found: 5  -  Server - CustomModelSpawner:62
-  17:13:03.198  Structures models found: 1  -  Server - CustomModelSpawner:62
-  17:13:03.198  Rocks models found: 6  -  Server - CustomModelSpawner:62
-  17:13:03.198  Clearing spawned objects...  -  Server - CustomModelSpawner:247
-  17:13:03.198  Objects cleared!  -  Server - CustomModelSpawner:256
-  17:13:11.662  Custom model spawning complete!  -  Server - CustomModelSpawner:287
-  17:13:11.662  Terrain system initialized! Model spawning enabled.  -  Server - ChunkInit:33
-  17:13:12.680  Initializing day/night cycle...  -  Server - DayNightCycle:173
-  17:13:12.680  Day length: 480 seconds  -  Server - DayNightCycle:174
-  17:13:12.680  Starting time: 6:00 AM  -  Server - DayNightCycle:175
-  17:13:12.680  Day/night cycle initialized!  -  Server - DayNightCycle:194
-  17:13:12.681  Current time: 6:00 AM  -  Server - DayNightCycle:195
-  17:13:12.681  Current period: SUNRISE  -  Server - DayNightCycle:196
-  17:13:12.681  Initializing lighting manager...  -  Server - LightingManager:61
-  17:13:12.681  SunAngularSize is not a valid member of Lighting "Lighting"  -  Server - LightingManager:24
-  17:13:12.681  Stack Begin  -  Studio
-  17:13:12.681  Script 'ServerScriptService.Server.environment.LightingManager', Line 24 - function applyLightingPreset  -  Studio - LightingManager:24
-  17:13:12.681  Script 'ServerScriptService.Server.environment.LightingManager', Line 64 - function init  -  Studio - LightingManager:64
-  17:13:12.681  Script 'ServerScriptService.Server.ChunkInit', Line 42  -  Studio - ChunkInit:42
-  17:13:12.681  Stack End  -  Studio
+  19:18:35.154  Chunk-based terrain system starting...  -  Server - ChunkInit:6
+  19:18:35.248  Hello world, from client!  -  Client - Client:1
+  19:18:35.525  Plugin loaded  -  Server
+  19:18:35.753  Plugin loaded  -  Client
+  19:18:37.165  Chunk terrain system initialized!  -  Server - ChunkInit:19
+  19:18:37.261  Initializing drag and drop client...  -  Client - DragDropClient:155
+  19:18:38.175  Initializing drag and drop server...  -  Server - DragDropServer:153
+  19:18:38.175  Drag and drop server ready!  -  Server - DragDropServer:165
+  19:18:38.175  Terrain system initialized! Model spawning enabled.  -  Server - ChunkInit:25
+  19:18:39.191  Initializing day/night cycle...  -  Server - DayNightCycle:161
+  19:18:39.191  Day length: 480 seconds  -  Server - DayNightCycle:162
+  19:18:39.191  Starting time: 6:00 AM  -  Server - DayNightCycle:163
+  19:18:39.191  Day/night cycle initialized!  -  Server - DayNightCycle:179
+  19:18:39.191  Current time: 6:00 AM  -  Server - DayNightCycle:180
+  19:18:39.191  Current period: SUNRISE  -  Server - DayNightCycle:181
+  19:18:39.191  Initializing lighting manager...  -  Server - LightingManager:56
+  19:18:39.192  Lighting manager ready. Initial preset: SUNRISE  -  Server - LightingManager:63
+  19:18:39.192  All systems initialized! Day/night cycle active.  -  Server - ChunkInit:31
+  19:18:39.192  Debug commands available: _G.timeDebug(), _G.skipTime(), _G.setTime(hour)  -  Server - ChunkInit:49
+  19:18:39.275  SpawnedVegetation folder exists: true  -  Client - DragDropClient:161
+  19:18:39.275  SpawnedRocks folder exists: true  -  Client - DragDropClient:162
+  19:18:39.275  SpawnedStructures folder exists: true  -  Client - DragDropClient:163
+  19:18:39.275  Drag and drop client ready!  -  Client - DragDropClient:169
+  19:18:39.275  Client systems initialized!  -  Client - Client:10
+  19:18:41.392   ▶ Found draggable part: Part in Chunks (x2)  -  Client - DragDropClient:49
+  19:18:41.392  Power is not a valid member of BodyPosition "BodyPosition"  -  Client - DragDropClient:87
+  19:18:41.392  Stack Begin  -  Studio
+  19:18:41.393  Script 'Players.iamC137.PlayerScripts.Client.dragdrop.DragDropClient', Line 87 - function startDrag  -  Studio - DragDropClient:87
+  19:18:41.393  Script 'Players.iamC137.PlayerScripts.Client.dragdrop.DragDropClient', Line 144 - function onMouseButton1Down  -  Studio - DragDropClient:144
+  19:18:41.393  Stack End  -  Studio
+  19:18:41.459  Stopped dragging: Part  -  Client - DragDropClient:132

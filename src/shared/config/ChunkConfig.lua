@@ -6,7 +6,7 @@
 local ChunkConfig = {}
 
 -- Chunk system parameters
-ChunkConfig.CHUNK_SIZE = 128 			-- Size of each chunk in studs (32x32)
+ChunkConfig.CHUNK_SIZE = 264 			-- Size of each chunk in studs (32x32)
 ChunkConfig.RENDER_DISTANCE = 3 		-- How many chunks to render in each direction (3 = 7x7 grid)
 ChunkConfig.HEIGHT_RANGE = {
 	MIN = 0,
@@ -24,7 +24,7 @@ ChunkConfig.TERRAIN_MATERIAL = Enum.Material.Plastic
 ChunkConfig.TERRAIN_COLOR = Color3.fromRGB(235, 225, 169)
 
 -- Performance parameters
-ChunkConfig.GENERATION_DELAY = 0.05 	-- Delay between chunk generations
+ChunkConfig.GENERATION_DELAY = 0.05
 
 -- Chunk subdivision for smoother terrain
 ChunkConfig.SUBDIVISIONS = 4 			-- How many parts per chunk axis (4x4 = 16 parts per chunk)
