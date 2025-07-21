@@ -186,27 +186,7 @@ ChunkConfig.TERRAIN_COLOR = Color3.fromRGB(194, 178, 128)
 TimeConfig.DAY_LENGTH = 120  -- 2 minutes real-time = 24 hours game time
 ```
 
-### **Start at Different Time**
-```lua
-TimeConfig.START_TIME = 18  -- Start at 6:00 PM (sunset)
-```
 
-## 🛠️ Debug Commands
-
-The following commands are available in the **Server Console** in Roblox Studio:
-
-### **Time Debug Commands**
-- `_G.timeDebug()` - Shows current time information
-- `_G.skipTime()` - Skip to next time period
-- `_G.setTime(18)` - Set time to 6:00 PM (sunset)
-
-### **Example Usage**
-```lua
--- In Server Console:
-_G.timeDebug()     -- Shows current time and period
-_G.setTime(12)     -- Jump to noon (harsh desert sun)
-_G.skipTime()      -- Skip to next time period
-```
 
 ## 📈 Performance Metrics
 
