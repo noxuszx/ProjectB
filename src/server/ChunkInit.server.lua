@@ -8,6 +8,7 @@ print("Chunk-based terrain system starting...")
 local ChunkManager = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner = require(script.Parent.spawning.CustomModelSpawner) -- Enabled after manual setup
 local DayNightCycle = require(script.Parent.environment.DayNightCycle)
+local VillageSpawner = require(script.Parent.spawning.VillageSpawner)
 local LightingManager = require(script.Parent.environment.LightingManager)
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local DragDropServer = require(script.Parent.dragdrop.DragDropServer)
@@ -35,6 +36,8 @@ print("Terrain system initialized! Model spawning enabled.")
 
 DayNightCycle.init()
 LightingManager.init()
+
+VillageSpawner.spawnVillages()
 
 print("All systems initialized! Day/night cycle active.")
 
