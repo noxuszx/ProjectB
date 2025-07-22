@@ -19,10 +19,11 @@ This project implements a Minecraft-inspired chunk-based terrain generation syst
 - ✅ **Chunk System**: Minecraft-inspired organization
 - ✅ **Day/Night Cycle**: Dynamic lighting with 8 time periods
 - ✅ **Model Spawning**: Custom vegetation, rocks, and structures
-- ✅ **Desert Theme**: Fallout-inspired atmosphere
+- ✅ **Village Generation**: Procedural villages with random layouts
+- ✅ **Drag & Drop System**: Interactive object manipulation with welding
+- ✅ **Desert Theme**: Egypt Theme
 - ✅ **Performance Optimized**: Batched generation and smooth transitions
 - ✅ **Highly Configurable**: Easy customization of all systems
-- ✅ **Professional Structure**: Clean, organized, and extensible codebase
 
 ## 📁 Project Structure
 
@@ -30,24 +31,33 @@ This project implements a Minecraft-inspired chunk-based terrain generation syst
 ProjectB/
 ├── src/
 │   ├── client/
-│   │   └── init.client.luau         # Client-side initialization
+│   │   ├── dragdrop/
+│   │   │   ├── DragDropClient.lua    # Drag and drop mechanics
+│   │   │   └── WeldSystem.lua        # Object welding system
+│   │   ├── FlyScript.client.lua      # Flying controls (G to toggle)
+│   │   └── init.client.luau          # Client-side initialization
 │   ├── server/
+│   │   ├── dragdrop/
+│   │   │   └── DragDropServer.lua    # Server-side drag validation
 │   │   ├── terrain/
-│   │   │   └── ChunkManager.lua     # Chunk generation logic
+│   │   │   └── ChunkManager.lua      # Chunk generation logic
 │   │   ├── spawning/
-│   │   │   └── CustomModelSpawner.lua # Model spawning system
+│   │   │   ├── CustomModelSpawner.lua # Model spawning system
+│   │   │   └── VillageSpawner.lua     # Village generation system
 │   │   ├── environment/
-│   │   │   ├── DayNightCycle.lua    # Time management system
-│   │   │   └── LightingManager.lua  # Dynamic lighting transitions
-│   │   └── ChunkInit.server.lua     # Server initialization
+│   │   │   ├── DayNightCycle.lua     # Time management system
+│   │   │   └── LightingManager.lua   # Dynamic lighting transitions
+│   │   └── ChunkInit.server.lua      # Server initialization
 │   └── shared/
 │       ├── config/
-│       │   ├── ChunkConfig.lua      # Terrain configuration
+│       │   ├── ChunkConfig.lua       # Terrain configuration
+│       │   ├── DragDropConfig.lua    # Drag and drop settings
 │       │   ├── ModelSpawnerConfig.lua # Model spawning config
-│       │   └── TimeConfig.lua       # Day/night cycle config
+│       │   ├── VillageConfig.lua     # Village spawning config
+│       │   └── TimeConfig.lua        # Day/night cycle config
 │       └── utilities/
-│           ├── NoiseGenerator.lua   # Noise generation utilities
-│           └── TimeDebugger.lua     # Time debugging tools
+│           ├── NoiseGenerator.lua    # Noise generation utilities
+│           └── TimeDebugger.lua      # Time debugging tools
 ├── default.project.json             # Rojo project configuration
 ├── aftman.toml                      # Tool dependencies
 └── README.md                        # This file
@@ -143,50 +153,12 @@ ProjectB/
 - **Configurable Chances**: Adjustable spawn rates per category
 - **Performance Optimized**: Batched generation with delays
 
-## 🔄 Evolution History
-
-### **Version 1: Part-Based System**
-- Individual parts for each terrain position
-- High part count (~2500+ parts)
-- Overlapping issues
-- Performance concerns
-
-### **Version 2: Chunk-Based System** (Current)
-- Minecraft-inspired chunk organization
-- Reduced part count (~784 parts)
-- Clean, non-overlapping terrain
-- Better performance and organization
-
-## 🎨 Customization Examples
-
-### **Larger Terrain Area**
-```lua
-ChunkConfig.RENDER_DISTANCE = 5  -- 11x11 chunks (352x352 studs)
-```
-
-### **Higher Resolution**
-```lua
-ChunkConfig.SUBDIVISIONS = 8  -- 8x8 parts per chunk (64 parts per chunk)
-```
-
-### **Different Terrain Style**
-```lua
-ChunkConfig.NOISE_SCALE = 0.01  -- Larger, smoother hills
-ChunkConfig.HEIGHT_RANGE.MAX = 50  -- Taller mountains
-```
-
-### **Desert Theme**
-```lua
-ChunkConfig.TERRAIN_MATERIAL = Enum.Material.Sand
-ChunkConfig.TERRAIN_COLOR = Color3.fromRGB(194, 178, 128)
-```
-
-### **Faster Day/Night Cycle**
-```lua
-TimeConfig.DAY_LENGTH = 120  -- 2 minutes real-time = 24 hours game time
-```
-
-
+### **Village Generation System**
+- **Procedural Villages**: 1-3 villages spawn randomly per session
+- **Dynamic Composition**: 2-4 structures per village (houses, shops)
+- **Random Rotations**: Natural-looking placement with varied orientations
+- **Smart Positioning**: Structures cluster together with proper spacing
+- **Obstacle Avoidance**: Villages avoid large rocks and terrain features
 
 ## 📈 Performance Metrics
 
@@ -194,34 +166,6 @@ TimeConfig.DAY_LENGTH = 120  -- 2 minutes real-time = 24 hours game time
 - **Part Count**: 784 parts (vs 2500+ in old system)
 - **Memory Usage**: Significantly reduced vs old system
 - **Render Performance**: Smooth 60fps with current settings
-
-## 🔧 Future Enhancements
-
-### **Planned Features**
-- [ ] **Enemy Systems**: Time-based spawning and behavior
-- [ ] **Weather System**: Sandstorms, clear skies, temperature effects
-- [ ] **Dynamic Events**: Time-triggered world events
-- [ ] **Player Survival**: Temperature, visibility, and resource mechanics
-- [ ] **Dynamic Chunk Loading**: Load/unload based on player position
-- [ ] **Biome System**: Different terrain types and themes
-- [ ] **Structure Generation**: Large buildings, settlements, ruins
-- [ ] **Terrain Modification**: Tools for real-time terrain editing
-- [ ] **Multiplayer Synchronization**: Shared world state
-- [ ] **Infinite Worlds**: Terrain streaming for unlimited exploration
-
-### **Performance Optimizations**
-- [ ] Level-of-detail (LOD) system
-- [ ] Occlusion culling
-- [ ] Chunk caching system
-- [ ] Background generation threading
-
-## 🤝 Contributing
-
-This is a learning project exploring procedural generation in Roblox. Feel free to:
-- Experiment with different noise functions
-- Try different chunk sizes and configurations
-- Add new terrain features
-- Optimize performance further
 
 ## 📝 Notes
 
@@ -239,3 +183,26 @@ This is a learning project exploring procedural generation in Roblox. Feel free 
 **Last Updated**: July 11, 2025
 **Rojo Version**: 7.5.1  
 **Roblox Studio**: Compatible with current version
+
+## 🔄 Evolution History
+
+### **Version 1: Part-Based System**
+- Individual parts for each terrain position
+- High part count (~2500+ parts)
+- Overlapping issues
+- Performance concerns
+
+### **Version 2: Chunk-Based System** (Current)
+- Minecraft-inspired chunk organization
+- Reduced part count (~784 parts)
+- Clean, non-overlapping terrain
+- Better performance and organization
+
+### **Drag & Drop System**
+- **Interactive Objects**: Click and drag unanchored parts in workspace
+- **Welding Mechanics**: Press Z to weld/unweld objects together
+- **Multi-Part Dragging**: Welded assemblies move together as one unit
+- **Rotation Controls**: R to cycle axis, Q/E to rotate objects
+- **Smart Validation**: Prevents dragging terrain and spawned models
+- **Performance Optimized**: Throttled updates and intelligent caching
+- **Visual Feedback**: Hover highlights and drag indicators

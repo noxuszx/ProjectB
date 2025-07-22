@@ -13,6 +13,7 @@ DragDropConfig.DRAG_SMOOTHNESS = 0.1 		-- Lower value for more responsive moveme
 DragDropConfig.UPDATE_RATE = 0.05 			-- Faster updates for smoother dragging (20fps)
 DragDropConfig.NETWORK_UPDATE_RATE = 0.1 	-- How often to send position to server (seconds)
 DragDropConfig.MAX_CONCURRENT_DRAGS = 5 	-- Max objects one player can drag simultaneously
+DragDropConfig.MIN_POSITION_DELTA = 0.1 	-- Minimum position change to trigger update (studs)
 
 DragDropConfig.DRAGGABLE_CATEGORIES = {
     ["DraggableItems"] = true,              -- Future folder for draggable items
@@ -35,6 +36,7 @@ DragDropConfig.HIGHLIGHT_TRANSPARENCY = 0.7
 
 DragDropConfig.REQUIRE_PERMISSIONS = false 	-- Whether to check permissions before dragging
 DragDropConfig.ADMIN_ONLY = false 			-- Whether only admins can drag objects
+DragDropConfig.DISABLE_COLLISION_WHILE_DRAGGING = true -- Make dragged parts non-collidable to prevent interference
 
 return DragDropConfig
 

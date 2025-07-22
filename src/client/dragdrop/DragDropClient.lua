@@ -22,8 +22,52 @@ local dragConstraint = nil
 local dragBodyPositions = nil
 local dragConnection = nil
 local highlightObject = nil
+local originalCollisionStates = nil
+local noCollisionConstraints = nil
 
 local remoteEvents = {}
+
+-- Create NoCollisionConstraints between dragged parts and player character parts
+local function createPlayerCollisionConstraints(draggedParts)
+    if not player.Character then return {} end
+
+    local constraints = {}
+    local characterParts = {}
+
+    -- Get all character parts
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            table.insert(characterParts, part)
+        end
+    end
+
+    -- Create NoCollisionConstraints between each dragged part and each character part
+    for _, draggedPart in pairs(draggedParts) do
+        for _, characterPart in pairs(characterParts) do
+            local constraint = Instance.new("NoCollisionConstraint")
+            constraint.Part0 = draggedPart
+            constraint.Part1 = characterPart
+            constraint.Parent = draggedPart
+            table.insert(constraints, constraint)
+        end
+    end
+
+    print("Created", #constraints, "NoCollisionConstraints for", #draggedParts, "dragged parts")
+    return constraints
+end
+
+-- Clean up NoCollisionConstraints
+local function cleanupPlayerCollisionConstraints(constraints)
+    if not constraints then return end
+
+    for _, constraint in pairs(constraints) do
+        if constraint and constraint.Parent then
+            constraint:Destroy()
+        end
+    end
+
+    print("Cleaned up", #constraints, "NoCollisionConstraints")
+end
 
 local currentRotation = CFrame.new()
 local rotationStep = math.rad(15)
@@ -88,7 +132,6 @@ local function removeHighlight()
     end
 end
 
--- Cache for draggable object validation - CLEAR CACHE
 local draggableCache = {}
 local cacheSize = 0
 local MAX_CACHE_SIZE = 100
@@ -207,38 +250,63 @@ local function startDrag(object)
     -- Create BodyPosition for each part in the assembly
     local bodyPositions = {}
     local initialOffsets = {}
-    
+    originalCollisionStates = {}
+
     for _, part in pairs(assembly) do
+        -- Store original collision state
+        originalCollisionStates[part] = part.CanCollide
+
         local bodyPos = Instance.new("BodyPosition")
         bodyPos.MaxForce = Vector3.new(12000, 12000, 12000)
         bodyPos.Position = part.Position
         bodyPos.D = 1000
         bodyPos.P = 20000
         bodyPos.Parent = part
-        
+
         bodyPositions[part] = bodyPos
         initialOffsets[part] = part.Position - object.Position
+    end
+
+    -- Create NoCollisionConstraints between dragged parts and player character
+    if DragDropConfig.DISABLE_COLLISION_WHILE_DRAGGING then
+        noCollisionConstraints = createPlayerCollisionConstraints(assembly)
     end
     
     dragConstraint = bodyPositions[object]
     dragBodyPositions = bodyPositions
-    
+
+    local lastTargetPos = getMouseWorldPosition()
+    local lastUpdateTime = 0
+    local UPDATE_THROTTLE = DragDropConfig.UPDATE_RATE or 0.05 -- Use config or default to 20fps
+
     dragConnection = RunService.Heartbeat:Connect(function()
         if draggedObject and dragConstraint then
+            local currentTime = tick()
             local targetPos = getMouseWorldPosition()
-            
-            for part, bodyPos in pairs(bodyPositions) do
-                if part == draggedObject then
-                    bodyPos.Position = targetPos
-                else
-                    bodyPos.Position = targetPos + initialOffsets[part]
+
+            local positionDelta = (targetPos - lastTargetPos).Magnitude
+            local timeDelta = currentTime - lastUpdateTime
+            local minDelta = DragDropConfig.MIN_POSITION_DELTA or 0.1
+
+            if positionDelta > minDelta or timeDelta >= UPDATE_THROTTLE then
+                for part, bodyPos in pairs(bodyPositions) do
+                    if part == draggedObject then
+                        bodyPos.Position = targetPos
+                    else
+                        bodyPos.Position = targetPos + initialOffsets[part]
+                    end
                 end
+
+                lastTargetPos = targetPos
+                lastUpdateTime = currentTime
             end
         end
     end)
     
-    print("Started dragging:", object.Name, "with", #assembly, "connected parts")
+    local weldCount = WeldSystem.getAssemblyWeldCount(assembly)
+    print("Started dragging:", object.Name, "with", #assembly, "connected parts and", weldCount, "welds")
     print("Controls: R to cycle axis (" .. selectedAxis .. "), Q/E to rotate, Z to weld/unweld")
+    print("New: Parts can now have multiple welds! Weld to any collidable object.")
 end
 
 local function stopDrag()
@@ -246,15 +314,27 @@ local function stopDrag()
     
     print("DEBUG: Stopping drag")
     
-    -- Clean up ALL BodyPosition constraints
     if dragBodyPositions then
-        for _, bodyPos in pairs(dragBodyPositions) do
+        for part, bodyPos in pairs(dragBodyPositions) do
             if bodyPos then
                 bodyPos:Destroy()
+            end
+            -- Restore original collision state
+            if originalCollisionStates and originalCollisionStates[part] ~= nil then
+                part.CanCollide = originalCollisionStates[part]
             end
         end
         dragBodyPositions = nil
     end
+
+    -- Clean up NoCollisionConstraints
+    if noCollisionConstraints then
+        cleanupPlayerCollisionConstraints(noCollisionConstraints)
+        noCollisionConstraints = nil
+    end
+
+    -- Clear collision states
+    originalCollisionStates = nil
     
     if dragConnection then
         dragConnection:Disconnect()
@@ -262,10 +342,7 @@ local function stopDrag()
     end
     
     removeHighlight()
-    
-    -- DON'T destroy welds here - let them persist!
     currentWeld = nil
-    isWelded = false
     
     if draggedObject then
         print("Stopped dragging:", draggedObject.Name)
@@ -310,10 +387,9 @@ end
 
 local function onKeyDown(key)
     if key.KeyCode == Enum.KeyCode.Z then
-        -- Weld works both while dragging and hovering
-        currentWeld, isWelded = WeldSystem.weldObject(draggedObject, currentWeld)
-    elseif not isDragging then 
-        return -- Other keys only work when dragging
+        currentWeld = WeldSystem.weldObject(draggedObject, currentWeld)
+    elseif not isDragging then
+        return
     elseif key.KeyCode == Enum.KeyCode.R then
         cycleAxis()
     elseif key.KeyCode == Enum.KeyCode.Q then
@@ -325,15 +401,14 @@ end
 
 function DragDropClient.init()
     print("Initializing drag and drop client...")
-    
+
     mouse.Button1Down:Connect(onMouseButton1Down)
     mouse.Button1Up:Connect(onMouseButton1Up)
     UserInputService.InputBegan:Connect(onKeyDown)
-    
-    -- Optimized hover detection - only runs when needed
+
     local lastHoverUpdate = 0
-    local HOVER_UPDATE_RATE = 0.05 -- 20fps max for hover detection
-    
+    local HOVER_UPDATE_RATE = 0.05
+
     RunService.Heartbeat:Connect(function()
         local currentTime = tick()
         if currentTime - lastHoverUpdate >= HOVER_UPDATE_RATE then
@@ -341,9 +416,8 @@ function DragDropClient.init()
             lastHoverUpdate = currentTime
         end
     end)
-    
-    print("Drag and drop client ready!")
-    print("Controls: Click to drag, Hover + Z to weld/unweld, R to cycle axis, Q/E to rotate")
+
+    print("Drag and drop client ready with NoCollisionConstraints!")
 end
 
 return DragDropClient
