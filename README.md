@@ -18,6 +18,7 @@ This project implements a Minecraft-inspired chunk-based terrain generation syst
 - ✅ **Procedural Terrain**: Noise-based height generation
 - ✅ **Chunk System**: Minecraft-inspired organization
 - ✅ **Day/Night Cycle**: Dynamic lighting with 8 time periods
+- ✅ **Item Spawning**: Session-based loot system with MeshParts & Tools
 - ✅ **Model Spawning**: Custom vegetation, rocks, and structures
 - ✅ **Village Generation**: Procedural villages with random layouts
 - ✅ **Drag & Drop System**: Interactive object manipulation with welding
@@ -42,6 +43,7 @@ ProjectB/
 │   │   ├── terrain/
 │   │   │   └── ChunkManager.lua      # Chunk generation logic
 │   │   ├── spawning/
+│   │   │   ├── ItemSpawner.lua        # Session-based item spawning
 │   │   │   ├── CustomModelSpawner.lua # Model spawning system
 │   │   │   └── VillageSpawner.lua     # Village generation system
 │   │   ├── environment/
@@ -51,6 +53,7 @@ ProjectB/
 │   └── shared/
 │       ├── config/
 │       │   ├── ChunkConfig.lua       # Terrain configuration
+│       │   ├── ItemConfig.lua        # Item spawning loot tables
 │       │   ├── DragDropConfig.lua    # Drag and drop settings
 │       │   ├── ModelSpawnerConfig.lua # Model spawning config
 │       │   ├── VillageConfig.lua     # Village spawning config
@@ -58,6 +61,8 @@ ProjectB/
 │       └── utilities/
 │           ├── NoiseGenerator.lua    # Noise generation utilities
 │           └── TimeDebugger.lua      # Time debugging tools
+├── Items/                           # Item models folder
+│   └── README.md                    # Item requirements and guide
 ├── default.project.json             # Rojo project configuration
 ├── aftman.toml                      # Tool dependencies
 └── README.md                        # This file
@@ -69,7 +74,7 @@ ProjectB/
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `CHUNK_SIZE` | 32 | Size of each chunk in studs (32x32) |
+|| `CHUNK_SIZE` | 264 | Size of each chunk in studs |
 | `RENDER_DISTANCE` | 3 | Chunks to render in each direction |
 | `SUBDIVISIONS` | 4 | Parts per chunk axis (4x4 = 16 parts) |
 | `HEIGHT_RANGE` | 0-25 | Min/max terrain height in studs |
@@ -145,6 +150,16 @@ ProjectB/
 - **Event System**: Time-based callbacks for other systems
 - **Debug Tools**: Console commands for testing and development
 
+### **Item Spawning System**
+- **Session-Based**: One-time world population for scavenging gameplay
+- **MeshPart & Tool Support**: Performance-optimized item types only
+- **4 Spawner Types**: VillageCommon, DungeonChest, BuildingResource, ConstructionSite
+- **Probabilistic Loot Tables**: Weighted chance system with empty spawners
+- **Smart Positioning**: Scatter placement with collision avoidance
+- **Auto-Discovery**: Automatically detects items from ReplicatedStorage.Items
+- **Ground Detection**: Raycast positioning for natural item placement
+- **Current Items**: MetalRoof, WoodPlank1, WoodPlank2 (building materials)
+
 ### **Model Spawning System**
 - **Three Categories**: Vegetation, Rocks, Structures
 - **Smart Placement**: Models embed naturally into terrain
@@ -176,11 +191,11 @@ ProjectB/
 
 ## 🏷️ Tags
 
-`roblox` `procedural-generation` `terrain` `chunks` `noise` `day-night-cycle` `model-spawning` `desert` `fallout` `rojo` `lua`
+`roblox` `procedural-generation` `terrain` `chunks` `noise` `day-night-cycle` `item-spawning` `meshparts` `tools` `model-spawning` `desert` `fallout` `rojo` `lua`
 
 ---
 
-**Last Updated**: July 11, 2025
+**Last Updated**: July 22, 2025
 **Rojo Version**: 7.5.1  
 **Roblox Studio**: Compatible with current version
 

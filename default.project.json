@@ -12,6 +12,9 @@
         "utilities": {
           "$path": "src/shared/utilities"
         }
+      },
+      "Items": {
+        "$className": "Folder"
       }
     },
 

@@ -1,0 +1,118 @@
+  00:53:49.354  Chunk-based terrain system starting...  -  Server - ChunkInit:6
+  00:53:49.487  Hello world, from client!  -  Client - Client:1
+  00:53:49.732  Plugin loaded  -  Server
+  00:53:49.962  Plugin loaded  -  Client
+  00:53:51.369  Chunk terrain system initialized  -  Server - ChunkInit:21
+  00:53:51.494  Initializing drag and drop client...  -  Client - DragDropClient:526
+  00:53:51.494  Drag and drop client ready with NoCollisionConstraints!  -  Client - DragDropClient:543
+  00:53:51.494  Client systems initialized!  -  Client - Client:10
+  00:53:52.377  Initializing drag and drop server...  -  Server - DragDropServer:153
+  00:53:52.377  Drag and drop server ready!  -  Server - DragDropServer:165
+  00:53:52.377  Drag and drop server initialized  -  Server - ChunkInit:25
+  00:53:52.377  Spawning villages...  -  Server - VillageSpawner:156
+  00:53:53.095  === MESHPART DRAG-DROP TEST SCRIPT ===  -  Client - TestMeshPartDragDrop:116
+  00:53:53.095  This script tests the new BasePart support in the drag-drop system  -  Client - TestMeshPartDragDrop:117
+  00:53:53.095  Expected results:  -  Client - TestMeshPartDragDrop:118
+  00:53:53.095  - MeshParts with CanCollide=true should be draggable  -  Client - TestMeshPartDragDrop:119
+  00:53:53.095  - MeshParts with CanCollide=false should NOT be draggable  -  Client - TestMeshPartDragDrop:120
+  00:53:53.095  - Regular Parts should still be draggable  -  Client - TestMeshPartDragDrop:121
+  00:53:53.095  - All draggable parts should be weldable to each other  -  Client - TestMeshPartDragDrop:122
+  00:53:53.095    -  Client - TestMeshPartDragDrop:123
+  00:53:53.095  Creating test MeshParts...  -  Client - TestMeshPartDragDrop:21
+  00:53:53.095  Created TestMeshPart1 at position 12.856212615966797, 16.036117553710938, -2.0014431476593018  -  Client - TestMeshPartDragDrop:38
+  00:53:53.096  Created TestMeshPart2 at position 17.856212615966797, 16.036117553710938, -2.0014431476593018  -  Client - TestMeshPartDragDrop:38
+  00:53:53.096  Created TestMeshPart3 at position 22.856212615966797, 16.036117553710938, -2.0014431476593018  -  Client - TestMeshPartDragDrop:38
+  00:53:53.096  Created TestRegularPart at position 27.856212615966797, 16.036117553710938, -2.0014431476593018  -  Client - TestMeshPartDragDrop:53
+  00:53:53.096  Created NonCollideMeshPart at position 32.8562126159668, 16.036117553710938, -2.0014431476593018 (should NOT be draggable)  -  Client - TestMeshPartDragDrop:67
+  00:53:53.995  3 out of 3 villages spawned successfully!  -  Server - VillageSpawner:186
+  00:53:53.995  Village spawning complete. Initializing item spawning...  -  Server - ChunkInit:27
+  00:53:54.111  
+=== TESTING DRAGGABILITY ===  -  Client - TestMeshPartDragDrop:74
+  00:53:54.111  Part: TestMeshPart1 (MeshPart) - CanCollide: true - Draggable: true  -  Client - TestMeshPartDragDrop:109
+  00:53:54.111  Part: TestMeshPart2 (MeshPart) - CanCollide: true - Draggable: true  -  Client - TestMeshPartDragDrop:109
+  00:53:54.111  Part: TestMeshPart3 (MeshPart) - CanCollide: true - Draggable: true  -  Client - TestMeshPartDragDrop:109
+  00:53:54.111  Part: TestRegularPart (Part) - CanCollide: true - Draggable: true  -  Client - TestMeshPartDragDrop:109
+  00:53:54.111  Part: NonCollideMeshPart (MeshPart) - CanCollide: false - Draggable: false  -  Client - TestMeshPartDragDrop:109
+  00:53:54.111  
+=== TEST INSTRUCTIONS ===  -  Client - TestMeshPartDragDrop:132
+  00:53:54.111  1. Try clicking and dragging the blue MeshParts - they should be draggable  -  Client - TestMeshPartDragDrop:133
+  00:53:54.111  2. Try clicking and dragging the red regular Part - it should be draggable  -  Client - TestMeshPartDragDrop:134
+  00:53:54.111  3. Try clicking and dragging the yellow MeshPart - it should NOT be draggable  -  Client - TestMeshPartDragDrop:135
+  00:53:54.111  4. Try welding the draggable parts together using the Z key  -  Client - TestMeshPartDragDrop:136
+  00:53:54.112  5. Try welding draggable parts to the terrain chunks - this should now work!  -  Client - TestMeshPartDragDrop:137
+  00:53:54.112  6. MeshParts should only weld when very close (not at distance)  -  Client - TestMeshPartDragDrop:138
+  00:53:54.112  7. Press T to clean up test parts  -  Client - TestMeshPartDragDrop:139
+  00:53:54.112  ========================  -  Client - TestMeshPartDragDrop:140
+  00:53:55.011  Initializing custom model spawner...  -  Server - CustomModelSpawner:235
+  00:53:55.011  Scanning for available models...  -  Server - CustomModelSpawner:34
+  00:53:55.011  Found Vegetation model: Shrub  -  Server - CustomModelSpawner:53
+  00:53:55.011  Found Vegetation model: Shrub2  -  Server - CustomModelSpawner:53
+  00:53:55.011   ▶ Found Vegetation model: Cactus (x3)  -  Server - CustomModelSpawner:53
+  00:53:55.011   ▶ Found Rocks model: Rock (x2)  -  Server - CustomModelSpawner:53
+  00:53:55.011  Found Rocks model: LargeRock  -  Server - CustomModelSpawner:53
+  00:53:55.012  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:53
+  00:53:55.012  Found Rocks model: Rock  -  Server - CustomModelSpawner:53
+  00:53:55.012  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:53
+  00:53:55.012  Vegetation models found: 5  -  Server - CustomModelSpawner:61
+  00:53:55.012  Structures models found: 0  -  Server - CustomModelSpawner:61
+  00:53:55.012  Rocks models found: 6  -  Server - CustomModelSpawner:61
+  00:53:55.012  Clearing spawned objects...  -  Server - CustomModelSpawner:222
+  00:53:55.012  Objects cleared!  -  Server - CustomModelSpawner:231
+  00:53:56.976  Custom model spawning complete!  -  Server - CustomModelSpawner:256
+  00:53:56.977  Terrain system initialized Model spawning enabled.  -  Server - ChunkInit:36
+  00:53:56.977  Initializing day/night cycle...  -  Server - DayNightCycle:161
+  00:53:56.977  Day length: 480 seconds  -  Server - DayNightCycle:162
+  00:53:56.977  Starting time: 6:00 AM  -  Server - DayNightCycle:163
+  00:53:56.977  Day/night cycle initialized!  -  Server - DayNightCycle:179
+  00:53:56.977  Current time: 6:00 AM  -  Server - DayNightCycle:180
+  00:53:56.977  Current period: SUNRISE  -  Server - DayNightCycle:181
+  00:53:56.977  Initializing lighting manager...  -  Server - LightingManager:56
+  00:53:56.977  Lighting manager ready. Initial preset: SUNRISE  -  Server - LightingManager:63
+  00:53:56.977  [ItemSpawner] Item discovery complete:  -  Server - ItemSpawner:80
+  00:53:56.977    - Valid items discovered: 3  -  Server - ItemSpawner:81
+  00:53:56.977    - Items skipped: 0  -  Server - ItemSpawner:82
+  00:53:56.980  [ItemSpawner] World population complete!  -  Server - ItemSpawner:311
+  00:53:56.980    - Processed spawners: 24  -  Server - ItemSpawner:312
+  00:53:56.980    - Total items spawned: 29  -  Server - ItemSpawner:313
+  00:53:56.980    - Available item types: 0  -  Server - ItemSpawner:314
+  00:53:56.980  All systems initialized. Day/night cycle active, world populated with items.  -  Server - ChunkInit:46
+  00:53:59.414  === CLICK DEBUG ===  -  Client - DragDropClient:481
+  00:53:59.414  Mouse clicked on: TestMeshPart1  -  Client - DragDropClient:482
+  00:53:59.414  Target exists: true  -  Client - DragDropClient:483
+  00:53:59.414  Target class: MeshPart  -  Client - DragDropClient:486
+  00:53:59.414  Target parent: Workspace  -  Client - DragDropClient:487
+  00:53:59.414  Target anchored: false  -  Client - DragDropClient:488
+  00:53:59.414  Is draggable result: true  -  Client - DragDropClient:491
+  00:53:59.414  ATTEMPTING TO START DRAG  -  Client - DragDropClient:494
+  00:53:59.414  DEBUG: Starting drag for TestMeshPart1 at position 12.857316970825195, 2.9946205615997314, -2.0035226345062256  -  Client - DragDropClient:274
+  00:53:59.415  DEBUG: Raycast hit at: 12.424578666687012, 4, 1.8635015487670898  -  Client - DragDropClient:218
+  00:53:59.415  DEBUG: Initial mouse position: 12.48001766204834, 4.077877044677734, 1.0243892669677734  -  Client - DragDropClient:290
+  00:53:59.415  DEBUG: Object position: 12.857316970825195, 2.9946205615997314, -2.0035226345062256  -  Client - DragDropClient:291
+  00:53:59.415  DEBUG: Calculated drag offset: 0.37729930877685547, -1.083256483078003, -3.027911901473999  -  Client - DragDropClient:294
+  00:53:59.415  Created 7 NoCollisionConstraints for 1 dragged parts  -  Client - DragDropClient:54
+  00:53:59.415  Started dragging: TestMeshPart1 with 1 parts | Smooth physics enabled  -  Client - DragDropClient:420
+  00:53:59.415  ==================  -  Client - DragDropClient:502
+  00:53:59.427   ▶ DEBUG: Raycast hit at: 12.424578666687012, 4, 1.8635015487670898 (x3)  -  Client - DragDropClient:218
+  00:53:59.478  DEBUG: Raycast hit at: 12.414765357971191, 4, 2.0120410919189453  -  Client - DragDropClient:218
+  00:53:59.494  DEBUG: Raycast hit at: 12.414765357971191, 4, 2.012040138244629  -  Client - DragDropClient:218
+  00:53:59.510  DEBUG: Raycast hit at: 12.414765357971191, 4, 2.0120410919189453  -  Client - DragDropClient:218
+  00:53:59.527  DEBUG: Raycast hit at: 12.399602890014648, 4, 2.241527557373047  -  Client - DragDropClient:218
+  00:53:59.545  DEBUG: Raycast hit at: 12.383885383605957, 4, 2.4794387817382812  -  Client - DragDropClient:218
+  00:53:59.561  DEBUG: Raycast hit at: 12.236614227294922, 4, 3.520541191101074  -  Client - DragDropClient:218
+  00:53:59.577  DEBUG: Raycast hit at: 12.018949508666992, 4, 4.739645957946777  -  Client - DragDropClient:218
+  00:53:59.594  DEBUG: Raycast hit at: 11.752838134765625, 4, 7.990324974060059  -  Client - DragDropClient:218
+  00:53:59.611  DEBUG: Raycast hit at: 11.518118858337402, 4, 10.857545852661133  -  Client - DragDropClient:218
+  00:53:59.627  DEBUG: Raycast hit at: 11.053380966186523, 4, 13.889772415161133  -  Client - DragDropClient:218
+  00:53:59.644  DEBUG: Raycast hit at: 10.880853652954102, 4, 15.778228759765625  -  Client - DragDropClient:218
+  00:53:59.661  DEBUG: Raycast hit at: 10.78381633758545, 4, 16.840383529663086  -  Client - DragDropClient:218
+  00:53:59.677  DEBUG: Raycast hit at: 10.678335189819336, 4, 17.994983673095703  -  Client - DragDropClient:218
+  00:53:59.695  DEBUG: Raycast hit at: 10.563241004943848, 4, 19.254783630371094  -  Client - DragDropClient:218
+  00:53:59.711  DEBUG: Raycast hit at: 10.29837703704834, 4, 22.153945922851562  -  Client - DragDropClient:218
+  00:53:59.728  DEBUG: Raycast hit at: 10.144906044006348, 4, 23.83380699157715  -  Client - DragDropClient:218
+  00:53:59.745   ▶ DEBUG: Raycast hit at: 9.974246978759766, 4, 25.70182228088379 (x3)  -  Client - DragDropClient:218
+  00:53:59.794   ▶ DEBUG: Raycast hit at: 9.783320426940918, 4, 27.791671752929688 (x3)  -  Client - DragDropClient:218
+  00:53:59.844   ▶ DEBUG: Raycast hit at: 9.568263053894043, 4, 30.14566421508789 (x7)  -  Client - DragDropClient:218
+  00:53:59.946  DEBUG: Stopping drag  -  Client - DragDropClient:426
+  00:53:59.946  WARNING: Restoring TestMeshPart1 from invalid position: 0, -3.4028234663852886e+38, 0  -  Client - DragDropClient:436
+  00:53:59.946  Cleaned up 7 NoCollisionConstraints  -  Client - DragDropClient:68
+  00:53:59.946  Stopped dragging: TestMeshPart1  -  Client - DragDropClient:471

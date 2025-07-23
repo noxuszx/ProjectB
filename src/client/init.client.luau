@@ -1,10 +1,25 @@
 print("Hello world, from client!")
 
-local DragDropClient = require(script.dragdrop.DragDropClient)
+-- Use the enhanced professional drag-drop system
+local DragDropClientInit = require(script.dragdrop.DragDropClientInit)
 
 -- Wait for game to load
 task.wait(2)
 
-DragDropClient.init()
+-- Initialize the enhanced drag-drop system
+local success = DragDropClientInit.integrateWithExistingClient()
 
-print("Client systems initialized!")
+if success then
+    print("Client systems initialized with Enhanced Professional Drag-Drop System!")
+else
+    warn("Failed to initialize enhanced drag-drop system - falling back to legacy system")
+
+    -- Fallback to legacy system if available
+    local legacySuccess, DragDropClient = pcall(require, script.dragdrop.DragDropClient)
+    if legacySuccess then
+        DragDropClient.init()
+        print("Client systems initialized with Legacy Drag-Drop System!")
+    else
+        warn("No drag-drop system available!")
+    end
+end

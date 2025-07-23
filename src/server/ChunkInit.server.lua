@@ -9,21 +9,24 @@ local ChunkManager = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner = require(script.Parent.spawning.CustomModelSpawner) -- Enabled after manual setup
 local DayNightCycle = require(script.Parent.environment.DayNightCycle)
 local VillageSpawner = require(script.Parent.spawning.VillageSpawner)
+local ItemSpawner = require(script.Parent.spawning.ItemSpawner)
 local LightingManager = require(script.Parent.environment.LightingManager)
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
-local DragDropServer = require(script.Parent.dragdrop.DragDropServer)
+local DragDropSystemInit = require(script.Parent.dragdrop.DragDropSystemInit)
 
 task.wait(2)
 
 ChunkManager.init()
 
 print("Chunk terrain system initialized")
-
 task.wait(1)
 
-DragDropServer.init()
-
-print("Drag and drop server initialized")
+-- Initialize enhanced drag-drop system
+DragDropSystemInit.integrateWithChunkInit()
+print("Enhanced drag-drop system initialized")
+VillageSpawner.spawnVillages()
+print("Village spawning complete. Initializing item spawning...")
+task.wait(1)
 
 CustomModelSpawner.init(
     ChunkConfig.RENDER_DISTANCE,
@@ -35,7 +38,11 @@ print("Terrain system initialized Model spawning enabled.")
 
 DayNightCycle.init()
 LightingManager.init()
-VillageSpawner.spawnVillages()
 
-print("All systems initialized Day/night cycle active.")
+
+
+
+ItemSpawner.Initialize()
+
+print("All systems initialized. Day/night cycle active, world populated with items.")
 

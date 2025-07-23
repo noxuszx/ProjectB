@@ -1,6 +1,9 @@
 --[[
     DragDropConfig.lua
     Configuration for drag and drop physics system
+
+    NOTE: This config is now extended by DragDropSystemConfig.lua
+    This file maintains backward compatibility with existing systems
 ]]--
 
 local DragDropConfig = {}
@@ -15,6 +18,11 @@ DragDropConfig.NETWORK_UPDATE_RATE = 0.1 	-- How often to send position to serve
 DragDropConfig.MAX_CONCURRENT_DRAGS = 5 	-- Max objects one player can drag simultaneously
 DragDropConfig.MIN_POSITION_DELTA = 0.1 	-- Minimum position change to trigger update (studs)
 
+-- Physics settings for AlignPosition/AlignOrientation dragging
+DragDropConfig.MAX_FORCE = math.huge 				-- Maximum force for AlignPosition
+DragDropConfig.POWER = 10000 						-- Responsiveness for AlignPosition/AlignOrientation
+DragDropConfig.RIGIDITY_ENABLED = false 			-- Whether to use rigid attachment mode
+
 DragDropConfig.DRAGGABLE_CATEGORIES = {
     ["DraggableItems"] = true,              -- Future folder for draggable items
     ["Workspace"] = true,                   -- For testing with regular parts
@@ -25,6 +33,22 @@ DragDropConfig.EXCLUDED_CATEGORIES = {
     ["SpawnedRocks"] = true,
     ["SpawnedStructures"] = true,
     ["Chunks"] = true
+}
+
+-- Restricted folder names that should not contain draggable objects
+DragDropConfig.RESTRICTED_FOLDERS = {
+    ["SpawnedVegetation"] = true,
+    ["SpawnedRocks"] = true,
+    ["SpawnedStructures"] = true,
+    ["Chunks"] = true
+}
+
+-- Suspicious part names that should not be weldable targets
+DragDropConfig.SUSPICIOUS_NAMES = {
+    "Baseplate",
+    "SpawnLocation",
+    "Terrain",
+    "Collision"
 }
 
 DragDropConfig.MIN_DRAG_MASS = 0.1 			-- Minimum part mass to be draggable
@@ -38,10 +62,11 @@ DragDropConfig.REQUIRE_PERMISSIONS = false 	-- Whether to check permissions befo
 DragDropConfig.ADMIN_ONLY = false 			-- Whether only admins can drag objects
 DragDropConfig.DISABLE_COLLISION_WHILE_DRAGGING = true -- Make dragged parts non-collidable to prevent interference
 
+-- Compatibility and Migration Notes:
+-- This configuration is extended by DragDropSystemConfig.lua for the enhanced system
+-- All existing settings are preserved and inherited by the new system
+-- New features use the enhanced configuration while maintaining backward compatibility
+
 return DragDropConfig
-
-
-
-
 
 

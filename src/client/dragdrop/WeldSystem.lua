@@ -5,6 +5,10 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DragDropConfig = require(ReplicatedStorage.Shared.config.DragDropConfig)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local WeldSystem = {}
 local player = Players.LocalPlayer
@@ -17,13 +21,49 @@ local lastTarget = nil
 local lastUpdateTime = 0
 local UPDATE_THROTTLE = 0.1
 
--- Helper to check if a part belongs to any player's character
 local function isPlayerCharacterPart(part)
     local model = part:FindFirstAncestorOfClass("Model")
     if model then
         return Players:GetPlayerFromCharacter(model) ~= nil
     end
     return false
+end
+
+local function isProblematicWeldTarget(part)
+    -- Skip extremely large anchored parts (but allow terrain chunks)
+    if part.Anchored and part.Size.Magnitude > 100 then
+        print("DEBUG: Skipping extremely large anchored part:", part.Name, "Size:", part.Size.Magnitude)
+        return true
+    end
+
+    if part.Transparency >= 1 then
+        print("DEBUG: Skipping invisible part:", part.Name, "Transparency:", part.Transparency)
+        return true
+    end
+
+    -- Check suspicious names but allow chunk terrain parts
+    for _, suspiciousName in pairs(DragDropConfig.SUSPICIOUS_NAMES) do
+        if part.Name:find(suspiciousName) then
+            -- Allow chunk parts to be weld targets even though they're in restricted folders
+            if part.Parent and part.Parent.Name == "Chunks" then
+                print("DEBUG: Allowing chunk part as weld target:", part.Name)
+                -- Don't skip chunk parts - they should be weldable
+            else
+                print("DEBUG: Skipping suspicious part:", part.Name)
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function isWeldableTarget(part)
+    return part:IsA("BasePart")
+        and part.CanCollide
+        and not isProblematicWeldTarget(part)
+        and not isPlayerCharacterPart(part)
+        and CollectionServiceTags.isWeldable(part)
 end
 
 local function createHoverHighlight(object)
@@ -68,67 +108,39 @@ function WeldSystem.updateHoveredObject(isDragging, isDraggableObjectFunc)
     end
 end
 
--- Helper function to check if a part should be excluded from welding
-local function isProblematicWeldTarget(part)
-    -- Skip baseplate and other large anchored parts
-    if part.Anchored and part.Size.Magnitude > 50 then
-        print("DEBUG: Skipping large anchored part:", part.Name, "Size:", part.Size.Magnitude)
-        return true
-    end
-
-    -- Skip invisible parts (might be collision boxes or other invisible objects)
-    if part.Transparency >= 1 then
-        print("DEBUG: Skipping invisible part:", part.Name, "Transparency:", part.Transparency)
-        return true
-    end
-
-    -- Skip parts with suspicious names
-    local suspiciousNames = {"Baseplate", "SpawnLocation", "Terrain", "Collision"}
-    for _, suspiciousName in pairs(suspiciousNames) do
-        if part.Name:find(suspiciousName) then
-            print("DEBUG: Skipping suspicious part:", part.Name)
-            return true
-        end
-    end
-
-    return false
-end
-
--- Enhanced collision detection for finding weld targets
 local function findWeldTargets(sourceObject, maxDistance)
     local targets = {}
     local sourcePos = sourceObject.Position
     local sourceSize = sourceObject.Size
-    maxDistance = maxDistance or 2.0  -- Increased default range
+    maxDistance = maxDistance or 2.0 
 
-    -- Method 1: GetPartBoundsInBox (most reliable for nearby parts)
-    local searchSize = sourceSize + Vector3.new(maxDistance * 2, maxDistance * 2, maxDistance * 2)
+    -- Use a smaller search area to be more precise
+    local searchSize = sourceSize + Vector3.new(maxDistance * 1.2, maxDistance * 1.2, maxDistance * 1.2)
     local touchingParts = workspace:GetPartBoundsInBox(sourceObject.CFrame, searchSize)
     for _, part in pairs(touchingParts) do
-        if part ~= sourceObject
-            and part.CanCollide
-            and not isProblematicWeldTarget(part)
-            and not isPlayerCharacterPart(part) then -- ✅ Added player check
-            -- Calculate surface-to-surface distance instead of center-to-center
-            local surfaceDistance = math.max(0, (part.Position - sourcePos).Magnitude - (sourceSize.Magnitude/2 + part.Size.Magnitude/2))
-            if surfaceDistance <= maxDistance then
+        if part ~= sourceObject and isWeldableTarget(part) then
+            -- Calculate actual surface-to-surface distance more accurately
+            local centerDistance = (part.Position - sourcePos).Magnitude
+            local sourceRadius = sourceSize.Magnitude / 2
+            local targetRadius = part.Size.Magnitude / 2
+            local surfaceDistance = math.max(0, centerDistance - sourceRadius - targetRadius)
+
+            -- Only include if actually close enough (stricter check)
+            if surfaceDistance <= maxDistance * 0.8 then -- More restrictive multiplier
                 table.insert(targets, {part = part, distance = surfaceDistance, method = "proximity"})
                 print("DEBUG: Found nearby part:", part.Name, "surface distance:", math.floor(surfaceDistance * 100) / 100)
             end
         end
     end
 
-    -- Method 2: Enhanced raycasting in more directions
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
-    -- Filter out the source object, player character, and any currently dragged objects
     local filterList = {sourceObject}
     if Players.LocalPlayer.Character then
         table.insert(filterList, Players.LocalPlayer.Character)
     end
 
-    -- Also filter out any parts that are currently being dragged (non-collidable)
     for _, part in pairs(workspace:GetPartBoundsInBox(sourceObject.CFrame, sourceObject.Size * 5)) do
         if part ~= sourceObject and not part.CanCollide then
             table.insert(filterList, part)
@@ -162,12 +174,7 @@ local function findWeldTargets(sourceObject, maxDistance)
             local hitPart = raycastResult.Instance
             local distance = raycastResult.Distance
 
-            -- More permissive filtering - only exclude player parts
-            local isPlayerPart = isPlayerCharacterPart(hitPart) -- ✅ Replaces old LocalPlayer check
-
-            -- More generous distance check for raycasting
-            if not isPlayerPart and not isProblematicWeldTarget(hitPart) and hitPart.CanCollide and distance <= maxDistance * 1.5 then
-                -- Check if we already found this part
+            if isWeldableTarget(hitPart) and distance <= maxDistance then
                 local alreadyFound = false
                 for _, existing in pairs(targets) do
                     if existing.part == hitPart then
@@ -193,10 +200,7 @@ local function findWeldTargets(sourceObject, maxDistance)
     -- Method 3: GetTouchingParts as fallback (for parts that are actually touching)
     local actuallyTouching = sourceObject:GetTouchingParts()
     for _, part in pairs(actuallyTouching) do
-        if part.CanCollide
-            and not isProblematicWeldTarget(part)
-            and not isPlayerCharacterPart(part) then -- ✅ Added player check
-            -- Check if we already found this part
+        if isWeldableTarget(part) then
             local alreadyFound = false
             for _, existing in pairs(targets) do
                 if existing.part == part then
@@ -226,7 +230,6 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
         return nil, false
     end
 
-    -- Find all possible weld targets with generous distance
     local weldTargets = findWeldTargets(targetObject, 3.0)
 
     if #weldTargets == 0 then
@@ -234,7 +237,6 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
         return currentWeld, (currentWeld ~= nil)
     end
 
-    -- Check if we're trying to unweld (if hovering over an already welded part)
     local existingWelds = {}
     for _, child in pairs(targetObject:GetChildren()) do
         if child:IsA("WeldConstraint") and child.Name:find("DragDropWeld") then
