@@ -13,6 +13,11 @@ local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local VillageSpawner = {}
 local random = Random.new()
 
+-- Create organized folder for spawned villages
+local villageFolder = Instance.new("Folder")
+villageFolder.Name = "SpawnedVillages"
+villageFolder.Parent = Workspace
+
 -- Load village models from ReplicatedStorage
 local function loadVillageModels()
 	local models = {}
@@ -137,7 +142,7 @@ local function spawnVillage(models, chunkPosition)
 				end
 				
 				clonedModel:SetPrimaryPartCFrame(cframe)
-				clonedModel.Parent = Workspace
+				clonedModel.Parent = villageFolder
 				
 				wait(VillageConfig.SPAWN_DELAY)
 			else

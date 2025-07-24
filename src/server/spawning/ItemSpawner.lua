@@ -16,6 +16,11 @@ local processedSpawnersCount = 0
 local SPAWN_TAG = "ItemSpawnPoint"
 local SPAWN_TYPE_ATTRIBUTE = "SpawnType"
 
+-- Create organized folders for spawned items
+local itemFolder = Instance.new("Folder")
+itemFolder.Name = "SpawnedItems"
+itemFolder.Parent = workspace
+
 local function debugPrint(message)
 	if ItemConfig.Settings.DebugMode then
 		print("[ItemSpawner]", message)
@@ -254,9 +259,9 @@ local function spawnItem(itemName, position)
 		newItem:MoveTo(position)
 	end
 	
-	newItem.Parent = workspace
+newItem.Parent = itemFolder
 
-	-- Tag the spawned item as draggable and weldable for the drag-drop system
+    -- Tag the spawned item as draggable and weldable for the drag-drop system
 	if newItem:IsA("MeshPart") then
 		-- MeshParts can be tagged directly
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
@@ -319,8 +324,21 @@ local function processSpawner(spawnerPart)
 	debugPrint("Spawner processed. Items spawned: " .. #itemsToSpawn)
 end
 
+-- Clear all spawned items
+function ItemSpawner.ClearSpawnedItems()
+	debugPrint("Clearing spawned items...")
+	for _, child in pairs(itemFolder:GetChildren()) do
+		child:Destroy()
+	end
+	spawnedItemsCount = 0
+	print("[ItemSpawner] All spawned items cleared!")
+end
+
 function ItemSpawner.PopulateWorld()
 	debugPrint("Starting world population...")
+	
+	-- Clear any existing spawned items first
+	ItemSpawner.ClearSpawnedItems()
 	
 	spawnedItemsCount = 0
 	processedSpawnersCount = 0

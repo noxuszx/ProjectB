@@ -33,13 +33,14 @@ ProjectB/
 ├── src/
 │   ├── client/
 │   │   ├── dragdrop/
-│   │   │   ├── DragDropClient.lua    # Drag and drop mechanics
-│   │   │   └── WeldSystem.lua        # Object welding system
-│   │   ├── FlyScript.client.lua      # Flying controls (G to toggle)
-│   │   └── init.client.luau          # Client-side initialization
+│   │   │   ├── interactableHandler.client.lua  # Main drag-drop and rotation logic
+│   │   │   └── weldSystem.lua                  # Touch-based welding system
+│   │   ├── FlyScript.client.lua                # Flying controls (G to toggle)
+│   │   └── init.client.luau                    # Client-side initialization
 │   ├── server/
 │   │   ├── dragdrop/
-│   │   │   └── DragDropServer.lua    # Server-side drag validation
+│   │   │   ├── interactableHandler.server.lua  # Network ownership management
+│   │   │   └── itemSetup.server.lua            # Legacy item setup (unused)
 │   │   ├── terrain/
 │   │   │   └── ChunkManager.lua      # Chunk generation logic
 │   │   ├── spawning/
@@ -59,8 +60,9 @@ ProjectB/
 │       │   ├── VillageConfig.lua     # Village spawning config
 │       │   └── TimeConfig.lua        # Day/night cycle config
 │       └── utilities/
-│           ├── NoiseGenerator.lua    # Noise generation utilities
-│           └── TimeDebugger.lua      # Time debugging tools
+│           ├── NoiseGenerator.lua       # Noise generation utilities
+│           ├── TimeDebugger.lua         # Time debugging tools
+│           └── CollectionServiceTags.lua # Drag-drop object tagging system
 ├── Items/                           # Item models folder
 │   └── README.md                    # Item requirements and guide
 ├── default.project.json             # Rojo project configuration
@@ -74,7 +76,7 @@ ProjectB/
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-|| `CHUNK_SIZE` | 264 | Size of each chunk in studs |
+| `CHUNK_SIZE` | 264 | Size of each chunk in studs |
 | `RENDER_DISTANCE` | 3 | Chunks to render in each direction |
 | `SUBDIVISIONS` | 4 | Parts per chunk axis (4x4 = 16 parts) |
 | `HEIGHT_RANGE` | 0-25 | Min/max terrain height in studs |
@@ -195,7 +197,7 @@ ProjectB/
 
 ---
 
-**Last Updated**: July 22, 2025
+**Last Updated**: July 24, 2025
 **Rojo Version**: 7.5.1  
 **Roblox Studio**: Compatible with current version
 
@@ -214,10 +216,31 @@ ProjectB/
 - Better performance and organization
 
 ### **Drag & Drop System**
-- **Interactive Objects**: Click and drag unanchored parts in workspace
-- **Welding Mechanics**: Press Z to weld/unweld objects together
-- **Multi-Part Dragging**: Welded assemblies move together as one unit
-- **Rotation Controls**: R to cycle axis, Q/E to rotate objects
-- **Smart Validation**: Prevents dragging terrain and spawned models
-- **Performance Optimized**: Throttled updates and intelligent caching
-- **Visual Feedback**: Hover highlights and drag indicators
+- **Interactive Objects**: Click and drag spawned items and draggable objects
+- **Auto-Integration**: All items spawned by ItemSpawner are automatically draggable
+- **Object Support**: MeshParts, Tools, and Models with proper physics handling
+- **Smart Detection**: Uses CollectionService tags for efficient object identification
+- **Network Optimization**: Delayed network ownership transfer reduces lag
+- **Collision Management**: Items become non-collidable with players during drag
+
+### **Welding System**
+- **Touch-Based Welding**: Objects must physically touch to be weldable
+- **Smart Assembly Detection**: Uses Roblox's built-in Assembly system for anchored part detection
+- **Terrain Integration**: Items can weld to terrain but become immovable (prevents terrain dragging)
+- **Chain Welding**: Complex welded structures move as single assemblies
+- **Automatic Validation**: Prevents welding to players and problematic parts
+- **Performance Optimized**: Engine-level assembly checks instead of manual traversal
+
+### **Orientation System**
+- **Precise Rotation**: 15° increments around X, Y, or Z axes
+- **Axis Switching**: Cycle between rotation axes during drag
+- **Position Stability**: Objects stay in place while rotating (no drift)
+- **Smooth Animation**: Lerped rotation for fluid visual feedback
+- **State Management**: Rotation resets when dropping and picking up objects
+
+### **Control Scheme**
+- **Left Click + Hold**: Drag objects
+- **Z Key**: Weld/unweld objects (only when touching)
+- **R Key**: Rotate object 15° around current axis
+- **X Key**: Switch rotation axis (X → Y → Z → X)
+- **Release Click**: Drop objects (maintains rotation and welds)
