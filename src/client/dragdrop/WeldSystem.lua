@@ -29,8 +29,7 @@ local function isPlayerCharacterPart(part)
     return false
 end
 
-local function isProblematicWeldTarget(part)
-    -- Skip extremely large anchored parts (but allow terrain chunks)
+local function problemWeld(part)
     if part.Anchored and part.Size.Magnitude > 100 then
         print("DEBUG: Skipping extremely large anchored part:", part.Name, "Size:", part.Size.Magnitude)
         return true
@@ -41,13 +40,10 @@ local function isProblematicWeldTarget(part)
         return true
     end
 
-    -- Check suspicious names but allow chunk terrain parts
     for _, suspiciousName in pairs(DragDropConfig.SUSPICIOUS_NAMES) do
         if part.Name:find(suspiciousName) then
-            -- Allow chunk parts to be weld targets even though they're in restricted folders
             if part.Parent and part.Parent.Name == "Chunks" then
                 print("DEBUG: Allowing chunk part as weld target:", part.Name)
-                -- Don't skip chunk parts - they should be weldable
             else
                 print("DEBUG: Skipping suspicious part:", part.Name)
                 return true
@@ -61,7 +57,7 @@ end
 local function isWeldableTarget(part)
     return part:IsA("BasePart")
         and part.CanCollide
-        and not isProblematicWeldTarget(part)
+        and not problemWeld(part)
         and not isPlayerCharacterPart(part)
         and CollectionServiceTags.isWeldable(part)
 end
@@ -300,8 +296,6 @@ function WeldSystem.getWeldedAssembly(part, isDraggableObjectFunc)
             end
         end
 
-        -- Also check if other parts have welds pointing to this part
-        -- This ensures we find all connections in both directions
         for _, otherPart in pairs(workspace:GetPartBoundsInBox(currentPart.CFrame, currentPart.Size * 3)) do
             if not visited[otherPart] and isDraggableObjectFunc(otherPart) then
                 for _, child in pairs(otherPart:GetChildren()) do

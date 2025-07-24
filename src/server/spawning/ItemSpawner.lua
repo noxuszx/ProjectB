@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
 local ItemConfig = require(ReplicatedStorage.Shared.config.ItemConfig)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local ItemSpawner = {}
 local availableItems = {}
@@ -255,9 +256,41 @@ local function spawnItem(itemName, position)
 	end
 	
 	newItem.Parent = workspace
+
+	-- Tag the spawned item as draggable and weldable for the drag-drop system
+	if newItem:IsA("MeshPart") then
+		-- MeshParts can be tagged directly
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
+		debugPrint("Tagged MeshPart as draggable: " .. itemName)
+	elseif newItem:IsA("Tool") then
+		-- For Tools, tag the Handle if it exists
+		local handle = newItem:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
+			debugPrint("Tagged Tool Handle as draggable: " .. itemName)
+		end
+		-- Also tag the Tool itself for broader compatibility
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
+	elseif newItem:IsA("Model") then
+		-- For Models, tag all BaseParts within them
+		for _, descendant in pairs(newItem:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				CollectionServiceTags.addTag(descendant, CollectionServiceTags.DRAGGABLE)
+				CollectionServiceTags.addTag(descendant, CollectionServiceTags.WELDABLE)
+			end
+		end
+		-- Also tag the Model itself
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
+		debugPrint("Tagged Model and its parts as draggable: " .. itemName)
+	end
+
 	spawnedItemsCount = spawnedItemsCount + 1
 	debugPrint("Spawned item: " .. itemName .. " (" .. newItem.ClassName .. ") at " .. tostring(position))
-	
+
 	return newItem
 end
 

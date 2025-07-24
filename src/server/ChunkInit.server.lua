@@ -12,7 +12,7 @@ local VillageSpawner = require(script.Parent.spawning.VillageSpawner)
 local ItemSpawner = require(script.Parent.spawning.ItemSpawner)
 local LightingManager = require(script.Parent.environment.LightingManager)
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
-local DragDropSystemInit = require(script.Parent.dragdrop.DragDropSystemInit)
+local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 task.wait(2)
 
@@ -22,8 +22,6 @@ print("Chunk terrain system initialized")
 task.wait(1)
 
 -- Initialize enhanced drag-drop system
-DragDropSystemInit.integrateWithChunkInit()
-print("Enhanced drag-drop system initialized")
 VillageSpawner.spawnVillages()
 print("Village spawning complete. Initializing item spawning...")
 task.wait(1)
@@ -43,6 +41,11 @@ LightingManager.init()
 
 
 ItemSpawner.Initialize()
+
+-- Initialize drag-drop system tags for existing objects and spawned items
+print("Initializing drag-drop system tags...")
+CollectionServiceTags.initializeDefaultTags()
+CollectionServiceTags.tagItemsFolder()
 
 print("All systems initialized. Day/night cycle active, world populated with items.")
 

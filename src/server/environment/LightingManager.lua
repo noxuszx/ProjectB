@@ -12,11 +12,9 @@ local DayNightCycle = require(script.Parent.DayNightCycle)
 local TweenService = game:GetService("TweenService")
 
 local LightingManager = {}
-local currentTween = nil -- Current tween for smooth transitions
+local currentTween = nil
 
--- Apply lighting preset instantly
 local function applyLightingPreset(preset)
-	-- Note: ClockTime is handled continuously by DayNightCycle
 	Lighting.Ambient = preset.Ambient
 	Lighting.Brightness = preset.Brightness
 	Lighting.ColorShift_Bottom = preset.ColorShift_Bottom
@@ -24,10 +22,9 @@ local function applyLightingPreset(preset)
 	Lighting.OutdoorAmbient = preset.OutdoorAmbient
 end
 
--- Tween lighting settings for smooth transition
 local function tweenLighting(preset)
 	if currentTween then
-		currentTween:Cancel() -- Cancel existing tween
+		currentTween:Cancel()
 	end
 	
 	local tweenInfo = TweenInfo.new(TimeConfig.TRANSITION_DURATION, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)

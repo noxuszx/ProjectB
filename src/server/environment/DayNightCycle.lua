@@ -62,7 +62,6 @@ local function fireTimeEvents(eventType, data)
 	end
 end
 
--- Update the current time
 local function updateTime()
 	local currentTick = tick()
 	local elapsedTime = currentTick - cycleStartTime

@@ -1,72 +1,46 @@
---[[
-    DragDropConfig.lua
-    Configuration for drag and drop physics system
+-- src/shared/config/DragDropConfig.lua
+-- Configuration file for the Drag and Drop System
+-- This file defines settings for dragging, welding, and object interaction
 
-    NOTE: This config is now extended by DragDropSystemConfig.lua
-    This file maintains backward compatibility with existing systems
-]]--
-
-local DragDropConfig = {}
-
-
-DragDropConfig.MAX_DRAG_DISTANCE = 10 		-- Increased range for easier dragging
-DragDropConfig.DRAG_HEIGHT_OFFSET = 2 		-- How high above ground to drag objects
-DragDropConfig.DRAG_SMOOTHNESS = 0.1 		-- Lower value for more responsive movement
-
-DragDropConfig.UPDATE_RATE = 0.05 			-- Faster updates for smoother dragging (20fps)
-DragDropConfig.NETWORK_UPDATE_RATE = 0.1 	-- How often to send position to server (seconds)
-DragDropConfig.MAX_CONCURRENT_DRAGS = 5 	-- Max objects one player can drag simultaneously
-DragDropConfig.MIN_POSITION_DELTA = 0.1 	-- Minimum position change to trigger update (studs)
-
--- Physics settings for AlignPosition/AlignOrientation dragging
-DragDropConfig.MAX_FORCE = math.huge 				-- Maximum force for AlignPosition
-DragDropConfig.POWER = 10000 						-- Responsiveness for AlignPosition/AlignOrientation
-DragDropConfig.RIGIDITY_ENABLED = false 			-- Whether to use rigid attachment mode
-
-DragDropConfig.DRAGGABLE_CATEGORIES = {
-    ["DraggableItems"] = true,              -- Future folder for draggable items
-    ["Workspace"] = true,                   -- For testing with regular parts
+local DragDropConfig = {
+    -- Physics and interaction settings
+    DRAG_RANGE = 12,                    -- Maximum distance to detect draggable objects
+    CARRY_DISTANCE = 9,                 -- Distance to maintain objects while dragging
+    MAX_CARRY_DISTANCE = 20,            -- Maximum distance before auto-dropping
+    CARRY_SMOOTHNESS = 0.06,            -- Smoothing factor for drag movement
+    THROW_BOOST = 8,                    -- Velocity multiplier when throwing objects
+    
+    -- Weld system settings
+    WELD_DETECTION_RADIUS = 3.0,        -- Radius to search for weld targets
+    WELD_HOVER_UPDATE_THROTTLE = 0.1,   -- Throttle hover updates (seconds)
+    
+    -- Object filtering - parts with these names are problematic for welding
+    SUSPICIOUS_NAMES = {
+        "HumanoidRootPart",
+        "Head", 
+        "Torso",
+        "Left Arm", "Right Arm",
+        "Left Leg", "Right Leg",
+        "LeftUpperArm", "RightUpperArm",
+        "LeftLowerArm", "RightLowerArm", 
+        "LeftUpperLeg", "RightUpperLeg",
+        "LeftLowerLeg", "RightLowerLeg",
+        "LeftHand", "RightHand",
+        "LeftFoot", "RightFoot",
+        "UpperTorso", "LowerTorso"
+    },
+    
+    -- Collision groups
+    ITEM_COLLISION_GROUP = "Item",
+    PLAYER_COLLISION_GROUP = "player",
+    
+    -- Visual feedback
+    HOVER_HIGHLIGHT_COLOR = Color3.fromRGB(0, 162, 255),
+    WELD_HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 0),
+    
+    -- Performance settings
+    MAX_CONCURRENT_DRAGS = 10,          -- Maximum objects that can be dragged simultaneously
+    RAYCAST_FILTER_DESCENDANTS = true,  -- Filter player character from raycasts
 }
-
-DragDropConfig.EXCLUDED_CATEGORIES = {
-    ["SpawnedVegetation"] = true,
-    ["SpawnedRocks"] = true,
-    ["SpawnedStructures"] = true,
-    ["Chunks"] = true
-}
-
--- Restricted folder names that should not contain draggable objects
-DragDropConfig.RESTRICTED_FOLDERS = {
-    ["SpawnedVegetation"] = true,
-    ["SpawnedRocks"] = true,
-    ["SpawnedStructures"] = true,
-    ["Chunks"] = true
-}
-
--- Suspicious part names that should not be weldable targets
-DragDropConfig.SUSPICIOUS_NAMES = {
-    "Baseplate",
-    "SpawnLocation",
-    "Terrain",
-    "Collision"
-}
-
-DragDropConfig.MIN_DRAG_MASS = 0.1 			-- Minimum part mass to be draggable
-DragDropConfig.MAX_DRAG_MASS = 500 			-- Maximum part mass to be draggable
-DragDropConfig.SNAP_TO_TERRAIN = true 		-- Whether to snap objects to terrain when dropped
-
-DragDropConfig.HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 255)
-DragDropConfig.HIGHLIGHT_TRANSPARENCY = 0.7
-
-DragDropConfig.REQUIRE_PERMISSIONS = false 	-- Whether to check permissions before dragging
-DragDropConfig.ADMIN_ONLY = false 			-- Whether only admins can drag objects
-DragDropConfig.DISABLE_COLLISION_WHILE_DRAGGING = true -- Make dragged parts non-collidable to prevent interference
-
--- Compatibility and Migration Notes:
--- This configuration is extended by DragDropSystemConfig.lua for the enhanced system
--- All existing settings are preserved and inherited by the new system
--- New features use the enhanced configuration while maintaining backward compatibility
 
 return DragDropConfig
-
-

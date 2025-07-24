@@ -18,7 +18,6 @@ local availableModels = {
 	Structures = {}
 }
 
--- Create folders to organize spawned objects
 local objectFolders = {}
 for category in pairs(availableModels) do
 	local folder = Instance.new("Folder")
@@ -27,7 +26,6 @@ for category in pairs(availableModels) do
 	objectFolders[category] = folder
 end
 
--- Random number generator
 local random = Random.new()
 
 local function scanAvailableModels()
@@ -36,7 +34,6 @@ local function scanAvailableModels()
 	for category, folderPath in pairs(ModelSpawnerConfig.MODEL_FOLDERS) do
 		local folder = ReplicatedStorage
 		
-		-- Navigate to the folder (e.g., "Models.Vegetation")
 		for part in folderPath:gmatch("[^%.]+") do
 			folder = folder:FindFirstChild(part)
 			if not folder then
@@ -46,7 +43,6 @@ local function scanAvailableModels()
 		end
 		
 		if folder then
-			-- Scan for models in the folder
 			for _, model in ipairs(folder:GetChildren()) do
 				if model:IsA("Model") then
 					table.insert(availableModels[category], model)
@@ -64,19 +60,18 @@ end
 
 -- Get terrain height at a position
 local function getTerrainHeightAt(x, z)
-	local distanceFromSpawn = math.sqrt(x^2 + z^2)
+	local distfromspawn = math.sqrt(x^2 + z^2)
 	
-	if distanceFromSpawn <= ChunkConfig.SPAWN_FLAT_RADIUS then
+	if distfromspawn <= ChunkConfig.SPAWN_FLAT_RADIUS then
 		return ChunkConfig.SPAWN_HEIGHT
-	elseif distanceFromSpawn <= (ChunkConfig.SPAWN_FLAT_RADIUS + ChunkConfig.SPAWN_TRANSITION_WIDTH) then
-		local transitionFactor = (distanceFromSpawn - ChunkConfig.SPAWN_FLAT_RADIUS) / ChunkConfig.SPAWN_TRANSITION_WIDTH
+	elseif distfromspawn <= (ChunkConfig.SPAWN_FLAT_RADIUS + ChunkConfig.SPAWN_TRANSITION_WIDTH) then
+		local transitionFactor = (distfromspawn - ChunkConfig.SPAWN_FLAT_RADIUS) / ChunkConfig.SPAWN_TRANSITION_WIDTH
 		return (1 - transitionFactor) * ChunkConfig.SPAWN_HEIGHT + transitionFactor * NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
 	else
 		return NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
 	end
 end
 
--- Check if position is too close to existing objects of the same category
 local function isPositionValid(x, z, category, minDistance)
 	local chunkKey = math.floor(x/32) .. "," .. math.floor(z/32)
 	if not spawnedObjects[chunkKey] then
@@ -97,7 +92,7 @@ local function isPositionValid(x, z, category, minDistance)
 	return true
 end
 
-local function selectRandomModel(category)
+local function selecRnum(category)
 	local models = availableModels[category]
 	if #models == 0 then
 		return nil
@@ -119,7 +114,7 @@ local function spawnModel(originalModel, x, z, category)
 		scaleRange = ModelSpawnerConfig.VEGETATION_SCALE_RANGE
 	elseif category == "Rocks" then
 		scaleRange = ModelSpawnerConfig.ROCK_SCALE_RANGE
-	else -- Structures
+	else
 		scaleRange = ModelSpawnerConfig.STRUCTURE_SCALE_RANGE
 	end
 	
@@ -167,7 +162,6 @@ local function spawnModel(originalModel, x, z, category)
 	return model
 end
 
--- Spawn objects in a chunk
 function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 	local baseX, baseZ = cx * chunkSize, cz * chunkSize
 	local counters = {Vegetation = 0, Rocks = 0, Structures = 0}
@@ -175,10 +169,10 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 	for x = 0, chunkSize - 1, chunkSize / subdivisions do
 		for z = 0, chunkSize - 1, chunkSize / subdivisions do
 			local worldX, worldZ = baseX + x, baseZ + z
-			local distanceFromSpawn = math.sqrt(worldX^2 + worldZ^2)
+			local distfromspawn = math.sqrt(worldX^2 + worldZ^2)
 			
-			if distanceFromSpawn >= ModelSpawnerConfig.MIN_SPAWN_DISTANCE and
-				distanceFromSpawn <= ModelSpawnerConfig.MAX_SPAWN_DISTANCE then
+			if distfromspawn >= ModelSpawnerConfig.MIN_SPAWN_DISTANCE and
+				distfromspawn <= ModelSpawnerConfig.MAX_SPAWN_DISTANCE then
 				
 				for category, chance in pairs({
 					Vegetation = ModelSpawnerConfig.VEGETATION_CHANCE,
@@ -192,16 +186,16 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 								minDistance = ModelSpawnerConfig.MIN_VEGETATION_DISTANCE
 							elseif category == "Rocks" then
 								minDistance = ModelSpawnerConfig.MIN_ROCK_DISTANCE
-							else -- Structures
+							else
 								minDistance = ModelSpawnerConfig.MIN_STRUCTURE_DISTANCE
 							end
 							
 							if isPositionValid(worldX, worldZ, category, minDistance) then
-								local subdivisionSize = chunkSize / subdivisions
-								local offsetX = random:NextNumber(-subdivisionSize/3, subdivisionSize/3)
-								local offsetZ = random:NextNumber(-subdivisionSize/3, subdivisionSize/3)
+								local subSize = chunkSize / subdivisions
+								local offsetX = random:NextNumber(-subSize/3, subSize/3)
+								local offsetZ = random:NextNumber(-subSize/3, subSize/3)
 								
-								local modelToSpawn = selectRandomModel(category)
+								local modelToSpawn = selecRnum(category)
 								if modelToSpawn then
 									spawnModel(modelToSpawn, worldX + offsetX, worldZ + offsetZ, category)
 									counters[category] = counters[category] + 1
