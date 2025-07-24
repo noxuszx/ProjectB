@@ -104,96 +104,9 @@ function WeldSystem.updateHoveredObject(isDragging, isDraggableObjectFunc)
     end
 end
 
-local function findWeldTargets(sourceObject, maxDistance)
+local function findWeldTargets(sourceObject)
     local targets = {}
-    local sourcePos = sourceObject.Position
-    local sourceSize = sourceObject.Size
-    maxDistance = maxDistance or 2.0 
 
-    -- Use a smaller search area to be more precise
-    local searchSize = sourceSize + Vector3.new(maxDistance * 1.2, maxDistance * 1.2, maxDistance * 1.2)
-    local touchingParts = workspace:GetPartBoundsInBox(sourceObject.CFrame, searchSize)
-    for _, part in pairs(touchingParts) do
-        if part ~= sourceObject and isWeldableTarget(part) then
-            -- Calculate actual surface-to-surface distance more accurately
-            local centerDistance = (part.Position - sourcePos).Magnitude
-            local sourceRadius = sourceSize.Magnitude / 2
-            local targetRadius = part.Size.Magnitude / 2
-            local surfaceDistance = math.max(0, centerDistance - sourceRadius - targetRadius)
-
-            -- Only include if actually close enough (stricter check)
-            if surfaceDistance <= maxDistance * 0.8 then -- More restrictive multiplier
-                table.insert(targets, {part = part, distance = surfaceDistance, method = "proximity"})
-                print("DEBUG: Found nearby part:", part.Name, "surface distance:", math.floor(surfaceDistance * 100) / 100)
-            end
-        end
-    end
-
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-    local filterList = {sourceObject}
-    if Players.LocalPlayer.Character then
-        table.insert(filterList, Players.LocalPlayer.Character)
-    end
-
-    for _, part in pairs(workspace:GetPartBoundsInBox(sourceObject.CFrame, sourceObject.Size * 5)) do
-        if part ~= sourceObject and not part.CanCollide then
-            table.insert(filterList, part)
-        end
-    end
-
-    raycastParams.FilterDescendantsInstances = filterList
-
-    -- More comprehensive directional scanning
-    local directions = {
-        Vector3.new(0, -1, 0),   -- Down
-        Vector3.new(0, 1, 0),    -- Up
-        Vector3.new(1, 0, 0),    -- Right
-        Vector3.new(-1, 0, 0),   -- Left
-        Vector3.new(0, 0, 1),    -- Forward
-        Vector3.new(0, 0, -1),   -- Back
-        -- Diagonal directions for better coverage
-        Vector3.new(1, 1, 0).Unit,
-        Vector3.new(-1, 1, 0).Unit,
-        Vector3.new(1, -1, 0).Unit,
-        Vector3.new(-1, -1, 0).Unit,
-    }
-
-    for _, direction in pairs(directions) do
-        -- Cast rays from the surface of the part, not the center
-        local rayOrigin = sourcePos + direction * (sourceSize.Magnitude / 2)
-        local rayDistance = maxDistance * 2  -- More generous raycast distance
-        local raycastResult = workspace:Raycast(rayOrigin, direction * rayDistance, raycastParams)
-
-        if raycastResult then
-            local hitPart = raycastResult.Instance
-            local distance = raycastResult.Distance
-
-            if isWeldableTarget(hitPart) and distance <= maxDistance then
-                local alreadyFound = false
-                for _, existing in pairs(targets) do
-                    if existing.part == hitPart then
-                        alreadyFound = true
-                        break
-                    end
-                end
-
-                if not alreadyFound then
-                    table.insert(targets, {part = hitPart, distance = distance, method = "raycast"})
-                    print("DEBUG: Raycast found:", hitPart.Name, "Parent:", hitPart.Parent and hitPart.Parent.Name or "nil",
-                          "Material:", hitPart.Material.Name, "Anchored:", hitPart.Anchored,
-                          "Transparency:", hitPart.Transparency, "CanCollide:", hitPart.CanCollide,
-                          "direction:", tostring(direction), "distance:", math.floor(distance * 100) / 100)
-                end
-            end
-        else
-            -- Debug: Show when raycast finds nothing
-            print("DEBUG: Raycast in direction", tostring(direction), "found nothing")
-        end
-    end
-
-    -- Method 3: GetTouchingParts as fallback (for parts that are actually touching)
     local actuallyTouching = sourceObject:GetTouchingParts()
     for _, part in pairs(actuallyTouching) do
         if isWeldableTarget(part) then
@@ -226,7 +139,7 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
         return nil, false
     end
 
-    local weldTargets = findWeldTargets(targetObject, 3.0)
+    local weldTargets = findWeldTargets(targetObject)
 
     if #weldTargets == 0 then
         print("No weldable objects found nearby - move closer to another object")
@@ -253,7 +166,6 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
         end
     end
 
-    -- Create new weld to the closest target
     local bestTarget = weldTargets[1]
     local weldTarget = bestTarget.part
 
@@ -284,7 +196,6 @@ function WeldSystem.getWeldedAssembly(part, isDraggableObjectFunc)
     while #toCheck > 0 do
         local currentPart = table.remove(toCheck, 1)
 
-        -- Enhanced: Check for all DragDropWeld constraints (supports multiple welds per part)
         for _, child in pairs(currentPart:GetChildren()) do
             if child:IsA("WeldConstraint") and child.Name:find("DragDropWeld") then
                 local otherPart = child.Part0 == currentPart and child.Part1 or child.Part0

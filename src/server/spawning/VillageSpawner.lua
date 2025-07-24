@@ -165,14 +165,13 @@ function VillageSpawner.spawnVillages()
 	local numVillages = random:NextInteger(VillageConfig.MIN_VILLAGES, VillageConfig.MAX_VILLAGES)
 	local spawnedVillages = 0
 	local attempts = 0
-	local maxAttempts = numVillages * 5 -- Allow more attempts than villages needed
+	local maxAttempts = numVillages * 5
 
 	while spawnedVillages < numVillages and attempts < maxAttempts do
 		local chunkX = random:NextInteger(-ChunkConfig.RENDER_DISTANCE, ChunkConfig.RENDER_DISTANCE)
 		local chunkZ = random:NextInteger(-ChunkConfig.RENDER_DISTANCE, ChunkConfig.RENDER_DISTANCE)
 		local chunkPosition = Vector3.new(chunkX * ChunkConfig.CHUNK_SIZE, 0, chunkZ * ChunkConfig.CHUNK_SIZE)
 
-		-- Try to spawn a village at this location
 		if not hasLargeObstacle(chunkPosition) then
 			local success = spawnVillage(models, chunkPosition)
 			if success then

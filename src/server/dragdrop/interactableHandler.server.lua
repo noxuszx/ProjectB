@@ -3,15 +3,11 @@ local RP = game:GetService("ReplicatedStorage")
 RP.Remotes.PickupItem.OnServerEvent:Connect(function(plr, object)
 	if not object then return end
 
-	-- Handle different object types for network ownership
 	if object:IsA("MeshPart") or object:IsA("Part") then
-		-- Direct part - set network owner
 		object:SetNetworkOwner(plr)
 	elseif object.PrimaryPart then
-		-- Model or Tool with PrimaryPart
 		object.PrimaryPart:SetNetworkOwner(plr)
 	else
-		-- Fallback - try to find the first BasePart
 		for _, child in pairs(object:GetDescendants()) do
 			if child:IsA("BasePart") then
 				child:SetNetworkOwner(plr)
@@ -24,16 +20,11 @@ end)
 RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 	if not object then return end
 
-	-- Handle different object types for network ownership and velocity
 	if object:IsA("MeshPart") or object:IsA("Part") then
-		-- Direct part - reset network owner and apply velocity
-		object:SetNetworkOwner(nil)
 		if velocity then
 			object.AssemblyLinearVelocity = velocity
 		end
 	elseif object.PrimaryPart then
-		-- Model or Tool with PrimaryPart
-		object.PrimaryPart:SetNetworkOwner(nil)
 		if velocity then
 			object.PrimaryPart.AssemblyLinearVelocity = velocity
 		end
@@ -41,7 +32,6 @@ RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 		-- Fallback - try to find the first BasePart
 		for _, child in pairs(object:GetDescendants()) do
 			if child:IsA("BasePart") then
-				child:SetNetworkOwner(nil)
 				if velocity then
 					child.AssemblyLinearVelocity = velocity
 				end
@@ -49,4 +39,23 @@ RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 			end
 		end
 	end
+
+	task.spawn(function()
+		task.wait(0.5)
+
+		if object and object.Parent then -- Check if object still exists
+			if object:IsA("MeshPart") or object:IsA("Part") then
+				object:SetNetworkOwner(nil)
+			elseif object.PrimaryPart then
+				object.PrimaryPart:SetNetworkOwner(nil)
+			else
+				for _, child in pairs(object:GetDescendants()) do
+					if child:IsA("BasePart") then
+						child:SetNetworkOwner(nil)
+						break
+					end
+				end
+			end
+		end
+	end)
 end)

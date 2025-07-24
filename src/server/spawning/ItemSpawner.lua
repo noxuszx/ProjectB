@@ -55,7 +55,6 @@ local function discoverAvailableItems()
 				end
 			end
 
-			-- Check for reasonable size (not too big or too small)
 			if size then
 				if size.X > 50 or size.Y > 50 or size.Z > 50 then
 					table.insert(issues, "Item too large (>50 studs)")
@@ -350,7 +349,6 @@ end
 -- Initialize the system (call this after world generation is complete)
 function ItemSpawner.Initialize()
 	debugPrint("ItemSpawner initialized")
-	
 	-- For now, we'll populate immediately
 	-- In a real implementation, this might be called by a world generation system
 	ItemSpawner.PopulateWorld()
