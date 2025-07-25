@@ -11,10 +11,22 @@
         },
         "utilities": {
           "$path": "src/shared/utilities"
+        },
+        "weapons": {
+          "$path": "src/shared/weapons"
         }
       },
       "Items": {
         "$className": "Folder"
+      },
+      "NPCs": {
+        "$className": "Folder",
+        "PassiveCreatures": {
+          "$className": "Folder"
+        },
+        "HostileCreatures": {
+          "$className": "Folder"
+        }
       }
     },
 

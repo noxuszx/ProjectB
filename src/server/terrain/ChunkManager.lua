@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
-local NoiseGenerator = require(game.ReplicatedStorage.Shared.utilities.NoiseGenerator)
+local terrain = require(game.ReplicatedStorage.Shared.utilities.terrain)
 
 local ChunkManager = {}
 local chunks = {}
@@ -35,17 +35,7 @@ function ChunkManager.generateChunk(cx, cz)
 for x = 0, chunkSize - 1, chunkSize / ChunkConfig.SUBDIVISIONS do
 		for z = 0, chunkSize - 1, chunkSize / ChunkConfig.SUBDIVISIONS do
 			local worldX, worldZ = baseX + x, baseZ + z
-			local distanceFromSpawn = math.sqrt(worldX^2 + worldZ^2)
-			local height
-			if distanceFromSpawn <= ChunkConfig.SPAWN_FLAT_RADIUS then
-				height = ChunkConfig.SPAWN_HEIGHT
-			elseif distanceFromSpawn <= (ChunkConfig.SPAWN_FLAT_RADIUS + ChunkConfig.SPAWN_TRANSITION_WIDTH) then
-
-				local transitionFactor = (distanceFromSpawn - ChunkConfig.SPAWN_FLAT_RADIUS) / ChunkConfig.SPAWN_TRANSITION_WIDTH
-				height = (1 - transitionFactor) * ChunkConfig.SPAWN_HEIGHT + transitionFactor * NoiseGenerator.getTerrainHeight(worldX, worldZ, ChunkConfig)
-			else
-				height = NoiseGenerator.getTerrainHeight(worldX, worldZ, ChunkConfig)
-			end
+			local height = terrain.getTerrainHeight(worldX, worldZ)
 					
 			local subdivisionSize = chunkSize / ChunkConfig.SUBDIVISIONS
 			createChunkPart(worldX, worldZ, subdivisionSize, subdivisionSize, height)

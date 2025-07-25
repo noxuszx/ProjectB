@@ -3,41 +3,38 @@
 -- This file defines all loot tables, spawn settings, and spawner types for the session-based scavenging game
 
 local ItemConfig = {
-	-- Global settings for the spawning system
 	Settings = {
-		ItemsFolder = "Items", -- Folder name in ReplicatedStorage where item models are stored
-		ScatterRadius = 5, -- Random spawn radius around spawner position (in studs)
-		MaxScatterAttempts = 10, -- Max attempts to find valid spawn position
-		SpawnHeight = 3, -- Height above spawner position to spawn items (to avoid clipping)
-		DebugMode = false, -- Enable debug prints and visualizations
+		ItemsFolder = "Items",
+		ScatterRadius = 5,
+		MaxScatterAttempts = 10,
+		SpawnHeight = 3,
+		DebugMode = false,
 	},
 
-	-- Defines the rules for each type of spawner, linked by the "SpawnType" attribute
-	-- Each spawner type can have different loot tables and spawn behavior
 	SpawnTypes = {
-		-- Common village loot - basic resources and consumables
 ["VillageCommon"] = {
 			MaxRolls = 2,
 			MinRolls = 0,
 			PossibleLoot = {
-				["MetalRoof"] = 0.4, 
+				["MetalRoof"] = 0.4,
 				["WoodPlank1"] = 0.6,
-				["WoodPlank2"] = 0.5
+				["WoodPlank2"] = 0.5,
+				["Knife"] = 0.15
 			}
 		},
 
-		-- Dungeon chest loot - valuable but rare items
 		["DungeonChest"] = {
 			MaxRolls = 1,
 			MinRolls = 0,
 			PossibleLoot = {
-				["MetalRoof"] = 0.6, -- Metal resources
+				["MetalRoof"] = 0.6,
 				["WoodPlank1"] = 0.4,
-				["WoodPlank2"] = 0.4
+				["WoodPlank2"] = 0.4,
+				["Machete"] = 0.25,
+				["Spear"] = 0.20
 			}
 		},
 
-		-- Building resource spawner
 		["BuildingResource"] = {
 			MaxRolls = 3,
 			MinRolls = 1,
@@ -48,14 +45,14 @@ local ItemConfig = {
 			}
 		},
 
-		-- Construction site - building materials
 		["ConstructionSite"] = {
 			MaxRolls = 2,
 			MinRolls = 0,
 			PossibleLoot = {
-				["MetalRoof"] = 0.8, -- Common construction material
+				["MetalRoof"] = 0.8,
 				["WoodPlank1"] = 0.5,
-				["WoodPlank2"] = 0.5
+				["WoodPlank2"] = 0.5,
+				["Knife"] = 0.10
 			}
 		}
 	}

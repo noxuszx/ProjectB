@@ -2,7 +2,12 @@ local PhysicsService = game:GetService("PhysicsService")
 
 PhysicsService:RegisterCollisionGroup("Item")
 PhysicsService:RegisterCollisionGroup("player")
+PhysicsService:RegisterCollisionGroup("Creature")
+
+-- Set collision rules
 PhysicsService:CollisionGroupSetCollidable("Item", "player", false)
+PhysicsService:CollisionGroupSetCollidable("Creature", "player", true) -- Creatures can collide with players
+PhysicsService:CollisionGroupSetCollidable("Creature", "Item", true)   -- Creatures can collide with items
 
 local Players = game.Players
 

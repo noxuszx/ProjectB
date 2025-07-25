@@ -21,6 +21,8 @@ This project implements a Minecraft-inspired chunk-based terrain generation syst
 - ✅ **Item Spawning**: Session-based loot system with MeshParts & Tools
 - ✅ **Model Spawning**: Custom vegetation, rocks, and structures
 - ✅ **Village Generation**: Procedural villages with random layouts
+- ✅ **AI Creature System**: Intelligent NPCs with behavior-driven AI
+- ✅ **Procedural Spawner Placement**: Noise-based creature distribution
 - ✅ **Drag & Drop System**: Interactive object manipulation with welding
 - ✅ **Desert Theme**: Egypt Theme
 - ✅ **Performance Optimized**: Batched generation and smooth transitions
@@ -47,6 +49,19 @@ ProjectB/
 │   │   │   ├── ItemSpawner.lua        # Session-based item spawning
 │   │   │   ├── CustomModelSpawner.lua # Model spawning system
 │   │   │   └── VillageSpawner.lua     # Village generation system
+│   │   ├── ai/
+│   │   │   ├── creatures/
+│   │   │   │   ├── BaseCreature.lua      # Base creature class
+│   │   │   │   ├── PassiveCreature.lua   # Passive creature AI
+│   │   │   │   └── HostileCreature.lua   # Hostile creature AI
+│   │   │   ├── behaviors/
+│   │   │   │   ├── AIBehavior.lua        # Base behavior class
+│   │   │   │   ├── RoamingBehavior.lua   # Roaming behavior
+│   │   │   │   ├── ChasingBehavior.lua   # Chasing behavior
+│   │   │   │   └── FleeingBehavior.lua   # Fleeing behavior
+│   │   │   ├── AIManager.lua             # Central AI coordination
+│   │   │   ├── CreatureSpawner.lua       # Creature spawning system
+│   │   │   └── SpawnerPlacement.lua      # Procedural spawner placement
 │   │   ├── environment/
 │   │   │   ├── DayNightCycle.lua     # Time management system
 │   │   │   └── LightingManager.lua   # Dynamic lighting transitions
@@ -58,13 +73,19 @@ ProjectB/
 │       │   ├── DragDropConfig.lua    # Drag and drop settings
 │       │   ├── ModelSpawnerConfig.lua # Model spawning config
 │       │   ├── VillageConfig.lua     # Village spawning config
-│       │   └── TimeConfig.lua        # Day/night cycle config
+│       │   ├── TimeConfig.lua        # Day/night cycle config
+│       │   ├── AIConfig.lua          # AI creature configuration
+│       │   ├── CreatureSpawnConfig.lua # Creature spawn types
+│       │   └── SpawnerPlacementConfig.lua # Procedural spawner settings
 │       └── utilities/
 │           ├── NoiseGenerator.lua       # Noise generation utilities
 │           ├── TimeDebugger.lua         # Time debugging tools
 │           └── CollectionServiceTags.lua # Drag-drop object tagging system
 ├── Items/                           # Item models folder
 │   └── README.md                    # Item requirements and guide
+├── NPCs/                            # Creature models folder (ReplicatedStorage)
+│   ├── PassiveCreatures/            # Passive creature models (Rabbit, Deer, etc.)
+│   └── HostileCreatures/            # Hostile creature models (Wolf, Bear, etc.)
 ├── default.project.json             # Rojo project configuration
 ├── aftman.toml                      # Tool dependencies
 └── README.md                        # This file
@@ -117,7 +138,18 @@ ProjectB/
    rojo build -o ProjectB.rbxlx
    ```
 4. **Open `ProjectB.rbxlx`** in Roblox Studio
-5. **Press Play** to see the terrain generate!
+5. **Add creature models** to the NPCs folders (see Creature Setup below)
+6. **Press Play** to see the terrain generate with creatures!
+
+### **Creature Setup**
+To add creatures to your world:
+1. **Create or import creature models** in Roblox Studio
+2. **Set PrimaryPart** for each model (usually the main body part)
+3. **Place models** in the appropriate ReplicatedStorage folders:
+   - `ReplicatedStorage/NPCs/PassiveCreatures/` - Rabbit, Deer, Bird, Sheep
+   - `ReplicatedStorage/NPCs/HostileCreatures/` - Wolf, Bear, Goblin, Orc
+4. **Name models** to match creature types in `AIConfig.lua`
+5. **Restart the game** to see creatures spawn in Safe (green) and Dangerous (red) areas
 
 ### **Development Workflow**
 1. **Edit Lua files** in your preferred editor
@@ -176,6 +208,15 @@ ProjectB/
 - **Random Rotations**: Natural-looking placement with varied orientations
 - **Smart Positioning**: Structures cluster together with proper spacing
 - **Obstacle Avoidance**: Villages avoid large rocks and terrain features
+
+### **AI Creature System**
+- **Intelligent NPCs**: Behavior-driven AI with state machines
+- **Two Creature Types**: Passive (flee when hurt) and Hostile (chase players)
+- **Touch-Based Combat**: Hostile creatures deal damage on contact
+- **Procedural Spawning**: Noise-based placement creates natural distribution
+- **Safe vs Dangerous Areas**: Desert regions with different creature densities
+- **Performance Optimized**: Handles hundreds of creatures efficiently
+- **Configurable Behaviors**: Easy to customize creature stats and AI parameters
 
 ## 📈 Performance Metrics
 

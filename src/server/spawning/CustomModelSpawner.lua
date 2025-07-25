@@ -7,8 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local ModelSpawnerConfig = require(ReplicatedStorage.Shared.config.ModelSpawnerConfig)
-local NoiseGenerator = require(ReplicatedStorage.Shared.utilities.NoiseGenerator)
-local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
+local terrain = require(ReplicatedStorage.Shared.utilities.terrain)
 
 local CustomModelSpawner = {}
 local spawnedObjects = {}
@@ -58,19 +57,7 @@ local function scanAvailableModels()
 	end
 end
 
--- Get terrain height at a position
-local function getTerrainHeightAt(x, z)
-	local distfromspawn = math.sqrt(x^2 + z^2)
-	
-	if distfromspawn <= ChunkConfig.SPAWN_FLAT_RADIUS then
-		return ChunkConfig.SPAWN_HEIGHT
-	elseif distfromspawn <= (ChunkConfig.SPAWN_FLAT_RADIUS + ChunkConfig.SPAWN_TRANSITION_WIDTH) then
-		local transitionFactor = (distfromspawn - ChunkConfig.SPAWN_FLAT_RADIUS) / ChunkConfig.SPAWN_TRANSITION_WIDTH
-		return (1 - transitionFactor) * ChunkConfig.SPAWN_HEIGHT + transitionFactor * NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
-	else
-		return NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
-	end
-end
+
 
 local function isPositionValid(x, z, category, minDistance)
 	local chunkKey = math.floor(x/32) .. "," .. math.floor(z/32)
@@ -104,7 +91,7 @@ end
 local function spawnModel(originalModel, x, z, category)
 	if not originalModel then return nil end
 	
-	local terrainHeight = getTerrainHeightAt(x, z)
+	local terrainHeight = terrain.getTerrainHeight(x, z)
 	
 	local model = originalModel:Clone()
 	model.Parent = objectFolders[category]

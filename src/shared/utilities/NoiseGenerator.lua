@@ -5,13 +5,11 @@
 
 local NoiseGenerator = {}
 
--- Simple hash function for pseudo-random values
 local function hash(x, y)
 	local n = math.sin(x * 12.9898 + y * 78.233) * 43758.5453
 	return n - math.floor(n)
 end
 
--- Smooth interpolation between two values
 local function smoothstep(t)
 	return t * t * (3 - 2 * t)
 end
@@ -26,18 +24,18 @@ function NoiseGenerator.noise(x, y)
 	local yi = math.floor(y)
 	local xf = x - xi
 	local yf = y - yi
-	
+
 	local a = hash(xi, yi)
 	local b = hash(xi + 1, yi)
 	local c = hash(xi, yi + 1)
 	local d = hash(xi + 1, yi + 1)
-	
+
 	local u = smoothstep(xf)
 	local v = smoothstep(yf)
-	
+
 	local x1 = lerp(a, b, u)
 	local x2 = lerp(c, d, u)
-	
+
 	return lerp(x1, x2, v)
 end
 

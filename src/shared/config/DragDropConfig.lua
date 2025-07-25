@@ -3,7 +3,7 @@
 -- This file defines settings for dragging, welding, and object interaction
 
 local DragDropConfig = {
-    -- Physics and interaction settings
+    
     DRAG_RANGE = 12,                    -- Maximum distance to detect draggable objects
     CARRY_DISTANCE = 9,                 -- Distance to maintain objects while dragging
     MAX_CARRY_DISTANCE = 20,            -- Maximum distance before auto-dropping
@@ -11,10 +11,10 @@ local DragDropConfig = {
     THROW_BOOST = 8,                    -- Velocity multiplier when throwing objects
     
     -- Weld system settings
-    WELD_DETECTION_RADIUS = 3.0,        -- Radius to search for weld targets
-    WELD_HOVER_UPDATE_THROTTLE = 0.1,   -- Throttle hover updates (seconds)
+    WELD_DETECTION_RADIUS = 3.0,
+    WELD_HOVER_UPDATE_THROTTLE = 0.1,
     
-    -- Object filtering - parts with these names are problematic for welding
+    -- Object filtering
     SUSPICIOUS_NAMES = {
         "HumanoidRootPart",
         "Head", 
@@ -30,17 +30,15 @@ local DragDropConfig = {
         "UpperTorso", "LowerTorso"
     },
     
-    -- Collision groups
     ITEM_COLLISION_GROUP = "Item",
     PLAYER_COLLISION_GROUP = "player",
     
-    -- Visual feedback
     HOVER_HIGHLIGHT_COLOR = Color3.fromRGB(0, 162, 255),
     WELD_HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 0),
     
     -- Performance settings
-    MAX_CONCURRENT_DRAGS = 10,          -- Maximum objects that can be dragged simultaneously
-    RAYCAST_FILTER_DESCENDANTS = true,  -- Filter player character from raycasts
+    MAX_CONCURRENT_DRAGS = 10,
+    RAYCAST_FILTER_DESCENDANTS = true,
 }
 
 return DragDropConfig

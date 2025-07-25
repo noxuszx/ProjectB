@@ -20,6 +20,7 @@ CollectionServiceTags.NO_DROP_ZONE = "NoDropZone"
 CollectionServiceTags.HEAVY_OBJECT = "HeavyObject"      -- Requires special handling
 CollectionServiceTags.FRAGILE_OBJECT = "FragileObject"  -- Special physics settings
 CollectionServiceTags.PLAYER_OWNED = "PlayerOwned"      -- Player-specific ownership
+CollectionServiceTags.WEAPON_PICKUP = "WeaponPickup"    -- Weapons that can be picked up
 
 -- Add a tag to an object
 function CollectionServiceTags.addTag(object, tag)

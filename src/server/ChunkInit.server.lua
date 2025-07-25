@@ -7,10 +7,10 @@ print("Chunk-based terrain system starting...")
 
 local ChunkManager = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner = require(script.Parent.spawning.CustomModelSpawner) -- Enabled after manual setup
-local DayNightCycle = require(script.Parent.environment.DayNightCycle)
+local DayNightCycle = require(script.Parent.environment.dayNightCycle)
 local VillageSpawner = require(script.Parent.spawning.VillageSpawner)
 local ItemSpawner = require(script.Parent.spawning.ItemSpawner)
-local LightingManager = require(script.Parent.environment.LightingManager)
+local LightingManager = require(script.Parent.environment.lighting)
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
@@ -36,16 +36,24 @@ print("Terrain system initialized Model spawning enabled.")
 
 DayNightCycle.init()
 LightingManager.init()
-
-
-
-
 ItemSpawner.Initialize()
 
--- Initialize drag-drop system tags for existing objects and spawned items
+print("Placing procedural creature spawners...")
+local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
+SpawnerPlacement.run()
+
+print("Initializing AI system...")
+local AIManager = require(script.Parent.ai.AIManager)
+local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
+
+AIManager.getInstance():init()
+CreatureSpawner.init()
+
 print("Initializing drag-drop system tags...")
 CollectionServiceTags.initializeDefaultTags()
 CollectionServiceTags.tagItemsFolder()
 
-print("All systems initialized. Day/night cycle active, world populated with items.")
+print("Initializing weapon systems...")
+
+print("All systems initialized. Day/night cycle active, world populated with items, procedural spawners, creatures, and weapons.")
 

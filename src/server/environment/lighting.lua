@@ -6,12 +6,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 
-local TimeConfig = require(ReplicatedStorage.Shared.config.TimeConfig)
-local DayNightCycle = require(script.Parent.DayNightCycle)
+local TimeConfig = require(ReplicatedStorage.Shared.config.time)
+local DayNightCycle = require(script.Parent.dayNightCycle)
 
 local TweenService = game:GetService("TweenService")
 
-local LightingManager = {}
+local lighting = {}
 local currentTween = nil
 
 local function applyLightingPreset(preset)
@@ -45,11 +45,10 @@ local function onTimePeriodChange(eventType, data)
 	if eventType ~= "periodChange" then return end
 	
 	local newPreset = DayNightCycle.getCurrentLightingPreset()
-	print("Switching to lighting preset:", data.newPeriod, "Description:", newPreset.description)
 	tweenLighting(newPreset)
 end
 
-function LightingManager.init()
+function lighting.init()
 	print("Initializing lighting manager...")
 	
 	local initialPreset = DayNightCycle.getCurrentLightingPreset()
@@ -57,7 +56,7 @@ function LightingManager.init()
 	
 	DayNightCycle.registerTimeCallback(onTimePeriodChange)
 	
-	print("Lighting manager ready. Initial preset:", DayNightCycle.getCurrentPeriod())
+	-- Lighting manager ready
 end
 
-return LightingManager
+return lighting

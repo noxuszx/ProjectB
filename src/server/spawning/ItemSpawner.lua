@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 
 local ItemConfig = require(ReplicatedStorage.Shared.config.ItemConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local weapons = require(ReplicatedStorage.Shared.config.weapons)
 
 local ItemSpawner = {}
 local availableItems = {}
@@ -261,23 +262,30 @@ local function spawnItem(itemName, position)
 	
 newItem.Parent = itemFolder
 
-    -- Tag the spawned item as draggable and weldable for the drag-drop system
+    -- Tag the spawned item based on its type
 	if newItem:IsA("MeshPart") then
-		-- MeshParts can be tagged directly
+		-- MeshParts are regular items - draggable and weldable
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 		debugPrint("Tagged MeshPart as draggable: " .. itemName)
 	elseif newItem:IsA("Tool") then
-		-- For Tools, tag the Handle if it exists
-		local handle = newItem:FindFirstChild("Handle")
-		if handle and handle:IsA("BasePart") then
-			CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
-			CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
-			debugPrint("Tagged Tool Handle as draggable: " .. itemName)
+		-- Check if this is a weapon
+		local weaponConfig = weapons.getWeaponConfig(itemName)
+		if weaponConfig then
+			-- This is a weapon - tag for pickup system, NOT draggable
+			CollectionServiceTags.addTag(newItem, CollectionServiceTags.WEAPON_PICKUP)
+			debugPrint("Tagged Tool as weapon pickup: " .. itemName)
+		else
+			-- This is a regular tool - make it draggable
+			local handle = newItem:FindFirstChild("Handle")
+			if handle and handle:IsA("BasePart") then
+				CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
+				CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
+				debugPrint("Tagged Tool Handle as draggable: " .. itemName)
+			end
+			CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
+			CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 		end
-		-- Also tag the Tool itself for broader compatibility
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 	elseif newItem:IsA("Model") then
 		-- For Models, tag all BaseParts within them
 		for _, descendant in pairs(newItem:GetDescendants()) do
