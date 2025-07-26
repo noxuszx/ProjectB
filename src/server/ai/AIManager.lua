@@ -5,7 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local AIConfig = require(ReplicatedStorage.Shared.config.AIConfig)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local AIManager = {}
 AIManager.__index = AIManager

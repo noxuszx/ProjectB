@@ -1,0 +1,50 @@
+## Potential Simplifications in AI System
+
+### 1. Fleeing Behavior - Simplify Distance Calculations
+
+**Current:**
+- Checks threat distance every frame.
+- Uses a complex condition for stopping.
+
+**Simplification:**
+- Use only time-based fleeing.
+```lua
+-- Simplified stopping condition
+if timeElapsed >= self.fleeDuration then
+    self:stopFleeing(creature, "time expired")
+    return
+end
+```
+
+### 2. Roaming Behavior - Simplify Target Selection
+
+**Current:**
+- Attempts 5 different random targets.
+- Chooses the farthest valid one.
+
+**Simplification:**
+- Use one random destination.
+```lua
+-- Simple random target selection
+local randomAngle = math.random() * math.pi * 2
+local randomDistance = math.random() * roamRadius
+local targetX = centerPosition.X + math.cos(randomAngle) * randomDistance
+local targetZ = centerPosition.Z + math.sin(randomAngle) * randomDistance
+self.targetPosition = Vector3.new(targetX, centerPosition.Y, targetZ)
+```
+
+### 3. MoveTo Function - (If Unused)
+
+**Current:**
+- Handles ground snapping with raycasts.
+
+**Simplification:**
+- Remove `snapToGround` if Humanoid:MoveTo adequately handles it.
+
+### 4. Unused Variables - Clean Up
+
+**Target Code:**
+- `self.lastPosition`, `self.stuckCheckTime`, `self.lastStuckTime`, `self.stuckAttempts`.
+
+**Simplification:**
+- Remove unused variables for clarity.

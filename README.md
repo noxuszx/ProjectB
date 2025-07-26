@@ -146,10 +146,12 @@ To add creatures to your world:
 1. **Create or import creature models** in Roblox Studio
 2. **Set PrimaryPart** for each model (usually the main body part)
 3. **Place models** in the appropriate ReplicatedStorage folders:
-   - `ReplicatedStorage/NPCs/PassiveCreatures/` - Rabbit, Deer, Bird, Sheep
-   - `ReplicatedStorage/NPCs/HostileCreatures/` - Wolf, Bear, Goblin, Orc
-4. **Name models** to match creature types in `AIConfig.lua`
-5. **Restart the game** to see creatures spawn in Safe (green) and Dangerous (red) areas
+   - `ReplicatedStorage/NPCs/PassiveCreatures/` - Rabbit, Lizard (day/night spawning)
+   - `ReplicatedStorage/NPCs/HostileCreatures/` - Wolf, Mummy, Skeleton (night-only: Mummy, Skeleton)
+4. **Name models** to match creature types in `CreatureSpawnConfig.lua`
+5. **Restart the game** to see creatures spawn:
+   - **Green spawners** (Safe areas): Only passive creatures (Rabbit, Lizard)
+   - **Red spawners** (Dangerous areas): Only hostile creatures (Wolf always, Mummy/Skeleton at night)
 
 ### **Development Workflow**
 1. **Edit Lua files** in your preferred editor
@@ -210,13 +212,26 @@ To add creatures to your world:
 - **Obstacle Avoidance**: Villages avoid large rocks and terrain features
 
 ### **AI Creature System**
-- **Intelligent NPCs**: Behavior-driven AI with state machines
+- **Intelligent NPCs**: Behavior-driven AI with state machines and advanced pathfinding
 - **Two Creature Types**: Passive (flee when hurt) and Hostile (chase players)
 - **Touch-Based Combat**: Hostile creatures deal damage on contact
-- **Procedural Spawning**: Noise-based placement creates natural distribution
-- **Safe vs Dangerous Areas**: Desert regions with different creature densities
-- **Performance Optimized**: Handles hundreds of creatures efficiently
-- **Configurable Behaviors**: Easy to customize creature stats and AI parameters
+- **Time-Based Spawning**: Night-only creatures (Mummies, Skeletons) for dynamic gameplay
+- **Procedural Spawning**: Noise-based placement creates natural Safe vs Dangerous zones
+- **Pure Zone System**: Safe areas = only passive creatures, Dangerous areas = only hostile creatures
+- **Collision System**: Creatures use separate collision group, can't be dragged or welded
+- **Performance Optimized**: Handles hundreds of creatures with robust error handling
+- **Configurable Behaviors**: Easy to customize creature stats, spawn rates, and AI parameters
+
+### **Creature Spawning Mechanics**
+- **Safe Zones (Green Spawners)**: 75% of world areas, spawn 2-4 passive creatures each
+  - **Day & Night**: Rabbits (80% chance), Lizards (90% chance)
+  - **Peaceful exploration** with wildlife observation opportunities
+- **Dangerous Zones (Red Spawners)**: 25% of world areas, spawn 3-5 hostile creatures each
+  - **Day**: Wolves (70% chance) - moderate danger
+  - **Night**: Wolves (70%) + Mummies (50%) + Skeletons (60%) - high danger
+  - **Risk/reward gameplay** - dangerous but potentially rewarding areas
+- **Dynamic Difficulty**: World becomes significantly more dangerous at night
+- **Spawner Visibility**: Colored debug parts show spawner locations (can be toggled off)
 
 ## 📈 Performance Metrics
 
@@ -232,15 +247,45 @@ To add creatures to your world:
 - Terrain is static after generation (no dynamic modification yet)
 - Uses Roblox's built-in math functions for noise generation
 
+## 🔧 Troubleshooting
+
+### **No Creatures Spawning**
+- Ensure creature models are in correct ReplicatedStorage folders
+- Check that models have PrimaryPart set
+- Verify model names match those in `CreatureSpawnConfig.lua`
+- Enable debug mode in `SpawnerPlacementConfig.lua` to see spawner placement
+
+### **AI System Crashes**
+- Recent updates include robust error handling for missing creature models
+- Check console for "[AIBehavior]" warning messages about invalid creatures
+- Ensure all creature models have proper PrimaryPart configuration
+
+### **No Green Spawners**
+- Check hostility threshold in `SpawnerPlacementConfig.lua` (should be > 0.75)
+- Enable debug mode to see spawner type distribution
+- Verify noise-based spawning is enabled in config
+
 ## 🏷️ Tags
 
 `roblox` `procedural-generation` `terrain` `chunks` `noise` `day-night-cycle` `item-spawning` `meshparts` `tools` `model-spawning` `desert` `fallout` `rojo` `lua`
 
 ---
 
-**Last Updated**: July 24, 2025
-**Rojo Version**: 7.5.1  
+**Last Updated**: July 25, 2025
+**Rojo Version**: 7.5.1
 **Roblox Studio**: Compatible with current version
+
+## 🆕 Recent Updates (July 25, 2025)
+
+### **AI Creature System Enhancements**
+- ✅ **Time-Based Spawning**: Mummies and Skeletons now only spawn at night/dusk
+- ✅ **Pure Zone System**: Eliminated mixed spawning - Safe areas are truly safe, Dangerous areas are purely hostile
+- ✅ **Improved Spawner Placement**: Fixed raycast issues, spawners now place much closer to player spawn
+- ✅ **Better Balance**: 75% Safe zones vs 25% Dangerous zones for optimal gameplay
+- ✅ **Robust Error Handling**: AI system now handles creature model issues gracefully without crashes
+- ✅ **Collision System**: Creatures use separate collision group, can't be dragged or welded like items
+- ✅ **Higher Spawn Rates**: Increased creature density for more lively desert world
+- ✅ **Debug Improvements**: Better console output and spawner visualization for development
 
 ## 🔄 Evolution History
 

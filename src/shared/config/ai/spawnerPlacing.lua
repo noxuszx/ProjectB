@@ -73,7 +73,6 @@ local SpawnerPlacementConfig = {
 
 	-- Random spawning settings (used when UseNoiseBasedSpawning = false)
 	RandomSpawning = {
-		-- Spawn type probabilities (must add up to 1.0)
 		SpawnTypeProbabilities = {
 			Safe = 0.7,
 			Dangerous = 0.3,

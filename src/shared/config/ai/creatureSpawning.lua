@@ -5,18 +5,17 @@
 local CreatureSpawnConfig = {
 	-- Global spawn point settings
 	Settings = {
-		SpawnTag = "CreatureSpawner", -- CollectionService tag for spawn points
-		SpawnTypeAttribute = "CreatureType", -- Attribute name for spawn point type
-		DebugMode = false, -- Enable debug prints for spawning
-		ScatterRadius = 8, -- Random spawn radius around spawner position (studs)
-		MaxScatterAttempts = 15, -- Max attempts to find valid spawn position
-		SpawnHeight = 2, -- Height above spawner position to spawn creatures (studs)
+		SpawnTag = "CreatureSpawner",
+		SpawnTypeAttribute = "CreatureType",
+		DebugMode = false,
+		ScatterRadius = 8,
+		MaxScatterAttempts = 15,
+		SpawnHeight = 2,
 
 		-- Time-based spawning settings
-		NightOnlyCreatures = {"Mummy", "Skeleton"}, -- Creatures that only spawn at night/dusk
+		NightOnlyCreatures = {"Mummy", "Skeleton"},
 	},
 
-	-- Simplified spawn types - just Safe vs Dangerous desert areas
 	SpawnTypes = {
 		
 		Safe = {
@@ -24,11 +23,8 @@ local CreatureSpawnConfig = {
 			MinSpawns = 2, -- Minimum creatures per spawner
 			SpawnChance = 0.9, -- Chance this spawner will spawn creatures
 			PossibleCreatures = {
-				-- Only passive desert creatures in safe areas
 				Lizard = 0.9, -- Desert lizards
 				Rabbit = 0.8, -- Desert rabbits
-
-				-- NO hostile creatures in safe areas
 			}
 		},
 
@@ -72,12 +68,10 @@ local CreatureSpawnConfig = {
 		RespawnChance = 0.6, -- Chance to respawn after delay
 		MaxRespawnsPerSpawner = 5, -- Maximum times a spawner can respawn creatures
 		
-		-- Respawn conditions
 		RequirePlayerNearby = true, -- Only respawn if players are in area
 		PlayerProximityRange = 100, -- Range to check for players for respawning
 	},
 
-	-- Special spawn events (future expansion)
 	Events = {
 		-- Example: Night spawns more hostile creatures
 		-- NightSpawnMultiplier = 1.5,

@@ -5,11 +5,9 @@
 
 local TimeConfig = {}
 
--- Time cycle parameters
 TimeConfig.DAY_LENGTH = 480
 TimeConfig.START_TIME = 6
 
--- Time of day periods (in game hours)
 TimeConfig.DAWN_START = 5.5
 TimeConfig.SUNRISE_START = 6.0
 TimeConfig.MORNING_START = 8.0
@@ -103,11 +101,9 @@ TimeConfig.LIGHTING_PRESETS = {
 	}
 }
 
--- Performance settings
 TimeConfig.UPDATE_INTERVAL = 2
 TimeConfig.TRANSITION_DURATION = 1.5
 
--- Event settings
 TimeConfig.ENABLE_TIME_EVENTS = true
 
 return TimeConfig

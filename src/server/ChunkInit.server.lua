@@ -39,12 +39,12 @@ LightingManager.init()
 ItemSpawner.Initialize()
 
 print("Placing procedural creature spawners...")
-local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
+local SpawnerPlacement = require(script.Parent.ai.spawnerPlacement)
 SpawnerPlacement.run()
 
 print("Initializing AI system...")
-local AIManager = require(script.Parent.ai.AIManager)
-local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
+local AIManager = require(script.Parent.ai.aiManager)
+local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
 
 AIManager.getInstance():init()
 CreatureSpawner.init()

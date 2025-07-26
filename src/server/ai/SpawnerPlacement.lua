@@ -8,17 +8,15 @@ local Workspace = game:GetService("Workspace")
 
 local NoiseGenerator = require(ReplicatedStorage.Shared.utilities.NoiseGenerator)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
-local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.CreatureSpawnConfig)
-local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.SpawnerPlacementConfig)
+local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.creatureSpawning)
+local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.spawnerPlacing)
 
 local SpawnerPlacement = {}
 
--- Create organized folder for procedural spawners
 local proceduralSpawnersFolder = Instance.new("Folder")
 proceduralSpawnersFolder.Name = "ProceduralSpawners"
 proceduralSpawnersFolder.Parent = workspace
 
--- Noise configuration for biome detection
 local tempConfig = SpawnerPlacementConfig.NoiseSettings.Temperature
 local humidConfig = SpawnerPlacementConfig.NoiseSettings.Humidity
 local hostileConfig = SpawnerPlacementConfig.NoiseSettings.Hostility
@@ -26,7 +24,6 @@ local hostileConfig = SpawnerPlacementConfig.NoiseSettings.Hostility
 local spawnersPlaced = 0
 local chunksProcessed = 0
 
--- Initialize random seed for consistent random spawning
 math.randomseed(SpawnerPlacementConfig.RandomSpawning.RandomSeed)
 
 local function debugPrint(message)
@@ -35,7 +32,6 @@ local function debugPrint(message)
 	end
 end
 
--- Determine spawn type based on config setting (noise-based or random)
 local function getSpawnType(chunkX, chunkZ)
 	if SpawnerPlacementConfig.Settings.UseNoiseBasedSpawning then
 		
@@ -45,7 +41,7 @@ local function getSpawnType(chunkX, chunkZ)
 		local temperature = NoiseGenerator.fractalNoise(
 			worldX, worldZ,
 			tempConfig.Octaves,
-			0.5, -- persistence
+			0.5,
 			tempConfig.Scale
 		)
 
@@ -85,28 +81,21 @@ local function getSpawnType(chunkX, chunkZ)
 				return spawnType
 			end
 		end
-
-		-- Fallback for random
 		return "Safe"
 	end
 end
 
--- Simple ground detection for flat desert terrain
 local function hasGround(position)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 	raycastParams.FilterDescendantsInstances = {proceduralSpawnersFolder}
 
-	-- Cast ray downward to find ground
 	local rayOrigin = position + Vector3.new(0, 10, 0)
 	local rayDirection = Vector3.new(0, -SpawnerPlacementConfig.TerrainValidation.RaycastDistance, 0)
-
 	local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-
-	return raycastResult ~= nil -- Just check if we hit ground
+	return raycastResult ~= nil
 end
 
--- Simple spawner spacing check
 local function isGoodSpacing(position)
 	local minDistance = SpawnerPlacementConfig.TerrainValidation.ClearanceRadius
 
@@ -119,27 +108,24 @@ local function isGoodSpacing(position)
 		end
 	end
 
-	return true -- Good spacing
+	return true
 end
 
--- Simple village avoidance check
 local function isAwayFromVillages(position)
 	local minDistance = SpawnerPlacementConfig.AvoidanceRules.VillageDistance
 
-	-- Check distance from player spawn (0,0,0)
 	local spawnDistance = (position - Vector3.new(0, 0, 0)).Magnitude
 	if spawnDistance < SpawnerPlacementConfig.AvoidanceRules.PlayerSpawnDistance then
-		return false -- Too close to player spawn
+		return false
 	end
 
-	-- Check distance from villages (if any exist)
 	local villageFolder = workspace:FindFirstChild("SpawnedVillages")
 	if villageFolder then
 		for _, village in pairs(villageFolder:GetChildren()) do
 			if village:IsA("Model") and village.PrimaryPart then
 				local villageDistance = (position - village.PrimaryPart.Position).Magnitude
 				if villageDistance < minDistance then
-					return false -- Too close to village
+					return false
 				end
 			end
 		end
@@ -148,17 +134,14 @@ local function isAwayFromVillages(position)
 	return true
 end
 
--- Find a valid position within a chunk for spawner placement
 local function findValidSpawnerPosition(chunkX, chunkZ)
 	local chunkSize = ChunkConfig.CHUNK_SIZE
 	local worldX = chunkX * chunkSize
 	local worldZ = chunkZ * chunkSize
 
-	-- Use configurable max attempts
 	local maxAttempts = SpawnerPlacementConfig.Settings.MaxPlacementAttempts
 
 	for attempt = 1, maxAttempts do
-		-- Random position within chunk bounds
 		local offsetX = math.random(-chunkSize/2, chunkSize/2)
 		local offsetZ = math.random(-chunkSize/2, chunkSize/2)
 
@@ -180,14 +163,12 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 			local spawnerHeight = SpawnerPlacementConfig.Settings.SpawnerHeight
 			local groundPosition = raycastResult.Position + Vector3.new(0, spawnerHeight, 0)
 
-			-- Simple validation checks for flat desert world
 			local spacingValid = isGoodSpacing(groundPosition)
 			local villageValid = isAwayFromVillages(groundPosition)
 
 			if spacingValid and villageValid then
 				return groundPosition
 			else
-				-- Debug why this position failed
 				if SpawnerPlacementConfig.Settings.DebugMode then
 					local reasons = {}
 					if not spacingValid then table.insert(reasons, "spacing") end
@@ -196,25 +177,21 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 				end
 			end
 		else
-			-- Debug raycast failure
 			if SpawnerPlacementConfig.Settings.DebugMode then
 				debugPrint("Raycast failed at " .. tostring(testPosition) .. " - no ground found")
 			end
 		end
 	end
 
-	return nil -- No valid position found
+	return nil
 end
 
--- Create a spawner part at the specified position
 local function createSpawnerPart(position, spawnType)
-	-- Verify spawn type exists in config
 	if not CreatureSpawnConfig.SpawnTypes[spawnType] then
 		warn("[SpawnerPlacement] Unknown spawn type:", spawnType)
 		return nil
 	end
 
-	-- Create spawner part (visible or invisible based on debug setting)
 	local spawnerPart = Instance.new("Part")
 	spawnerPart.Name = "ProceduralSpawner_" .. spawnType .. "_" .. tick()
 	spawnerPart.Size = Vector3.new(5, 5, 5)
@@ -224,7 +201,6 @@ local function createSpawnerPart(position, spawnType)
 	spawnerPart.CanCollide = false
 	spawnerPart.Parent = proceduralSpawnersFolder
 
-	-- Set debug color if visible
 	if SpawnerPlacementConfig.Debug.ShowSpawnerParts then
 		local areaColor = SpawnerPlacementConfig.Debug.AreaColors[spawnType]
 		if areaColor then
@@ -232,10 +208,7 @@ local function createSpawnerPart(position, spawnType)
 		end
 	end
 
-	-- Add CollectionService tag (must match CreatureSpawner expectations)
 	CollectionService:AddTag(spawnerPart, CreatureSpawnConfig.Settings.SpawnTag)
-
-	-- Set spawn type attribute (must match CreatureSpawner expectations)
 	spawnerPart:SetAttribute(CreatureSpawnConfig.Settings.SpawnTypeAttribute, spawnType)
 
 	spawnersPlaced = spawnersPlaced + 1
@@ -244,24 +217,18 @@ local function createSpawnerPart(position, spawnType)
 	return spawnerPart
 end
 
--- Process a single chunk for spawner placement
 function SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
 	chunksProcessed = chunksProcessed + 1
 	
-	-- Basic spawn chance - not every chunk gets a spawner
 	local spawnChance = SpawnerPlacementConfig.Settings.SpawnerChunkChance
 	if math.random() > spawnChance then
-		return -- Skip this chunk
+		return
 	end
 	
-	-- Determine spawn type for this chunk (noise-based or random)
 	local spawnType = getSpawnType(chunkX, chunkZ)
-	
-	-- Find valid position within chunk
 	local spawnerPosition = findValidSpawnerPosition(chunkX, chunkZ)
 
 	if spawnerPosition then
-		-- Create the spawner
 		createSpawnerPart(spawnerPosition, spawnType)
 		debugPrint("Placed " .. spawnType .. " spawner in chunk (" .. chunkX .. ", " .. chunkZ .. ")")
 	else
@@ -269,7 +236,6 @@ function SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
 	end
 end
 
--- Main function to run spawner placement for all chunks
 function SpawnerPlacement.run()
 	local spawningMethod = SpawnerPlacementConfig.Settings.UseNoiseBasedSpawning and "noise-based" or "random"
 	debugPrint("Starting procedural spawner placement using " .. spawningMethod .. " method...")
@@ -277,10 +243,7 @@ function SpawnerPlacement.run()
 	spawnersPlaced = 0
 	chunksProcessed = 0
 	
-	-- Get render distance from ChunkConfig or use default
 	local renderDistance = ChunkConfig.RENDER_DISTANCE or 10
-	
-	-- Process all chunks within render distance
 	for chunkX = -renderDistance, renderDistance do
 		for chunkZ = -renderDistance, renderDistance do
 			SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
@@ -293,7 +256,6 @@ function SpawnerPlacement.run()
 	print("  - Placement rate:", string.format("%.1f%%", (spawnersPlaced / chunksProcessed) * 100))
 end
 
--- Get debug information
 function SpawnerPlacement.getDebugInfo()
 	return {
 		spawnersPlaced = spawnersPlaced,
@@ -302,17 +264,14 @@ function SpawnerPlacement.getDebugInfo()
 	}
 end
 
--- Clean up all procedural spawners (for session management)
 function SpawnerPlacement.cleanup()
 	if proceduralSpawnersFolder then
 		proceduralSpawnersFolder:Destroy()
 	end
 
-	-- Reset counters
 	spawnersPlaced = 0
 	chunksProcessed = 0
 
-	-- Recreate folder for next session
 	proceduralSpawnersFolder = Instance.new("Folder")
 	proceduralSpawnersFolder.Name = "ProceduralSpawners"
 	proceduralSpawnersFolder.Parent = workspace

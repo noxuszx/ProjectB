@@ -3,8 +3,8 @@
 -- TODO: Add actual movement and better logic later
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIBehavior = require(script.Parent.AIBehavior)
-local AIConfig = require(ReplicatedStorage.Shared.config.AIConfig)
+local AIBehavior = require(script.Parent.aiBehavior)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local ChasingBehavior = setmetatable({}, {__index = AIBehavior})
 ChasingBehavior.__index = ChasingBehavior
@@ -45,17 +45,34 @@ function ChasingBehavior:update(creature, deltaTime)
 		return
 	end
 
-	-- Check if target is still within range
-	if self.targetPlayer and self.targetPlayer.Character and self.targetPlayer.Character.PrimaryPart then
-		local targetPosition = self.targetPlayer.Character.PrimaryPart.Position
-		local distance = (targetPosition - creature.model.PrimaryPart.Position).Magnitude
+	-- Check if target is still within range and get position
+	if not (self.targetPlayer and self.targetPlayer.Character and self.targetPlayer.Character.PrimaryPart) then
+		self:giveUpChase(creature, "Target invalid")
+		return
+	end
 
-		if distance > creature.detectionRange * 1.5 then -- Give some leeway
-			self:giveUpChase(creature, "Target out of range")
-			return
-		end
+	local targetPosition = self.targetPlayer.Character.PrimaryPart.Position
+	local currentPosition = creature.model.PrimaryPart.Position
+	local distance = (targetPosition - currentPosition).Magnitude
 
-		-- TODO: Add actual chase movement here
+	-- Check if target is too far away
+	if distance > creature.detectionRange * 1.5 then
+		self:giveUpChase(creature, "Target out of range")
+		return
+	end
+
+	-- REMOVED: Line of sight check - simplified for reliability
+
+	-- Move towards the target using chase speed
+	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
+	local chaseSpeed = creatureConfig and creatureConfig.ChaseSpeed or creature.moveSpeed * 1.2
+
+	self:moveTowards(creature, targetPosition, chaseSpeed, deltaTime)
+
+	-- Optional: Add some debug info
+	if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.01 then -- Log occasionally
+		print("[ChasingBehavior] " .. creature.creatureType .. " chasing " .. self.targetPlayer.Name ..
+			  " (distance: " .. string.format("%.1f", distance) .. ")")
 	end
 end
 
@@ -73,8 +90,7 @@ function ChasingBehavior:giveUpChase(creature, reason)
 		print("[ChasingBehavior] " .. creature.creatureType .. " giving up chase: " .. reason)
 	end
 
-	-- Go back to roaming
-	local RoamingBehavior = require(script.Parent.RoamingBehavior)
+	local RoamingBehavior = require(script.Parent.roaming)
 	creature:setBehavior(RoamingBehavior.new())
 end
 

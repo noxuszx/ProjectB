@@ -4,12 +4,12 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local BaseCreature = require(script.Parent.BaseCreature)
-local AIConfig = require(ReplicatedStorage.Shared.config.AIConfig)
+local BaseCreature = require(script.Parent.base)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 -- Import behavior classes
-local RoamingBehavior = require(script.Parent.Parent.behaviors.RoamingBehavior)
-local ChasingBehavior = require(script.Parent.Parent.behaviors.ChasingBehavior)
+local RoamingBehavior = require(script.Parent.Parent.behaviors.roaming)
+local ChasingBehavior = require(script.Parent.Parent.behaviors.chasing)
 
 local HostileCreature = setmetatable({}, {__index = BaseCreature})
 HostileCreature.__index = HostileCreature
@@ -23,21 +23,16 @@ function HostileCreature.new(model, creatureType, spawnPosition)
 	self.chaseSpeed = config.ChaseSpeed or 22
 	self.damageCooldown = config.DamageCooldown or 1.5
 
-	-- Touch damage tracking
 	self.lastDamageTime = {} -- Track damage cooldown per player
 	self.touchConnections = {}
 
-	-- Set up touch damage
 	self:setupTouchDamage()
-
-	-- Start with roaming behavior
 	self:setBehavior(RoamingBehavior.new())
 
 	return self
 end
 
 function HostileCreature:update(deltaTime)
-	-- Call parent update (which handles behavior updates)
 	BaseCreature.update(self, deltaTime)
 end
 

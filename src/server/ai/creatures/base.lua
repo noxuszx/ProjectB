@@ -3,7 +3,7 @@
 -- Provides common functionality and interface
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIConfig = require(ReplicatedStorage.Shared.config.AIConfig)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature

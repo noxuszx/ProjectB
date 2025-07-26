@@ -5,7 +5,6 @@
 
 local ModelSpawnerConfig = {}
 
--- General spawning parameters
 ModelSpawnerConfig.MIN_SPAWN_DISTANCE = 100 		-- Minimum distance from spawn to place objects
 ModelSpawnerConfig.MAX_SPAWN_DISTANCE = 500 		-- Maximum distance from spawn to place objects
 
@@ -17,7 +16,7 @@ ModelSpawnerConfig.MIN_VEGETATION_DISTANCE = 8
 ModelSpawnerConfig.MIN_ROCK_DISTANCE = 12
 ModelSpawnerConfig.MIN_STRUCTURE_DISTANCE = 30
 
-ModelSpawnerConfig.VEGETATION_SCALE_RANGE = {0.8, 1.3} 	-- 80% to 130% of original size
+ModelSpawnerConfig.VEGETATION_SCALE_RANGE = {0.8, 1.3}
 ModelSpawnerConfig.ROCK_SCALE_RANGE = {0.7, 3.5}
 ModelSpawnerConfig.STRUCTURE_SCALE_RANGE = {0.9, 1.1}
 
@@ -30,7 +29,7 @@ ModelSpawnerConfig.MODEL_FOLDERS = {
 }
 
 ModelSpawnerConfig.MODEL_WEIGHTS = {
-		-- Example:
+	-- Example:
 	-- Vegetation = {
 	--     ["DeadTree1"] = 10,
 	--     ["Cactus1"] = 15,
@@ -38,8 +37,7 @@ ModelSpawnerConfig.MODEL_WEIGHTS = {
 	-- }
 }
 
--- Performance settings
-ModelSpawnerConfig.GENERATION_DELAY = 0.02 				-- Delay between model spawns (seconds)
+ModelSpawnerConfig.GENERATION_DELAY = 0.02
 ModelSpawnerConfig.MAX_OBJECTS_PER_CHUNK = {
 	Vegetation = 20,
 	Rocks = 10,

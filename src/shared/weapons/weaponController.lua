@@ -94,14 +94,12 @@ local function playWeaponSound(soundType)
 		sound.Parent = workspace
 		sound:Play()
 		
-		-- Clean up sound after playing
 		sound.Ended:Connect(function()
 			sound:Destroy()
 		end)
 	end
 end
 
--- Handle weapon activation (attack)
 local function onWeaponActivated()
 	if not currentWeapon or not currentWeaponConfig then
 		debugPrint("No weapon equipped")
@@ -115,41 +113,34 @@ local function onWeaponActivated()
 	
 	debugPrint("Weapon activated: " .. currentWeapon.Name)
 	
-	-- Update cooldown
 	lastAttackTime = tick()
 	isOnCooldown = true
 	
-	-- Play visual and audio feedback
 	playWeaponAnimation()
 	playWeaponSound("swing")
 	
-	-- Fire remote event to server for damage processing
 	if weaponRemotes.AttackRemote then
 		weaponRemotes.AttackRemote:FireServer(currentWeapon.Name)
 	else
 		warn("[WeaponController] AttackRemote not found!")
 	end
 	
-	-- Reset cooldown after specified time
 	task.wait(currentWeaponConfig.Cooldown)
 	isOnCooldown = false
 end
 
--- Equip weapon
 function weaponController.equip(tool)
 	if not tool or not tool:IsA("Tool") then
 		warn("[WeaponController] Invalid tool provided to equip")
 		return
 	end
 	
-	-- Get weapon configuration
 	local weaponConfig = weapons.getWeaponConfig(tool.Name)
 	if not weaponConfig then
 		warn("[WeaponController] No configuration found for weapon: " .. tool.Name)
 		return
 	end
 	
-	-- Validate weapon configuration
 	local isValid, errorMessage = weapons.validateWeaponConfig(tool.Name)
 	if not isValid then
 		warn("[WeaponController] Invalid weapon config for " .. tool.Name .. ": " .. errorMessage)
