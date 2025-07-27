@@ -12,6 +12,7 @@ local DayNightCycle = require(script.Parent.Parent.environment.dayNightCycle)
 local PassiveCreature = require(script.Parent.creatures.passive)
 local HostileCreature = require(script.Parent.creatures.hostile)
 local AIManager = require(script.Parent.aiManager)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local CreatureSpawner = {}
 local availableCreatures = {
@@ -51,6 +52,50 @@ local function shouldSpawnBasedOnTime(creatureType)
 	return true
 end
 
+local function validateCreatureModel(model, creatureType)
+	local issues = {}
+
+	-- Check if model has PrimaryPart
+	if not model.PrimaryPart then
+		table.insert(issues, "No PrimaryPart set")
+	elseif not model.PrimaryPart.Parent then
+		table.insert(issues, "PrimaryPart reference is invalid")
+	end
+
+	-- Check for essential parts
+	local hasHumanoid = model:FindFirstChild("Humanoid") ~= nil
+	if not hasHumanoid then
+		table.insert(issues, "No Humanoid found")
+	end
+
+	-- Check for common body parts
+	local bodyParts = {"HumanoidRootPart", "Torso", "UpperTorso", "Head"}
+	local foundParts = {}
+	for _, partName in ipairs(bodyParts) do
+		if model:FindFirstChild(partName) then
+			table.insert(foundParts, partName)
+		end
+	end
+
+	if #foundParts == 0 then
+		table.insert(issues, "No standard body parts found (HumanoidRootPart, Torso, UpperTorso, Head)")
+	end
+
+	-- Report issues
+	if #issues > 0 then
+		warn("[CreatureSpawner] Model validation issues for " .. creatureType .. ":")
+		for _, issue in ipairs(issues) do
+			warn("  - " .. issue)
+		end
+		if #foundParts > 0 then
+			warn("  Available parts: " .. table.concat(foundParts, ", "))
+		end
+		return false
+	end
+
+	return true
+end
+
 local function discoverAvailableCreatures()
 	debugPrint("Discovering available creature models...")
 	local creaturesFolder = ReplicatedStorage:FindFirstChild(AIConfig.Settings.CreaturesFolder)
@@ -63,8 +108,12 @@ local function discoverAvailableCreatures()
 	if passiveFolder then
 		for _, model in pairs(passiveFolder:GetChildren()) do
 			if model:IsA("Model") then
-				table.insert(availableCreatures.PassiveCreatures, model)
-				debugPrint("Found passive creature: " .. model.Name)
+				if validateCreatureModel(model, model.Name) then
+					table.insert(availableCreatures.PassiveCreatures, model)
+					debugPrint("Found valid passive creature: " .. model.Name)
+				else
+					warn("[CreatureSpawner] Skipping invalid passive creature: " .. model.Name)
+				end
 			end
 		end
 	end
@@ -73,14 +122,149 @@ local function discoverAvailableCreatures()
 	if hostileFolder then
 		for _, model in pairs(hostileFolder:GetChildren()) do
 			if model:IsA("Model") then
-				table.insert(availableCreatures.HostileCreatures, model)
-				debugPrint("Found hostile creature: " .. model.Name)
+				if validateCreatureModel(model, model.Name) then
+					table.insert(availableCreatures.HostileCreatures, model)
+					debugPrint("Found valid hostile creature: " .. model.Name)
+				else
+					warn("[CreatureSpawner] Skipping invalid hostile creature: " .. model.Name)
+				end
 			end
 		end
 	end
 
 	local totalCreatures = #availableCreatures.PassiveCreatures + #availableCreatures.HostileCreatures
 	debugPrint("Total creature models found: " .. totalCreatures)
+end
+
+-- Diagnostic function to help debug PrimaryPart issues
+function CreatureSpawner.diagnosePrimaryPartIssues()
+	print("[CreatureSpawner] Running PrimaryPart diagnostics...")
+
+	local creaturesFolder = ReplicatedStorage:FindFirstChild(AIConfig.Settings.CreaturesFolder)
+	if not creaturesFolder then
+		warn("Creatures folder not found in ReplicatedStorage:", AIConfig.Settings.CreaturesFolder)
+		return
+	end
+
+	local function checkFolder(folder, folderType)
+		if not folder then return end
+
+		print("Checking " .. folderType .. " creatures:")
+		for _, model in pairs(folder:GetChildren()) do
+			if model:IsA("Model") then
+				print("  Model: " .. model.Name)
+
+				if model.PrimaryPart then
+					print("    ✓ PrimaryPart: " .. model.PrimaryPart.Name)
+				else
+					print("    ✗ No PrimaryPart set!")
+
+					-- List available parts
+					local parts = {}
+					for _, child in pairs(model:GetChildren()) do
+						if child:IsA("BasePart") then
+							table.insert(parts, child.Name)
+						end
+					end
+
+					if #parts > 0 then
+						print("    Available parts: " .. table.concat(parts, ", "))
+					else
+						print("    No BaseParts found in model!")
+					end
+				end
+
+				-- Check for Humanoid
+				local humanoid = model:FindFirstChild("Humanoid")
+				if humanoid then
+					print("    ✓ Has Humanoid")
+				else
+					print("    ✗ No Humanoid found")
+				end
+			end
+		end
+	end
+
+	checkFolder(creaturesFolder:FindFirstChild("PassiveCreatures"), "Passive")
+	checkFolder(creaturesFolder:FindFirstChild("HostileCreatures"), "Hostile")
+
+	print("[CreatureSpawner] Diagnostics complete")
+end
+
+-- Function to attempt to fix PrimaryPart issues on models in ReplicatedStorage
+function CreatureSpawner.fixPrimaryPartIssues()
+	print("[CreatureSpawner] Attempting to fix PrimaryPart issues...")
+
+	local creaturesFolder = ReplicatedStorage:FindFirstChild(AIConfig.Settings.CreaturesFolder)
+	if not creaturesFolder then
+		warn("Creatures folder not found in ReplicatedStorage:", AIConfig.Settings.CreaturesFolder)
+		return
+	end
+
+	local function fixFolder(folder, folderType)
+		if not folder then return end
+
+		print("Fixing " .. folderType .. " creatures:")
+		for _, model in pairs(folder:GetChildren()) do
+			if model:IsA("Model") and not model.PrimaryPart then
+				print("  Fixing: " .. model.Name)
+
+				-- Try to find and set a suitable PrimaryPart
+				local candidates = {"HumanoidRootPart", "Torso", "UpperTorso", "Head"}
+				local fixed = false
+
+				for _, partName in ipairs(candidates) do
+					local part = model:FindFirstChild(partName)
+					if part and part:IsA("BasePart") then
+						model.PrimaryPart = part
+						print("    ✓ Set " .. partName .. " as PrimaryPart")
+						fixed = true
+						break
+					end
+				end
+
+				if not fixed then
+					-- Last resort: use any BasePart
+					for _, child in pairs(model:GetChildren()) do
+						if child:IsA("BasePart") then
+							model.PrimaryPart = child
+							print("    ✓ Set " .. child.Name .. " as PrimaryPart (fallback)")
+							fixed = true
+							break
+						end
+					end
+				end
+
+				if not fixed then
+					warn("    ✗ Could not fix " .. model.Name .. " - no BaseParts found")
+				end
+			end
+		end
+	end
+
+	fixFolder(creaturesFolder:FindFirstChild("PassiveCreatures"), "Passive")
+	fixFolder(creaturesFolder:FindFirstChild("HostileCreatures"), "Hostile")
+
+	print("[CreatureSpawner] Fix attempt complete")
+end
+
+function CreatureSpawner.init()
+	debugPrint("Initializing creature spawner...")
+
+	-- Set up physics collision groups (only if PhysicsService is available)
+	local success, err = pcall(function()
+		PhysicsService:CreateCollisionGroup("Creature")
+		PhysicsService:SetPartCollisionGroup(game.Workspace.Terrain, "Default")
+		PhysicsService:CollisionGroupSetCollidable("Creature", "Default", true)
+	end)
+
+	if not success then
+		warn("[CreatureSpawner] Failed to set up collision groups:", err)
+	end
+
+	debugPrint("Creature spawner initialized")
+	CreatureSpawner.populateWorld()
+	return true
 end
 
 function CreatureSpawner.getCreatureTemplate(creatureType)
@@ -116,31 +300,75 @@ function CreatureSpawner.spawnCreature(creatureType, position, config)
 		return nil
 	end
 
+	-- Store the original PrimaryPart name for recovery
+	local originalPrimaryPartName = template.PrimaryPart.Name
+
 	local creatureModel = template:Clone()
 	creatureModel.Name = creatureType .. "_" .. tick()
+
+	-- Enhanced PrimaryPart validation and recovery system
+	local function findAndSetPrimaryPart(model, preferredName)
+		-- First try to use the original PrimaryPart name
+		if preferredName then
+			local originalPart = model:FindFirstChild(preferredName)
+			if originalPart and originalPart:IsA("BasePart") then
+				model.PrimaryPart = originalPart
+				debugPrint("Restored original PrimaryPart (" .. preferredName .. ") for " .. creatureType)
+				return true
+			end
+		end
+
+		-- Try standard creature part names in order of preference
+		local candidateParts = {
+			"HumanoidRootPart",
+			"Torso",
+			"UpperTorso",
+			"LowerTorso",
+			"Head",
+			"Root"
+		}
+
+		for _, partName in ipairs(candidateParts) do
+			local part = model:FindFirstChild(partName)
+			if part and part:IsA("BasePart") then
+				model.PrimaryPart = part
+				debugPrint("Set " .. partName .. " as PrimaryPart for " .. creatureType)
+				return true
+			end
+		end
+
+		-- Last resort: find any BasePart in the model
+		for _, child in pairs(model:GetChildren()) do
+			if child:IsA("BasePart") then
+				model.PrimaryPart = child
+				warn("[CreatureSpawner] Using fallback BasePart (" .. child.Name .. ") as PrimaryPart for " .. creatureType)
+				return true
+			end
+		end
+
+		return false
+	end
 
 	-- Validate PrimaryPart after cloning and attempt recovery if needed
 	if not creatureModel.PrimaryPart then
 		warn("[CreatureSpawner] PrimaryPart lost during cloning for " .. creatureType .. "! Attempting recovery...")
-		
-		-- Try to find and set a suitable PrimaryPart
-		local humanoidRootPart = creatureModel:FindFirstChild("HumanoidRootPart")
-		local torso = creatureModel:FindFirstChild("Torso") or creatureModel:FindFirstChild("UpperTorso")
-		local head = creatureModel:FindFirstChild("Head")
-		
-		if humanoidRootPart then
-			creatureModel.PrimaryPart = humanoidRootPart
-			debugPrint("Set HumanoidRootPart as PrimaryPart for " .. creatureType)
-		elseif torso then
-			creatureModel.PrimaryPart = torso
-			debugPrint("Set Torso as PrimaryPart for " .. creatureType)
-		elseif head then
-			creatureModel.PrimaryPart = head
-			debugPrint("Set Head as PrimaryPart for " .. creatureType)
-		else
-			warn("[CreatureSpawner] Could not find suitable PrimaryPart for " .. creatureType .. "! Skipping spawn.")
+
+		if not findAndSetPrimaryPart(creatureModel, originalPrimaryPartName) then
+			warn("[CreatureSpawner] Could not find any suitable PrimaryPart for " .. creatureType .. "! Skipping spawn.")
 			creatureModel:Destroy()
 			return nil
+		end
+	else
+		-- Even if PrimaryPart exists, validate it's still valid
+		if not creatureModel.PrimaryPart.Parent then
+			warn("[CreatureSpawner] PrimaryPart reference is invalid for " .. creatureType .. "! Attempting recovery...")
+			creatureModel.PrimaryPart = nil -- Clear invalid reference
+
+			if not findAndSetPrimaryPart(creatureModel, originalPrimaryPartName) then
+				warn("[CreatureSpawner] Could not recover PrimaryPart for " .. creatureType .. "! Skipping spawn.")
+				creatureModel:Destroy()
+				return nil
+			end
 		end
 	end
 
@@ -162,6 +390,9 @@ function CreatureSpawner.spawnCreature(creatureType, position, config)
 	if creatureModel.PrimaryPart then
     creatureModel.PrimaryPart.CollisionGroup = "Creature"
 end
+
+	-- Tag the creature as non-draggable to prevent drag-drop interference
+	CollectionServiceTags.tagCreatureAsNonDraggable(creatureModel)
 
 	local aiController = nil
 
@@ -305,10 +536,7 @@ function CreatureSpawner.populateWorld()
 	print("  - Available creature types:", #availableCreatures.PassiveCreatures + #availableCreatures.HostileCreatures)
 end
 
-function CreatureSpawner.init()
-	debugPrint("CreatureSpawner initialized")
-	CreatureSpawner.populateWorld()
-end
+
 
 function CreatureSpawner.cleanup()
 	if creatureFolder then

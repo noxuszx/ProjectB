@@ -3,7 +3,7 @@
 -- TODO: Add actual movement later
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIBehavior = require(script.Parent.aiBehavior)
+local AIBehavior = require(script.Parent.AIBehavior)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local FleeingBehavior = setmetatable({}, {__index = AIBehavior})

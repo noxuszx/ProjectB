@@ -3,7 +3,7 @@
 -- Includes random waypoint selection, idle states, and smooth movement
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIBehavior = require(script.Parent.aiBehavior)
+local AIBehavior = require(script.Parent.AIBehavior)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local RoamingBehavior = setmetatable({}, {__index = AIBehavior})

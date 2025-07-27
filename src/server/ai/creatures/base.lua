@@ -12,9 +12,34 @@ BaseCreature.__index = BaseCreature
 function BaseCreature.new(model, creatureType, spawnPosition)
 	local self = setmetatable({}, BaseCreature)
 
-	-- Safety check for model and PrimaryPart
-	if not model or not model.PrimaryPart then
-		error("[BaseCreature] Invalid model or missing PrimaryPart for creature type: " .. (creatureType or "unknown"))
+	-- Enhanced safety check for model and PrimaryPart
+	if not model then
+		error("[BaseCreature] No model provided for creature type: " .. (creatureType or "unknown"))
+	end
+
+	if not model.PrimaryPart then
+		-- Try to recover PrimaryPart before failing
+		local candidates = {"HumanoidRootPart", "Torso", "UpperTorso", "Head"}
+		local recovered = false
+
+		for _, partName in ipairs(candidates) do
+			local part = model:FindFirstChild(partName)
+			if part and part:IsA("BasePart") then
+				model.PrimaryPart = part
+				warn("[BaseCreature] Recovered PrimaryPart (" .. partName .. ") for " .. (creatureType or "unknown"))
+				recovered = true
+				break
+			end
+		end
+
+		if not recovered then
+			error("[BaseCreature] Invalid model or missing PrimaryPart for creature type: " .. (creatureType or "unknown") .. ". Model has no suitable BaseParts.")
+		end
+	end
+
+	-- Validate PrimaryPart is still valid
+	if not model.PrimaryPart.Parent then
+		error("[BaseCreature] PrimaryPart reference is invalid for creature type: " .. (creatureType or "unknown"))
 	end
 
 	-- Core properties

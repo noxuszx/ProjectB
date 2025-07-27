@@ -245,13 +245,72 @@ function CollectionServiceTags.initializeDefaultTags()
         end
     end
 
+    -- Get suspicious names from DragDropConfig
+    local DragDropConfig = require(game.ReplicatedStorage.Shared.config.DragDropConfig)
+    local suspiciousNames = DragDropConfig.SUSPICIOUS_NAMES or {}
+
+    -- Create a lookup table for faster checking
+    local suspiciousNamesLookup = {}
+    for _, name in ipairs(suspiciousNames) do
+        suspiciousNamesLookup[name] = true
+    end
+
+    -- Tag creature folders first to ensure all creature parts are marked as non-draggable
+    local creatureFolders = {"SpawnedCreatures", "PassiveCreatures", "HostileCreatures"}
+    for _, folderName in pairs(creatureFolders) do
+        local folder = workspace:FindFirstChild(folderName)
+        if folder then
+            local count = CollectionServiceTags.tagFolder(folder, CollectionServiceTags.NON_DRAGGABLE, true)
+            print("Tagged", count, folderName, "parts as NON-draggable (creature parts)")
+        end
+    end
+
     for _, child in pairs(workspace:GetChildren()) do
         if (child:IsA("Part") or child:IsA("MeshPart")) and not child.Anchored then
-            if not CollectionServiceTags.hasTag(child, CollectionServiceTags.DRAGGABLE) and
-               not CollectionServiceTags.hasTag(child, CollectionServiceTags.NON_DRAGGABLE) then
-                CollectionServiceTags.addTag(child, CollectionServiceTags.DRAGGABLE)
-                CollectionServiceTags.addTag(child, CollectionServiceTags.WELDABLE)
-                print("Tagged", child.Name, "(", child.ClassName, ") as draggable and weldable")
+            -- Skip creature body parts and other suspicious names
+            if suspiciousNamesLookup[child.Name] then
+                -- Tag as non-draggable to prevent accidental tagging later
+                CollectionServiceTags.addTag(child, CollectionServiceTags.NON_DRAGGABLE)
+                print("Tagged", child.Name, "as NON-draggable (suspicious name)")
+            elseif not CollectionServiceTags.hasTag(child, CollectionServiceTags.DRAGGABLE) and
+                   not CollectionServiceTags.hasTag(child, CollectionServiceTags.NON_DRAGGABLE) then
+                -- Check if this part belongs to a creature
+                local isCreaturePart = false
+                local parent = child.Parent
+
+                -- Check if parent is in creature folders (direct child)
+                if parent and (parent.Name == "PassiveCreatures" or
+                              parent.Name == "HostileCreatures" or
+                              parent.Name == "SpawnedCreatures") then
+                    isCreaturePart = true
+                end
+
+                -- Check if parent is a creature model (grandparent is creature folder)
+                if not isCreaturePart and parent and parent.Parent then
+                    local grandParent = parent.Parent
+                    if grandParent and (grandParent.Name == "PassiveCreatures" or
+                                       grandParent.Name == "HostileCreatures" or
+                                       grandParent.Name == "SpawnedCreatures") then
+                        isCreaturePart = true
+                    end
+                end
+
+                -- Check if the part is inside a creature model (check if model has Humanoid)
+                if not isCreaturePart and parent and parent:IsA("Model") then
+                    local humanoid = parent:FindFirstChild("Humanoid")
+                    if humanoid then
+                        isCreaturePart = true
+                    end
+                end
+
+                if isCreaturePart then
+                    CollectionServiceTags.addTag(child, CollectionServiceTags.NON_DRAGGABLE)
+                    print("Tagged", child.Name, "as NON-draggable (creature part)")
+                else
+                    CollectionServiceTags.addTag(child, CollectionServiceTags.DRAGGABLE)
+                    CollectionServiceTags.addTag(child, CollectionServiceTags.WELDABLE)
+                    print("Tagged", child.Name, "(", child.ClassName, ") as draggable and weldable")
+                end
             end
         end
     end
@@ -321,6 +380,31 @@ function CollectionServiceTags.tagItemsFolder()
 
     print("Tagged", count, "items as draggable and weldable")
     return count
+end
+
+-- Function to tag a creature model as non-draggable when it's spawned
+function CollectionServiceTags.tagCreatureAsNonDraggable(creatureModel)
+    if not creatureModel or not creatureModel:IsA("Model") then
+        warn("Invalid creature model provided to tagCreatureAsNonDraggable")
+        return false
+    end
+
+    local count = 0
+
+    -- Tag the model itself
+    CollectionServiceTags.addTag(creatureModel, CollectionServiceTags.NON_DRAGGABLE)
+    count = count + 1
+
+    -- Tag all BaseParts in the creature
+    for _, descendant in pairs(creatureModel:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            CollectionServiceTags.addTag(descendant, CollectionServiceTags.NON_DRAGGABLE)
+            count = count + 1
+        end
+    end
+
+    print("Tagged creature", creatureModel.Name, "and", count, "parts as NON-draggable")
+    return true
 end
 
 return CollectionServiceTags
