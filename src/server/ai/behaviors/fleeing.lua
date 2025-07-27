@@ -15,9 +15,7 @@ function FleeingBehavior.new(threatSource)
 	self.threatSource = threatSource
 	self.fleeDuration = 0
 	self.fleeStartTime = 0
-	self.initialThreatDistance = 0
-	self.minFleeDistance = 25 -- Minimum distance to flee before considering stopping
-	self.lastPosition = nil
+	-- Removed: initialThreatDistance, minFleeDistance, lastPosition (unused in simplified version)
 
 	return self
 end
@@ -28,12 +26,6 @@ function FleeingBehavior:enter(creature)
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	self.fleeDuration = creatureConfig and creatureConfig.FleeDuration or 10
 	self.fleeStartTime = tick()
-	self.lastPosition = creature.model.PrimaryPart.Position
-
-	local threatPosition = self:getThreatPosition()
-	if threatPosition then
-		self.initialThreatDistance = (creature.model.PrimaryPart.Position - threatPosition).Magnitude
-	end
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		local threatName = "Unknown"
@@ -41,32 +33,19 @@ function FleeingBehavior:enter(creature)
 			threatName = self.threatSource.Name
 		end
 		print("[FleeingBehavior] " .. creature.creatureType .. " fleeing from " .. threatName ..
-			  " for " .. self.fleeDuration .. " seconds (initial distance: " ..
-			  string.format("%.1f", self.initialThreatDistance) .. ")")
+			  " for " .. self.fleeDuration .. " seconds")
 	end
 end
 
 function FleeingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
+	-- Simple time-based fleeing - no complex distance calculations
 	local timeElapsed = tick() - self.fleeStartTime
 	if timeElapsed >= self.fleeDuration then
 		self:stopFleeing(creature, "time expired")
 		return
 	end
-
-	local threatPosition = self:getThreatPosition()
-	if threatPosition then
-		local currentDistance = (creature.model.PrimaryPart.Position - threatPosition).Magnitude
-		local safeDistance = math.max(self.minFleeDistance, self.initialThreatDistance * 1.5)
-
-		if currentDistance >= safeDistance and timeElapsed > 2 then -- Must flee for at least 2 seconds
-			self:stopFleeing(creature, "reached safe distance")
-			return
-		end
-	end
-
-	-- REMOVED: Stuck detection - Humanoid:MoveTo handles this
 
 	-- Calculate flee direction away from threat
 	local fleeDirection = self:calculateFleeDirection(creature)
@@ -82,13 +61,11 @@ function FleeingBehavior:update(creature, deltaTime)
 		self:moveTowards(creature, fleeTargetPosition, fleeSpeed, deltaTime)
 		self.lastPosition = currentPosition
 
-		-- Debug logging (reduced frequency)
+		-- Simplified debug logging
 		if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.01 then
 			local remainingTime = self.fleeDuration - timeElapsed
-			local currentDistance = threatPosition and (currentPosition - threatPosition).Magnitude or 0
 			print("[FleeingBehavior] " .. creature.creatureType .. " fleeing (" ..
-				  string.format("%.1f", remainingTime) .. "s remaining, distance: " ..
-				  string.format("%.1f", currentDistance) .. ")")
+				  string.format("%.1f", remainingTime) .. "s remaining)")
 		end
 	end
 end

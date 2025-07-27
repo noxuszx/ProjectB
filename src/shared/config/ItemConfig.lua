@@ -8,7 +8,7 @@ local ItemConfig = {
 		ScatterRadius = 5,
 		MaxScatterAttempts = 10,
 		SpawnHeight = 3,
-		DebugMode = false,
+		DebugMode = true,
 	},
 
 	SpawnTypes = {
@@ -19,7 +19,7 @@ local ItemConfig = {
 				["MetalRoof"] = 0.4,
 				["WoodPlank1"] = 0.6,
 				["WoodPlank2"] = 0.5,
-				["Knife"] = 0.15
+
 			}
 		},
 
@@ -30,8 +30,7 @@ local ItemConfig = {
 				["MetalRoof"] = 0.6,
 				["WoodPlank1"] = 0.4,
 				["WoodPlank2"] = 0.4,
-				["Machete"] = 0.25,
-				["Spear"] = 0.20
+
 			}
 		},
 
@@ -41,7 +40,8 @@ local ItemConfig = {
 			PossibleLoot = {
 				["WoodPlank1"] = 0.7,
 				["WoodPlank2"] = 0.7,
-				["MetalRoof"] = 0.3
+				["MetalRoof"] = 0.3,
+
 			}
 		},
 
@@ -52,7 +52,7 @@ local ItemConfig = {
 				["MetalRoof"] = 0.8,
 				["WoodPlank1"] = 0.5,
 				["WoodPlank2"] = 0.5,
-				["Knife"] = 0.10
+
 			}
 		}
 	}

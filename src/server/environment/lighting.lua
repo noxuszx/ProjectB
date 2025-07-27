@@ -13,6 +13,7 @@ local TweenService = game:GetService("TweenService")
 
 local lighting = {}
 local currentTween = nil
+local lastPeriod = nil
 
 local function applyLightingPreset(preset)
 	Lighting.Ambient = preset.Ambient
@@ -41,11 +42,13 @@ local function tweenLighting(preset)
 	currentTween = tween
 end
 
-local function onTimePeriodChange(eventType, data)
-	if eventType ~= "periodChange" then return end
-	
-	local newPreset = DayNightCycle.getCurrentLightingPreset()
-	tweenLighting(newPreset)
+local function updateLighting()
+	local currentPeriod = DayNightCycle.getCurrentPeriod()
+	if currentPeriod ~= lastPeriod then
+		lastPeriod = currentPeriod
+		local newPreset = DayNightCycle.getCurrentLightingPreset()
+		tweenLighting(newPreset)
+	end
 end
 
 function lighting.init()
@@ -54,9 +57,9 @@ function lighting.init()
 	local initialPreset = DayNightCycle.getCurrentLightingPreset()
 	applyLightingPreset(initialPreset)
 	
-	DayNightCycle.registerTimeCallback(onTimePeriodChange)
-	
-	-- Lighting manager ready
+	game:GetService("RunService").Heartbeat:Connect(function()
+		updateLighting()
+	end)
 end
 
 return lighting

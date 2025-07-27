@@ -7,7 +7,7 @@ local AIConfig = {
 	Settings = {
 		MaxCreatures = 300, 		-- Maximum number of creatures in the world
 		UpdateBudgetMs = 5, 		-- Maximum milliseconds per frame for AI updates
-		DebugMode = true, 			-- Enable debug prints and visualizations
+		DebugMode = false, 			-- Enable debug prints and visualizations
 		SpatialGridSize = 50, 		-- Size of spatial grid cells for optimization (studs)
 		CreaturesFolder = "NPCs", 	-- Folder name in ReplicatedStorage where creature models are stored
 	},

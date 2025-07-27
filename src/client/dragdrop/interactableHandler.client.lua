@@ -296,12 +296,14 @@ function DropItem(AddForce : boolean ?)
 
 	carrying = false
 	currentWeld = nil
-	WeldSystem.cleanup() 
+	WeldSystem.cleanup()
 
 	-- Reset rotation state
 	rotationCount = {0, 0, 0}
 	currentRotationAxis = 1
 	originalCFrame = nil
+
+
 
 	RP.Remotes.DropItem:FireServer(currTargs, velocity)
 

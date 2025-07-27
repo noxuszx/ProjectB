@@ -23,10 +23,7 @@ function RoamingBehavior.new()
 	self.targetPosition = nil
 	self.idleStartTime = 0
 	self.idleDuration = 0
-	self.lastPosition = nil
-	self.stuckCheckTime = 0
-	self.lastStuckTime = 0
-	self.stuckAttempts = 0
+	-- Removed unused variables: lastPosition, stuckCheckTime, lastStuckTime, stuckAttempts
 
 	return self
 end
@@ -35,7 +32,6 @@ function RoamingBehavior:enter(creature)
 	AIBehavior.enter(self, creature)
 
 	self.state = RoamingState.IDLE
-	self.lastPosition = creature.model.PrimaryPart.Position
 	self:startIdling(creature)
 
 	if AIConfig.Debug.LogBehaviorChanges then
@@ -104,33 +100,14 @@ function RoamingBehavior:updateChoosingDestination(creature)
 	-- Use spawn position as center for roaming area
 	local centerPosition = creature.spawnPosition
 
-	-- Try multiple attempts to find a good destination
-	local maxAttempts = 5
-	local bestTarget = nil
-	local bestDistance = 0
-
-	for attempt = 1, maxAttempts do
-		local randomAngle = math.random() * math.pi * 2
-		local randomDistance = math.random() * roamRadius * 0.8 -- Use 80% of radius to stay closer
-
-		local targetX = centerPosition.X + math.cos(randomAngle) * randomDistance
-		local targetZ = centerPosition.Z + math.sin(randomAngle) * randomDistance
-
-		local candidateTarget = Vector3.new(targetX, centerPosition.Y, targetZ)
-
-		-- Simple distance check - let Humanoid:MoveTo handle ground snapping
-		local distanceFromCurrent = (candidateTarget - creature.model.PrimaryPart.Position).Magnitude
-		if distanceFromCurrent > bestDistance and distanceFromCurrent > 5 then -- At least 5 studs away
-			bestTarget = candidateTarget
-			bestDistance = distanceFromCurrent
-		end
-	end
-
-	-- Use best target or fallback to simple selection
-	self.targetPosition = bestTarget or Vector3.new(centerPosition.X, centerPosition.Y, centerPosition.Z)
+	-- Simple random target selection (no multiple attempts)
+	local randomAngle = math.random() * math.pi * 2
+	local randomDistance = math.random() * roamRadius
+	local targetX = centerPosition.X + math.cos(randomAngle) * randomDistance
+	local targetZ = centerPosition.Z + math.sin(randomAngle) * randomDistance
+	self.targetPosition = Vector3.new(targetX, centerPosition.Y, targetZ)
 
 	self.state = RoamingState.MOVING
-	self.stuckAttempts = 0 -- Reset stuck attempts when choosing new destination
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		local distance = (self.targetPosition - creature.model.PrimaryPart.Position).Magnitude
@@ -157,7 +134,6 @@ function RoamingBehavior:updateMoving(creature, deltaTime)
 
 	-- Move towards target
 	self:moveTowards(creature, self.targetPosition, creature.moveSpeed, deltaTime)
-	self.lastPosition = currentPosition
 end
 
 return RoamingBehavior

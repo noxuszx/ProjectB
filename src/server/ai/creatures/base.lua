@@ -11,7 +11,12 @@ BaseCreature.__index = BaseCreature
 -- Abstract base class - should not be instantiated directly
 function BaseCreature.new(model, creatureType, spawnPosition)
 	local self = setmetatable({}, BaseCreature)
-	
+
+	-- Safety check for model and PrimaryPart
+	if not model or not model.PrimaryPart then
+		error("[BaseCreature] Invalid model or missing PrimaryPart for creature type: " .. (creatureType or "unknown"))
+	end
+
 	-- Core properties
 	self.model = model
 	self.creatureType = creatureType
@@ -36,7 +41,13 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 end
 
 function BaseCreature:update(deltaTime)
-	if not self.isActive or not self.model.Parent then
+	if not self.isActive or not self.model or not self.model.Parent then
+		return
+	end
+
+	-- Additional safety check for PrimaryPart
+	if not self.model.PrimaryPart then
+		warn("[BaseCreature] PrimaryPart is missing for " .. self.creatureType)
 		return
 	end
 
@@ -44,7 +55,10 @@ function BaseCreature:update(deltaTime)
 		self.currentBehavior:update(self, deltaTime)
 	end
 
-	self.position = self.model.PrimaryPart.Position
+	-- Update position with safety check (redundant but safe)
+	if self.model.PrimaryPart then
+		self.position = self.model.PrimaryPart.Position
+	end
 	self.lastUpdateTime = tick()
 end
 

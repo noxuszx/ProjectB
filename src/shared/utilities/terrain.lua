@@ -23,18 +23,15 @@ local terrain = {}
 	- Transition zone (between SPAWN_FLAT_RADIUS and SPAWN_FLAT_RADIUS + SPAWN_TRANSITION_WIDTH)
 	- Normal noise-based terrain (beyond transition zone)
 ]]--
+
 function terrain.getTerrainHeight(x, z)
 	local distanceFromSpawn = math.sqrt(x^2 + z^2)
-	
 	if distanceFromSpawn <= ChunkConfig.SPAWN_FLAT_RADIUS then
-		-- Flat spawn area
 		return ChunkConfig.SPAWN_HEIGHT
 	elseif distanceFromSpawn <= (ChunkConfig.SPAWN_FLAT_RADIUS + ChunkConfig.SPAWN_TRANSITION_WIDTH) then
-		-- Transition zone - interpolate between flat and noise-based height
 		local transitionFactor = (distanceFromSpawn - ChunkConfig.SPAWN_FLAT_RADIUS) / ChunkConfig.SPAWN_TRANSITION_WIDTH
 		return (1 - transitionFactor) * ChunkConfig.SPAWN_HEIGHT + transitionFactor * NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
 	else
-		-- Normal noise-based terrain
 		return NoiseGenerator.getTerrainHeight(x, z, ChunkConfig)
 	end
 end

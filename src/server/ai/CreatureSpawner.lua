@@ -110,8 +110,39 @@ function CreatureSpawner.spawnCreature(creatureType, position, config)
 		return nil
 	end
 
+	-- Validate template has PrimaryPart before cloning
+	if not template.PrimaryPart then
+		warn("[CreatureSpawner] Template " .. creatureType .. " has no PrimaryPart set!")
+		return nil
+	end
+
 	local creatureModel = template:Clone()
 	creatureModel.Name = creatureType .. "_" .. tick()
+
+	-- Validate PrimaryPart after cloning and attempt recovery if needed
+	if not creatureModel.PrimaryPart then
+		warn("[CreatureSpawner] PrimaryPart lost during cloning for " .. creatureType .. "! Attempting recovery...")
+		
+		-- Try to find and set a suitable PrimaryPart
+		local humanoidRootPart = creatureModel:FindFirstChild("HumanoidRootPart")
+		local torso = creatureModel:FindFirstChild("Torso") or creatureModel:FindFirstChild("UpperTorso")
+		local head = creatureModel:FindFirstChild("Head")
+		
+		if humanoidRootPart then
+			creatureModel.PrimaryPart = humanoidRootPart
+			debugPrint("Set HumanoidRootPart as PrimaryPart for " .. creatureType)
+		elseif torso then
+			creatureModel.PrimaryPart = torso
+			debugPrint("Set Torso as PrimaryPart for " .. creatureType)
+		elseif head then
+			creatureModel.PrimaryPart = head
+			debugPrint("Set Head as PrimaryPart for " .. creatureType)
+		else
+			warn("[CreatureSpawner] Could not find suitable PrimaryPart for " .. creatureType .. "! Skipping spawn.")
+			creatureModel:Destroy()
+			return nil
+		end
+	end
 
 	if creatureModel.PrimaryPart then
 		creatureModel:SetPrimaryPartCFrame(CFrame.new(position))
@@ -178,7 +209,7 @@ local function getRandomSpawnPosition(spawnerPart, usedPositions)
 		local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
 
 		if raycastResult then
-			local groundPosition = raycastResult.Position + Vector3.new(0, 2, 0) -- Slightly above ground
+			local groundPosition = raycastResult.Position + Vector3.new(0, 0.5, 0) -- Just slightly above ground
 
 			local tooClose = false
 			for _, usedPos in pairs(usedPositions) do
@@ -303,3 +334,5 @@ function CreatureSpawner.cleanup()
 end
 
 return CreatureSpawner
+
+

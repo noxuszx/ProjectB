@@ -44,7 +44,6 @@ function CollectionServiceTags.removeTag(object, tag)
     return true
 end
 
--- Check if an object has a specific tag
 function CollectionServiceTags.hasTag(object, tag)
     if not object or not tag then
         return false
@@ -53,7 +52,6 @@ function CollectionServiceTags.hasTag(object, tag)
     return CollectionService:HasTag(object, tag)
 end
 
--- Get all objects with a specific tag
 function CollectionServiceTags.getTaggedObjects(tag)
     if not tag then
         return {}
@@ -62,7 +60,6 @@ function CollectionServiceTags.getTaggedObjects(tag)
     return CollectionService:GetTagged(tag)
 end
 
--- Check if an object is draggable using tags or fallback logic
 function CollectionServiceTags.isDraggable(object)
     if not object or not object.Parent then
         return false
@@ -316,7 +313,6 @@ function CollectionServiceTags.tagItemsFolder()
     local count = 0
     for _, item in pairs(itemsFolder:GetChildren()) do
         if item:IsA("MeshPart") or item:IsA("Tool") then
-            -- Items should be draggable and weldable by default
             CollectionServiceTags.addTag(item, CollectionServiceTags.DRAGGABLE)
             CollectionServiceTags.addTag(item, CollectionServiceTags.WELDABLE)
             count = count + 1

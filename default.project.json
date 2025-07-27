@@ -11,9 +11,6 @@
         },
         "utilities": {
           "$path": "src/shared/utilities"
-        },
-        "weapons": {
-          "$path": "src/shared/weapons"
         }
       },
       "Items": {

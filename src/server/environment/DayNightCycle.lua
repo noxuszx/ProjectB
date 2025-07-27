@@ -18,12 +18,8 @@ local currentPeriod = nil
 local lastPeriod = nil
 
 local function formatTime(gameHours)
-	local hours = math.floor(gameHours) % 24
-	local minutes = math.floor((gameHours % 1) * 60)
-	local period = hours >= 12 and "PM" or "AM"
-	local displayHours = hours == 0 and 12 or (hours > 12 and hours - 12 or hours)
-	
-	return string.format("%d:%02d %s", displayHours, minutes, period)
+	local hour = math.floor(gameHours) % 24
+	return string.format("%.1f", gameHours)
 end
 
 local function getTimePeriod(gameHours)
@@ -50,18 +46,6 @@ local function getTimePeriod(gameHours)
 	end
 end
 
--- Fire time-based events
-local function fireTimeEvents(eventType, data)
-	if not TimeConfig.ENABLE_TIME_EVENTS then return end
-	
-	for _, callback in pairs(timeCallbacks) do
-		local success, error = pcall(callback, eventType, data)
-		if not success then
-			warn("Time event callback error:", error)
-		end
-	end
-end
-
 local function updateTime()
 	local currentTick = tick()
 	local elapsedTime = currentTick - cycleStartTime
@@ -76,15 +60,7 @@ local function updateTime()
 	if newPeriod ~= currentPeriod then
 		lastPeriod = currentPeriod
 		currentPeriod = newPeriod
-		
-		fireTimeEvents("periodChange", {
-			newPeriod = newPeriod,
-			oldPeriod = lastPeriod,
-			gameTime = currentTime,
-			formattedTime = formatTime(currentTime)
-		})
-		
-		-- Time period changed silently
+		-- Period changed - other systems can check getCurrentPeriod() if needed
 	end
 end
 
@@ -108,19 +84,6 @@ end
 function dayNightCycle.getCurrentLightingPreset()
 	local period = dayNightCycle.getCurrentPeriod()
 	return TimeConfig.LIGHTING_PRESETS[period]
-end
-
-function dayNightCycle.registerTimeCallback(callback)
-	table.insert(timeCallbacks, callback)
-end
-
-function dayNightCycle.unregisterTimeCallback(callback)
-	for i, cb in ipairs(timeCallbacks) do
-		if cb == callback then
-			table.remove(timeCallbacks, i)
-			break
-		end
-	end
 end
 
 function dayNightCycle.setTime(gameHours)
@@ -166,23 +129,13 @@ function dayNightCycle.init()
 		updateTime()
 	end)
 	
-	fireTimeEvents("init", {
-		period = currentPeriod,
-		gameTime = currentTime,
-		formattedTime = formatTime(currentTime)
-	})
-	
-    print("Day/Night cycle initialized...")
+	print("Day/Night cycle initialized...")
 end
 
 function dayNightCycle.getDebugInfo()
 	return {
-		currentTime = currentTime,
-		formattedTime = formatTime(currentTime),
 		currentPeriod = currentPeriod,
-		timeProgress = dayNightCycle.getTimeProgress(),
-		cycleStartTime = cycleStartTime,
-		elapsedTime = tick() - cycleStartTime
+		gameTime = currentTime
 	}
 end
 

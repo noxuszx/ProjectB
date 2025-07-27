@@ -85,6 +85,7 @@ local function getSpawnType(chunkX, chunkZ)
 	end
 end
 
+
 local function hasGround(position)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -95,6 +96,7 @@ local function hasGround(position)
 	local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
 	return raycastResult ~= nil
 end
+
 
 local function isGoodSpacing(position)
 	local minDistance = SpawnerPlacementConfig.TerrainValidation.ClearanceRadius

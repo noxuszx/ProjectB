@@ -90,11 +90,21 @@ end
 
 
 function AIBehavior:moveTowards(creature, targetPosition, speed, deltaTime)
+	-- Safety checks to prevent nil errors
+	if not creature or not creature.model or not creature.model.PrimaryPart then
+		warn("[AIBehavior] Invalid creature or missing PrimaryPart in moveTowards")
+		return
+	end
+
 	local humanoid = creature.model:FindFirstChild("Humanoid")
 	if humanoid then
 		humanoid:MoveTo(targetPosition)
 		humanoid.WalkSpeed = speed
-		creature.position = creature.model.PrimaryPart.Position
+
+		-- Update position with safety check
+		if creature.model.PrimaryPart then
+			creature.position = creature.model.PrimaryPart.Position
+		end
 	else
 		warn("[AIBehavior] No Humanoid found in creature model: " .. creature.creatureType)
 	end
@@ -102,23 +112,7 @@ end
 
 
 
-function AIBehavior:snapToGround(position, creature)
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-	if creature and creature.model then
-		raycastParams.FilterDescendantsInstances = {creature.model}
-	else
-		raycastParams.FilterDescendantsInstances = {}
-	end
-	local origin = position + Vector3.new(0, 10, 0)
-	local direction = Vector3.new(0, -20, 0)
-	local raycastResult = workspace:Raycast(origin, direction, raycastParams)
-
-	if raycastResult then
-		return raycastResult.Position + Vector3.new(0, 2, 0)
-	end
-	return position
-end
+-- REMOVED: snapToGround function - Humanoid:MoveTo handles ground positioning
 
 -- REMOVED: Complex stuck detection - Humanoid:MoveTo has built-in timeout
 

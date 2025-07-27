@@ -1,146 +1,35 @@
-  22:05:56.442  [WeaponPickups] Weapon pickup system initialized  -  Server - pickups:184
-  22:05:56.442  [WeaponHandler] Server-side weapon system ready  -  Server - weaponHandler:258
-  22:05:56.442  Chunk-based terrain system starting...  -  Server - ChunkInit:6
-  22:05:56.573  Hello world, from client!  -  Client - Client:1
-  22:05:56.844  Plugin loaded  -  Server
-  22:05:57.122  Plugin loaded  -  Client
-  22:05:58.464  Chunk terrain system initialized  -  Server - ChunkInit:21
-  22:05:59.472  Spawning villages...  -  Server - VillageSpawner:145
-  22:05:59.472  Could not find valid position for House2 using fallback position  -  Server - VillageSpawner:104
-  22:06:00.139  1 out of 1 villages spawned successfully!  -  Server - VillageSpawner:174
-  22:06:00.139  Village spawning complete. Initializing item spawning...  -  Server - ChunkInit:26
-  22:06:01.156  Initializing custom model spawner...  -  Server - CustomModelSpawner:216
-  22:06:01.156  Scanning for available models...  -  Server - CustomModelSpawner:31
-  22:06:01.156  Found Vegetation model: Shrub  -  Server - CustomModelSpawner:48
-  22:06:01.156  Found Vegetation model: Shrub2  -  Server - CustomModelSpawner:48
-  22:06:01.156   ▶ Found Vegetation model: Cactus (x3)  -  Server - CustomModelSpawner:48
-  22:06:01.157   ▶ Found Rocks model: Rock (x2)  -  Server - CustomModelSpawner:48
-  22:06:01.157  Found Rocks model: LargeRock  -  Server - CustomModelSpawner:48
-  22:06:01.157  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:48
-  22:06:01.157  Found Rocks model: Rock  -  Server - CustomModelSpawner:48
-  22:06:01.157  Found Rocks model: SmallRock  -  Server - CustomModelSpawner:48
-  22:06:01.158  Vegetation models found: 5  -  Server - CustomModelSpawner:56
-  22:06:01.158  Structures models found: 0  -  Server - CustomModelSpawner:56
-  22:06:01.158  Rocks models found: 6  -  Server - CustomModelSpawner:56
-  22:06:01.158  Clearing spawned objects...  -  Server - CustomModelSpawner:203
-  22:06:01.158  Objects cleared!  -  Server - CustomModelSpawner:212
-  22:06:03.555  Custom model spawning complete!  -  Server - CustomModelSpawner:237
-  22:06:03.555  Terrain system initialized Model spawning enabled.  -  Server - ChunkInit:35
-  22:06:03.555  Day/Night cycle initialized...  -  Server - dayNightCycle:175
-  22:06:03.555  Initializing lighting manager...  -  Server - lighting:52
-  22:06:03.556  [ItemSpawner] All spawned items cleared!  -  Server - ItemSpawner:342
-  22:06:03.556  [ItemSpawner] Item discovery complete:  -  Server - ItemSpawner:86
-  22:06:03.556    - Valid items discovered: 6  -  Server - ItemSpawner:87
-  22:06:03.556    - Items skipped: 0  -  Server - ItemSpawner:88
-  22:06:03.557  [ItemSpawner] World population complete!  -  Server - ItemSpawner:369
-  22:06:03.557    - Processed spawners: 4  -  Server - ItemSpawner:370
-  22:06:03.557    - Total items spawned: 2  -  Server - ItemSpawner:371
-  22:06:03.557    - Available item types: 0  -  Server - ItemSpawner:372
-  22:06:03.557  Placing procedural creature spawners...  -  Server - ChunkInit:41
-  22:06:03.558  [SpawnerPlacement] Starting procedural spawner placement using noise-based method...  -  Server - SpawnerPlacement:34
-  22:06:03.558  [SpawnerPlacement] Raycast failed at -891, 20, -800 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.558  [SpawnerPlacement] Raycast failed at -715, 20, -839 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.558  [SpawnerPlacement] Raycast failed at -882, 20, -911 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.558  [SpawnerPlacement] Created Dangerous spawner at -691, 4.865005016326904, -739  -  Server - SpawnerPlacement:34
-  22:06:03.558  [SpawnerPlacement] Placed Dangerous spawner in chunk (-3, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Created Dangerous spawner at -785, 4.418735027313232, -648  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Placed Dangerous spawner in chunk (-3, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Raycast failed at -855, 20, -71 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Created Dangerous spawner at -800, 5.088395118713379, 99  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Placed Dangerous spawner in chunk (-3, 0)  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Raycast failed at -913, 20, 554 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Created Dangerous spawner at -736, 4.618279933929443, 405  -  Server - SpawnerPlacement:34
-  22:06:03.559  [SpawnerPlacement] Placed Dangerous spawner in chunk (-3, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Created Dangerous spawner at -785, 3.344348907470703, 799  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Placed Dangerous spawner in chunk (-3, 3)  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Raycast failed at -415, 20, -923 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Created Dangerous spawner at -654, 3.9104738235473633, -786  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Placed Dangerous spawner in chunk (-2, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Created Dangerous spawner at -598, 4.494752407073975, -463  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Placed Dangerous spawner in chunk (-2, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Created Dangerous spawner at -657, 4.452667236328125, -168  -  Server - SpawnerPlacement:34
-  22:06:03.560  [SpawnerPlacement] Placed Dangerous spawner in chunk (-2, -1)  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Created Dangerous spawner at -397, 5.308022499084473, 443  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Placed Dangerous spawner in chunk (-2, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Created Dangerous spawner at -281, 4.864151954650879, -592  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Placed Dangerous spawner in chunk (-1, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Created Dangerous spawner at -295, 4.7212700843811035, -235  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Placed Dangerous spawner in chunk (-1, -1)  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Created Dangerous spawner at -192, 5.487774848937988, 468  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Placed Dangerous spawner in chunk (-1, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.561  [SpawnerPlacement] Created Dangerous spawner at -213, 4.322056770324707, 710  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Placed Dangerous spawner in chunk (-1, 3)  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Created Dangerous spawner at 1, 4.674270153045654, -665  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Placed Dangerous spawner in chunk (0, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Created Dangerous spawner at 66, 3.5904455184936523, -646  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Placed Dangerous spawner in chunk (0, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Created Dangerous spawner at 71, 3.604893684387207, -244  -  Server - SpawnerPlacement:34
-  22:06:03.562  [SpawnerPlacement] Placed Dangerous spawner in chunk (0, -1)  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Created Dangerous spawner at -74, 4.999528884887695, 335  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Placed Dangerous spawner in chunk (0, 1)  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Created Dangerous spawner at 49, 5.436790466308594, 910  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Placed Dangerous spawner in chunk (0, 3)  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Raycast failed at 362, 20, -848 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Raycast failed at 273, 20, -866 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Created Dangerous spawner at 371, 5.4288787841796875, -768  -  Server - SpawnerPlacement:34
-  22:06:03.563  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Created Dangerous spawner at 173, 4.016186714172363, -649  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Created Dangerous spawner at 217, 4.979563236236572, -287  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, -1)  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Created Dangerous spawner at 382, 5.02535343170166, 117  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, 0)  -  Server - SpawnerPlacement:34
-  22:06:03.564  [SpawnerPlacement] Created Dangerous spawner at 390, 4.048296928405762, 547  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Created Dangerous spawner at 361, 3.1370553970336914, 796  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Placed Dangerous spawner in chunk (1, 3)  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Raycast failed at 548, 20, -891 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Created Dangerous spawner at 615, 4.295558452606201, -797  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Placed Dangerous spawner in chunk (2, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Created Dangerous spawner at 640, 4.594210147857666, -564  -  Server - SpawnerPlacement:34
-  22:06:03.565  [SpawnerPlacement] Placed Dangerous spawner in chunk (2, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Created Dangerous spawner at 582, 4.131065368652344, -275  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Placed Dangerous spawner in chunk (2, -1)  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Created Dangerous spawner at 449, 3.8289613723754883, 374  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Placed Dangerous spawner in chunk (2, 1)  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Created Dangerous spawner at 602, 5.511772155761719, 526  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Placed Dangerous spawner in chunk (2, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Raycast failed at 701, 20, -842 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Raycast failed at 880, 20, -861 - no ground found  -  Server - SpawnerPlacement:34
-  22:06:03.566  [SpawnerPlacement] Created Dangerous spawner at 761, 5.655651092529297, -812  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, -3)  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Created Dangerous spawner at 682, 3.936305522918701, -643  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, -2)  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Created Dangerous spawner at 664, 4.3619256019592285, -95  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, 0)  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Created Dangerous spawner at 800, 4.705928802490234, 339  -  Server - SpawnerPlacement:34
-  22:06:03.567  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, 1)  -  Server - SpawnerPlacement:34
-  22:06:03.568  [SpawnerPlacement] Created Dangerous spawner at 804, 4.119694232940674, 573  -  Server - SpawnerPlacement:34
-  22:06:03.568  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, 2)  -  Server - SpawnerPlacement:34
-  22:06:03.568  [SpawnerPlacement] Created Dangerous spawner at 829, 4.950549125671387, 711  -  Server - SpawnerPlacement:34
-  22:06:03.568  [SpawnerPlacement] Placed Dangerous spawner in chunk (3, 3)  -  Server - SpawnerPlacement:34
-  22:06:03.568  [SpawnerPlacement] Procedural spawner placement complete!  -  Server - SpawnerPlacement:290
-  22:06:03.568    - Chunks processed: 49  -  Server - SpawnerPlacement:291
-  22:06:03.568    - Spawners placed: 35  -  Server - SpawnerPlacement:292
-  22:06:03.568    - Placement rate: 71.4%  -  Server - SpawnerPlacement:293
-  22:06:03.568  Initializing AI system...  -  Server - ChunkInit:45
-  22:06:03.571  SetPartCollisionGroup is deprecated, please use BasePart.CollisionGroup instead. More info: https://devforum.roblox.com/t/updates-to-collision-groups/1990215  -  Studio
-  22:06:03.598  [CreatureSpawner] World population complete!  -  Server - CreatureSpawner:300
-  22:06:03.598    - Processed spawners: 35  -  Server - CreatureSpawner:301
-  22:06:03.598    - Total creatures spawned: 94  -  Server - CreatureSpawner:302
-  22:06:03.598    - Available creature types: 5  -  Server - CreatureSpawner:303
-  22:06:03.599  Initializing drag-drop system tags...  -  Server - ChunkInit:52
-  22:06:03.599  Initializing CollectionService tags for existing objects...  -  Server - CollectionServiceTags:248
-  22:06:03.603  Tagged 784 chunk parts as non-draggable but weldable  -  Server - CollectionServiceTags:255
-  22:06:03.604  Tagged 214 SpawnedVegetation objects as non-draggable but weldable  -  Server - CollectionServiceTags:265
-  22:06:03.604  Tagged 160 SpawnedRocks objects as non-draggable but weldable  -  Server - CollectionServiceTags:265
-  22:06:03.604  Tagged 0 SpawnedStructures objects as non-draggable but weldable  -  Server - CollectionServiceTags:265
-  22:06:03.605  CollectionService tag initialization complete!  -  Server - CollectionServiceTags:282
-  22:06:03.605  Tagged 6 items as draggable and weldable  -  Server - CollectionServiceTags:354
-  22:06:03.605  Initializing weapon systems...  -  Server - ChunkInit:56
-  22:06:03.605  All systems initialized. Day/night cycle active, world populated with items, procedural spawners, creatures, and weapons.  -  Server - ChunkInit:58
-  22:06:18.856  Flying ON  -  Client - FlyScript:49
-  22:06:27.273  Flying OFF  -  Client - FlyScript:56
-  22:06:35.973  Flying ON  -  Client - FlyScript:49
-  22:06:52.255  Flying OFF  -  Client - FlyScript:56
-  22:06:58.346  Disconnect from ::ffff:127.0.0.1|64263  -  Studio
+ 22:11:14.404  [WeaponPickups] Setting up pickup for weapon: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Created pickup prompt for: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Weapon pickup configured: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Setting up pickup for weapon: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Created pickup prompt for: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Weapon pickup configured: Knife  -  Server - pickups:17
+  22:11:14.404  [WeaponPickups] Setting up pickup for weapon: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Created pickup prompt for: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Weapon pickup configured: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Setting up pickup for weapon: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Created pickup prompt for: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Weapon pickup configured: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Setting up pickup for weapon: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Created pickup prompt for: Knife  -  Server - pickups:17
+  22:11:14.405  [WeaponPickups] Weapon pickup configured: Knife  -  Server - pickups:17
+  22:11:22.505  [ToolLoaderScript] Equipping weapon: Knife  -  Client - toolLoaderScript:32
+  22:11:22.505  [WeaponController] Equipping weapon: Knife  -  Client - weaponController:44
+  22:11:22.505  [WeaponController] Weapon equipped successfully: Knife  -  Client - weaponController:44
+  22:11:22.537  [WeaponHandler] Equip request from iamC137 for Knife  -  Server - weaponHandler:38
+  22:11:22.537  [WeaponHandler] Player iamC137 equipped Knife  -  Server - weaponHandler:38
+  22:11:31.520  [WeaponController] Weapon activated: Knife  -  Client - weaponController:44
+  22:11:31.520  [WeaponController] Playing animation: rbxassetid://122745436568613  -  Client - weaponController:44
+  22:11:31.552  [WeaponHandler] Attack request from iamC137 with Knife  -  Server - weaponHandler:38
+  22:11:31.552  [WeaponHandler] Attack processed for iamC137 with Knife (0 hits)  -  Server - weaponHandler:38
+  22:11:32.016  Failed to load sound rbxassetid://131961136: Asset type does not match requested type  -  Studio
+  22:11:33.154  [ToolLoaderScript] Unequipping weapon: Knife  -  Client - toolLoaderScript:37
+  22:11:33.154  [WeaponController] Unequipping weapon: Knife  -  Client - weaponController:44
+  22:11:33.154  [WeaponController] Weapon unequipped successfully  -  Client - weaponController:44
+  22:11:33.186  [WeaponHandler] Unequip request from iamC137 for Knife  -  Server - weaponHandler:38
+  22:11:33.186  [WeaponHandler] Player iamC137 unequipped Knife  -  Server - weaponHandler:38
+  22:11:43.337  [ToolLoaderScript] Equipping weapon: Knife  -  Client - toolLoaderScript:32
+  22:11:43.337  [WeaponController] Equipping weapon: Knife  -  Client - weaponController:44
+  22:11:43.338  [WeaponController] Weapon equipped successfully: Knife  -  Client - weaponController:44
+  22:11:43.370  [WeaponHandler] Equip request from iamC137 for Knife  -  Server - weaponHandler:38
+  22:11:43.370  [WeaponHandler] Player iamC137 equipped Knife  -  Server - weaponHandler:38

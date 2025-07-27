@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 
 local ItemConfig = require(ReplicatedStorage.Shared.config.ItemConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-local weapons = require(ReplicatedStorage.Shared.config.weapons)
+
 
 local ItemSpawner = {}
 local availableItems = {}
@@ -42,45 +42,60 @@ local function discoverAvailableItems()
 	local discoveredCount = 0
 	local skippedItems = {}
 
-	for _, item in pairs(itemsFolder:GetChildren()) do
-		if item:IsA("MeshPart") or item:IsA("Tool") then
-			local isValid = true
-			local issues = {}
+	-- Function to scan items in a folder
+	local function scanFolder(folder, folderName)
+		debugPrint("Scanning " .. folderName .. " folder...")
+		for _, item in pairs(folder:GetChildren()) do
+			if item:IsA("MeshPart") or item:IsA("Tool") then
+				local isValid = true
+				local issues = {}
 
-			-- Get size for validation (different approach for MeshPart vs Tool)
-			local size
-			if item:IsA("MeshPart") then
-				size = item.Size
-			elseif item:IsA("Tool") then
-				local handle = item:FindFirstChild("Handle")
-				if handle and handle:IsA("BasePart") then
-					size = handle.Size
+				-- Get size for validation (different approach for MeshPart vs Tool)
+				local size
+				if item:IsA("MeshPart") then
+					size = item.Size
+				elseif item:IsA("Tool") then
+					local handle = item:FindFirstChild("Handle")
+					if handle and handle:IsA("BasePart") then
+						size = handle.Size
+					else
+						table.insert(issues, "No Handle found in Tool")
+						isValid = false
+					end
+				end
+
+				if size then
+					if size.X > 50 or size.Y > 50 or size.Z > 50 then
+						table.insert(issues, "Item too large (>50 studs)")
+					elseif size.X < 0.1 or size.Y < 0.1 or size.Z < 0.1 then
+						table.insert(issues, "Item too small (<0.1 studs)")
+					end
+				end
+
+				if isValid then
+					availableItems[item.Name] = item
+					discoveredCount = discoveredCount + 1
+					debugPrint("Discovered item: " .. item.Name .. " (" .. item.ClassName .. ") from " .. folderName ..
+						(#issues > 0 and " (warnings: " .. table.concat(issues, ", ") .. ")" or ""))
 				else
-					table.insert(issues, "No Handle found in Tool")
-					isValid = false
+					table.insert(skippedItems, {name = item.Name, issues = issues})
+					debugPrint("Skipped invalid item: " .. item.Name .. " from " .. folderName .. " (issues: " .. table.concat(issues, ", ") .. ")")
 				end
-			end
-
-			if size then
-				if size.X > 50 or size.Y > 50 or size.Z > 50 then
-					table.insert(issues, "Item too large (>50 studs)")
-				elseif size.X < 0.1 or size.Y < 0.1 or size.Z < 0.1 then
-					table.insert(issues, "Item too small (<0.1 studs)")
-				end
-			end
-
-			if isValid then
-				availableItems[item.Name] = item
-				discoveredCount = discoveredCount + 1
-				debugPrint("Discovered item: " .. item.Name .. " (" .. item.ClassName .. ")" ..
-					(#issues > 0 and " (warnings: " .. table.concat(issues, ", ") .. ")" or ""))
 			else
-				table.insert(skippedItems, {name = item.Name, issues = issues})
-				debugPrint("Skipped invalid item: " .. item.Name .. " (issues: " .. table.concat(issues, ", ") .. ")")
+				debugPrint("Skipped unsupported object: " .. item.Name .. " (" .. item.ClassName .. ") from " .. folderName .. " - Only MeshParts and Tools are supported")
 			end
-		else
-			debugPrint("Skipped unsupported object: " .. item.Name .. " (" .. item.ClassName .. ") - Only MeshParts and Tools are supported")
 		end
+	end
+
+	-- Scan main Items folder
+	scanFolder(itemsFolder, "Items")
+
+	-- Scan Weapons subfolder if it exists
+	local weaponsFolder = itemsFolder:FindFirstChild("Weapons")
+	if weaponsFolder then
+		scanFolder(weaponsFolder, "Weapons")
+	else
+		debugPrint("Weapons subfolder not found - create ReplicatedStorage.Items.Weapons for weapon Tools")
 	end
 
 	print("[ItemSpawner] Item discovery complete:")
@@ -269,23 +284,15 @@ newItem.Parent = itemFolder
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 		debugPrint("Tagged MeshPart as draggable: " .. itemName)
 	elseif newItem:IsA("Tool") then
-		-- Check if this is a weapon
-		local weaponConfig = weapons.getWeaponConfig(itemName)
-		if weaponConfig then
-			-- This is a weapon - tag for pickup system, NOT draggable
-			CollectionServiceTags.addTag(newItem, CollectionServiceTags.WEAPON_PICKUP)
-			debugPrint("Tagged Tool as weapon pickup: " .. itemName)
-		else
-			-- This is a regular tool - make it draggable
-			local handle = newItem:FindFirstChild("Handle")
-			if handle and handle:IsA("BasePart") then
-				CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
-				CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
-				debugPrint("Tagged Tool Handle as draggable: " .. itemName)
-			end
-			CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
-			CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
+		-- This is a regular tool - make it draggable
+		local handle = newItem:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
+			debugPrint("Tagged Tool Handle as draggable: " .. itemName)
 		end
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 	elseif newItem:IsA("Model") then
 		-- For Models, tag all BaseParts within them
 		for _, descendant in pairs(newItem:GetDescendants()) do
