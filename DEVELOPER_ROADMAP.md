@@ -50,7 +50,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 
 - [ ] Add water sources (wells, ponds) + refill mechanic  
 - [ ] Implement thirst + hunger decay  
-- [ ] Add lizard AI + drops (raw meat)  
+- [x] Add lizard AI + drops (raw meat)  
 - [x] Add wolf/sand hound AI + aggression  
 - [ ] Add third hostile creature (Sandback – large meat source)  
 - [ ] Add cook/firepit system to prepare food
@@ -102,7 +102,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 
 - [ ] Improve UI/UX (tooltips, animations, inventory)  
 - [ ] Add sound design: wind, steps, ambient tones  
-- [ ] Optimize chunk loading and memory use  
+- [ ] Optimize chunk loading and memory use
 - [ ] Add optional tutorial hints or world signs  
 - [ ] Add respawn logic
 

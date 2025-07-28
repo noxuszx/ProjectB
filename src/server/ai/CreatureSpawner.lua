@@ -122,10 +122,21 @@ function CreatureSpawner.spawnCreature(creatureType, position)
 	return aiController
 end
 
-local function getRandomSpawnPosition(spawnerPart, usedPositions)
+local function getRandomSpawnPosition(spawnerPart, usedPositions, creatureModel)
 	local spawnerPosition = spawnerPart.Position
 	local scatterRadius = CreatureSpawnConfig.Settings.ScatterRadius
 	local maxAttempts = CreatureSpawnConfig.Settings.MaxScatterAttempts
+	
+	-- Calculate dynamic height offset based on creature model size
+	local heightOffset = 0.5 -- Default fallback
+	if creatureModel then
+		local success, cframe, size = pcall(function()
+			return creatureModel:GetBoundingBox()
+		end)
+		if success and size then
+			heightOffset = size.Y / 2 + 0.1 -- Half height + small safety margin
+		end
+	end
 
 	for _ = 1, maxAttempts do
 		local angle = math.random() * math.pi * 2
@@ -146,7 +157,7 @@ local function getRandomSpawnPosition(spawnerPart, usedPositions)
 		local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
 
 		if raycastResult then
-			local groundPosition = raycastResult.Position + Vector3.new(0, 0.5, 0)
+			local groundPosition = raycastResult.Position + Vector3.new(0, heightOffset, 0)
 
 			local tooClose = false
 			for _, usedPos in pairs(usedPositions) do
@@ -201,7 +212,9 @@ local function processSpawner(spawnerPart)
 	local usedPositions = {}
 
 	for _, creatureType in pairs(creaturesToSpawn) do
-		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions)
+		-- Get creature template for height calculation
+		local template = CreatureSpawner.getCreatureTemplate(creatureType)
+		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions, template)
 		local aiController = CreatureSpawner.spawnCreature(creatureType, spawnPosition)
 
 		-- Register with AI Manager

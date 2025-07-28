@@ -88,10 +88,61 @@ local function selecRnum(category)
 	return models[random:NextInteger(1, #models)]
 end
 
+-- Check if an area is clear of existing objects using bounding box detection
+local function isAreaClear(position, templateModel)
+	-- Get the bounding box of the template model
+	local success, cframe, size = pcall(function()
+		return templateModel:GetBoundingBox()
+	end)
+	
+	if not success or not size then
+		-- If we can't get bounding box, allow spawning (fallback behavior)
+		return true
+	end
+	
+	-- Create a slightly larger check area to prevent tight overlapping
+	local checkSize = size * 1.2
+	local checkCFrame = CFrame.new(position)
+	
+	-- Use workspace:GetPartsInBox to detect any existing parts in the area
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = {
+		Workspace.Terrain, 			-- Ignore terrain - we want to spawn on it
+		objectFolders.Vegetation, 	-- Allow overlapping with other spawned objects of different categories
+		objectFolders.Rocks,
+		objectFolders.Structures
+	}
+	
+	local overlappingParts = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, overlapParams)
+	
+	if #overlappingParts > 0 then
+		for _, part in pairs(overlappingParts) do
+			local parent = part.Parent
+			if parent and (
+				string.find(parent.Name or "", "Village") or
+				string.find(parent.Name or "", "Spawner") or
+				parent.Name == "SpawnedCreatures" or
+				parent.Name == "DroppedFood"
+			) then
+				return false -- Area occupied by important structures
+			end
+		end
+	end
+	
+	return true
+end
+
 local function spawnModel(originalModel, x, z, category)
 	if not originalModel then return nil end
 	
 	local terrainHeight = terrain.getTerrainHeight(x, z)
+	
+	-- Pre-check: Test if area is clear before cloning model
+	local testPosition = Vector3.new(x, terrainHeight, z)
+	if not isAreaClear(testPosition, originalModel) then
+		return nil -- Area is occupied, skip spawning
+	end
 	
 	local model = originalModel:Clone()
 	model.Parent = objectFolders[category]
@@ -186,8 +237,6 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 								if modelToSpawn then
 									spawnModel(modelToSpawn, worldX + offsetX, worldZ + offsetZ, category)
 									counters[category] = counters[category] + 1
-									
-									wait(ModelSpawnerConfig.GENERATION_DELAY)
 								end
 							end
 						end

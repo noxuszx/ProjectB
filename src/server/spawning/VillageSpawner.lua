@@ -42,25 +42,18 @@ local function loadVillageModels()
 	return models
 end
 
--- REMOVED: Obstacle checking (runs before environment objects exist)
--- This was checking for rocks that haven't spawned yet
 
-
-
--- Spawn a single village
 local function spawnVillage(models, chunkPosition)
 	local structurePositions = {}
 	local selectedStructures = {}
 	local validPositionFound = false
 
-	-- Randomly select structures for this village
 	local numStructures = random:NextInteger(villageConfig.STRUCTURES_PER_VILLAGE[1], villageConfig.STRUCTURES_PER_VILLAGE[2])
 	for i = 1, numStructures do
 		local randomStructure = villageConfig.AVAILABLE_STRUCTURES[random:NextInteger(1, #villageConfig.AVAILABLE_STRUCTURES)]
 		table.insert(selectedStructures, randomStructure)
 	end
 
-	-- Determine positions for each structure
 	for _, modelName in ipairs(selectedStructures) do
 		local attempts = 0
 		local positionFound = false
@@ -69,11 +62,8 @@ local function spawnVillage(models, chunkPosition)
 			local offsetX = random:NextNumber(-villageConfig.VILLAGE_RADIUS, villageConfig.VILLAGE_RADIUS)
 			local offsetZ = random:NextNumber(-villageConfig.VILLAGE_RADIUS, villageConfig.VILLAGE_RADIUS)
 			local position = chunkPosition + Vector3.new(offsetX, 0, offsetZ)
-
-			-- Check for spacing and obstacles
 			local isValid = true
 
-			-- Check distance from other structures (only if we have structures placed)
 			if #structurePositions > 0 then
 				for _, otherPos in ipairs(structurePositions) do
 					local distance = (position - otherPos).Magnitude
@@ -83,8 +73,6 @@ local function spawnVillage(models, chunkPosition)
 					end
 				end
 			end
-
-			-- Position is valid (obstacle checking removed)
 			if isValid then
 				structurePositions[#structurePositions + 1] = position
 				positionFound = true
@@ -94,8 +82,6 @@ local function spawnVillage(models, chunkPosition)
 			attempts = attempts + 1
 
 		until positionFound or attempts >= 10  -- Fixed max attempts
-		
-		-- If we couldn't find a position, use proper spacing fallback
 		if not positionFound then
 			warn("Could not find valid position for", modelName, "using spaced fallback position")
 			local fallbackPosition = chunkPosition + Vector3.new(#structurePositions * villageConfig.STRUCTURE_SPACING, 0, 0)
@@ -112,24 +98,24 @@ local function spawnVillage(models, chunkPosition)
 				local pos = structurePositions[i]
 				local terrainHeight = terrain.getTerrainHeight(pos.X, pos.Z)
 				local finalPosition = Vector3.new(pos.X, terrainHeight, pos.Z)
-				
 				local cframe = CFrame.new(finalPosition)
-				
-				-- Apply rotation based on selected mode
 				local rotationSettings = villageConfig.ROTATION_SETTINGS[villageConfig.ROTATION_MODE]
+
 				if villageConfig.ROTATION_MODE == "CARDINAL" then
 					local angle = rotationSettings.angles[random:NextInteger(1, #rotationSettings.angles)]
 					cframe = cframe * CFrame.Angles(0, math.rad(angle), 0)
+
 				elseif villageConfig.ROTATION_MODE == "CENTER_FACING" then
-					-- Calculate angle to face village center
 					local directionToCenter = (chunkPosition - finalPosition).Unit
 					local angle = math.atan2(directionToCenter.X, directionToCenter.Z) + math.rad(rotationSettings.angle_offset)
 					cframe = cframe * CFrame.Angles(0, angle, 0)
+
 				elseif villageConfig.ROTATION_MODE == "CARDINAL_VARIED" then
 					local baseAngle = rotationSettings.base_angles[random:NextInteger(1, #rotationSettings.base_angles)]
 					local variance = random:NextNumber(-rotationSettings.variance, rotationSettings.variance)
 					local finalAngle = baseAngle + variance
 					cframe = cframe * CFrame.Angles(0, math.rad(finalAngle), 0)
+
 				elseif villageConfig.ROTATION_MODE == "RANDOM" then
 					local randomYRotation = random:NextNumber(0, 2 * math.pi)
 					cframe = cframe * CFrame.Angles(0, randomYRotation, 0)
@@ -138,7 +124,7 @@ local function spawnVillage(models, chunkPosition)
 				clonedModel:SetPrimaryPartCFrame(cframe)
 				clonedModel.Parent = villageFolder
 				
-				wait(villageConfig.SPAWN_DELAY)
+				task.wait(villageConfig.SPAWN_DELAY)
 			else
 				warn("Skipping", modelName, "- model or position not found")
 			end
@@ -167,24 +153,19 @@ function VillageSpawner.spawnVillages()
 	local maxAttempts = numVillages * 5
 
 	while spawnedVillages < numVillages and attempts < maxAttempts do
+
 		local chunkX, chunkZ
-		
-		-- Apply center bias if configured
 		if villageConfig.CENTER_BIAS and random:NextNumber() < villageConfig.CENTER_BIAS then
-			-- Spawn closer to center (within 50% of render distance)
 			local halfDistance = math.floor(ChunkConfig.RENDER_DISTANCE * 0.5)
 			chunkX = random:NextInteger(-halfDistance, halfDistance)
 			chunkZ = random:NextInteger(-halfDistance, halfDistance)
 		else
-			-- Apply edge buffer to prevent boundary spawning
 			local maxDistance = ChunkConfig.RENDER_DISTANCE - villageConfig.EDGE_BUFFER
 			chunkX = random:NextInteger(-maxDistance, maxDistance)
 			chunkZ = random:NextInteger(-maxDistance, maxDistance)
 		end
 		
 		local chunkPosition = Vector3.new(chunkX * ChunkConfig.CHUNK_SIZE, 0, chunkZ * ChunkConfig.CHUNK_SIZE)
-
-		-- Obstacle checking removed - spawn village directly
 		local success = spawnVillage(models, chunkPosition)
 		if success then
 			spawnedVillages = spawnedVillages + 1

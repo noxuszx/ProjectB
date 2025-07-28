@@ -84,18 +84,34 @@ function AIManager:updateAllCreatures()
 	local deltaTime = currentTime - lastUpdateTime
 	lastUpdateTime = currentTime
 	
-	-- Simple update - just call update on all creatures
-	-- TODO: Add performance optimizations (LOD, batching, etc.) later
-	for i = #activeCreatures, 1, -1 do -- Iterate backwards for safe removal
+	-- Batch cleanup system to prevent lag spikes from multiple table.remove() calls
+	local toRemove = {}  -- Collect indices of creatures to remove
+	
+	-- Update all creatures and mark inactive ones for removal
+	for i = 1, #activeCreatures do
 		local creature = activeCreatures[i]
 		
 		if creature and creature.isActive and creature.model.Parent then
 			creature:update(deltaTime)
+			
+			-- Check if creature became inactive during update (e.g., missing PrimaryPart)
+			if not creature.isActive then
+				table.insert(toRemove, i)
+			end
 		else
-			-- Remove inactive or destroyed creatures
-			table.remove(activeCreatures, i)
-			self.totalCreatures = #activeCreatures
+			-- Mark inactive or destroyed creatures for removal
+			table.insert(toRemove, i)
 		end
+	end
+	
+	-- Batch remove all inactive creatures (in reverse order to avoid index shifting issues)
+	for i = #toRemove, 1, -1 do
+		table.remove(activeCreatures, toRemove[i])
+	end
+	
+	-- Update total count once after batch removal
+	if #toRemove > 0 then
+		self.totalCreatures = #activeCreatures
 	end
 end
 

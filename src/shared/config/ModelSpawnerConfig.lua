@@ -37,7 +37,6 @@ ModelSpawnerConfig.MODEL_WEIGHTS = {
 	-- }
 }
 
-ModelSpawnerConfig.GENERATION_DELAY = 0.02
 ModelSpawnerConfig.MAX_OBJECTS_PER_CHUNK = {
 	Vegetation = 20,
 	Rocks = 10,

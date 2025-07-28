@@ -38,7 +38,7 @@ local CreatureSpawnConfig = {
 		},
 
 		Village = {
-			MaxSpawns = 3,		-- 1-3 villagers per spawner
+			MaxSpawns = 2,		-- 1-3 villagers per spawner
 			MinSpawns = 1,
 			SpawnChance = 0.8,	-- High chance for consistent village population
 			PossibleCreatures = {

@@ -191,7 +191,7 @@ function BaseCreature:setupCharacterProtection()
 	-- Additional protection settings
 	humanoid.RequiresNeck = false  -- Don't break if neck is missing
 	
-	print("[BaseCreature] Protected", self.creatureType, "from Roblox character cleanup")
+	-- Debug: Protected from Roblox character cleanup (removed spam)
 end
 
 function BaseCreature:setupDeathHandling()

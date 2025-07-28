@@ -17,12 +17,9 @@ local processedSpawnersCount = 0
 local SPAWN_TAG = "ItemSpawnPoint"
 local SPAWN_TYPE_ATTRIBUTE = "SpawnType"
 
--- Create organized folders for spawned items
 local itemFolder = Instance.new("Folder")
 itemFolder.Name = "SpawnedItems"
 itemFolder.Parent = workspace
-
--- Empty function to replace debugPrint calls
 local function debugPrint() end
 
 
@@ -49,7 +46,6 @@ local function discoverAvailableItems()
 				local isValid = true
 				local issues = {}
 
-				-- Get size for validation (different approach for MeshPart vs Tool)
 				local size
 				if item:IsA("MeshPart") then
 					size = item.Size
@@ -86,10 +82,7 @@ local function discoverAvailableItems()
 		end
 	end
 
-	-- Scan main Items folder
 	scanFolder(itemsFolder, "Items")
-
-	-- Scan Weapons subfolder if it exists
 	local weaponsFolder = itemsFolder:FindFirstChild("Weapons")
 	if weaponsFolder then
 		scanFolder(weaponsFolder, "Weapons")
