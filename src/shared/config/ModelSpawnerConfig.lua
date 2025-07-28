@@ -5,8 +5,8 @@
 
 local ModelSpawnerConfig = {}
 
-ModelSpawnerConfig.MIN_SPAWN_DISTANCE = 100 		-- Minimum distance from spawn to place objects
-ModelSpawnerConfig.MAX_SPAWN_DISTANCE = 500 		-- Maximum distance from spawn to place objects
+ModelSpawnerConfig.MIN_SPAWN_DISTANCE = 30 		-- Minimum distance from spawn to place objects  
+ModelSpawnerConfig.MAX_SPAWN_DISTANCE = 1200 		-- Maximum distance from spawn to place objects (covers full world)
 
 ModelSpawnerConfig.VEGETATION_CHANCE = 0.25
 ModelSpawnerConfig.ROCK_CHANCE = 0.15

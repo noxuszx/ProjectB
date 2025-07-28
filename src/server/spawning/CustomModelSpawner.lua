@@ -108,8 +108,8 @@ local function isAreaClear(position, templateModel)
 	local overlapParams = OverlapParams.new()
 	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
 	overlapParams.FilterDescendantsInstances = {
-		Workspace.Terrain, 			-- Ignore terrain - we want to spawn on it
-		objectFolders.Vegetation, 	-- Allow overlapping with other spawned objects of different categories
+		Workspace.Terrain,
+		objectFolders.Vegetation,
 		objectFolders.Rocks,
 		objectFolders.Structures
 	}
@@ -125,7 +125,7 @@ local function isAreaClear(position, templateModel)
 				parent.Name == "SpawnedCreatures" or
 				parent.Name == "DroppedFood"
 			) then
-				return false -- Area occupied by important structures
+				return false
 			end
 		end
 	end
