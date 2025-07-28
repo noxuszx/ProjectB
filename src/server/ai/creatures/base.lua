@@ -5,7 +5,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
-local CreatureAnimationManager = require(ReplicatedStorage.Shared.modules.CreatureAnimationManager)
 
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature
@@ -91,11 +90,6 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 	self.lastUpdateTime = tick()
 	self.isDead = false
 
-	-- Initialize animation manager for humanoid creatures
-	if self:shouldHaveAnimations() then
-		self.animationManager = CreatureAnimationManager.new(self.model)
-		self.animationManager:setIdleAnimation() -- Start with idle
-	end
 
 	-- Prevent Roblox auto-cleanup of character parts
 	self:setupCharacterProtection()
@@ -178,11 +172,6 @@ function BaseCreature:destroy()
 		self.currentBehavior = nil
 	end
 	
-	-- Cleanup animations
-	if self.animationManager then
-		self.animationManager:cleanup()
-		self.animationManager = nil
-	end
 	
 	if self.model and self.model.Parent then
 		self.model:Destroy()
@@ -267,24 +256,6 @@ function BaseCreature:shouldHaveAnimations()
 end
 
 
--- Animation control methods (kept for backward compatibility)
-function BaseCreature:playIdleAnimation()
-	if self.animationManager then
-		self.animationManager:setIdleAnimation()
-	end
-end
-
-function BaseCreature:playWalkAnimation()
-	if self.animationManager then
-		self.animationManager:setWalkAnimation()
-	end
-end
-
-function BaseCreature:stopAllAnimations()
-	if self.animationManager then
-		self.animationManager:stopAllAnimations()
-	end
-end
 
 function BaseCreature:setupHealthDisplay()
 	local humanoid = self.model:FindFirstChild("Humanoid")

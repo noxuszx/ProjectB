@@ -89,8 +89,6 @@ function RoamingBehavior:startIdling(creature)
 	local idleTimeRange = creatureConfig and creatureConfig.IdleTime or {5, 15}
 	self.idleDuration = self:getRandomTime(idleTimeRange)
 
-	-- Play idle animation
-	creature:playIdleAnimation()
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		print("[RoamingBehavior] " .. creature.creatureType .. " idling for " .. string.format("%.1f", self.idleDuration) .. " seconds")
@@ -121,8 +119,6 @@ function RoamingBehavior:updateChoosingDestination(creature)
 
 	self.state = RoamingState.MOVING
 
-	-- Play walk animation when starting to move
-	creature:playWalkAnimation()
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		local distance = (self.targetPosition - creature.model.PrimaryPart.Position).Magnitude
