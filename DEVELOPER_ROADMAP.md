@@ -73,7 +73,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 ## ⏳ Phase 4 – Combat & AI Polish
 > Focus: Making enemies dynamic and fun
 
-- [ ] Improve enemy pathfinding + aggression logic  
+- [x] Improve enemy pathfinding + aggression logic  
 - [ ] Add weapon hit sounds
 - {OPTIONAL} [ ] Add stealth bonuses or backstab mechanics  
 

@@ -100,11 +100,9 @@ local function isAreaClear(position, templateModel)
 		return true
 	end
 	
-	-- Create a slightly larger check area to prevent tight overlapping
 	local checkSize = size * 1.2
 	local checkCFrame = CFrame.new(position)
 	
-	-- Use workspace:GetPartsInBox to detect any existing parts in the area
 	local overlapParams = OverlapParams.new()
 	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
 	overlapParams.FilterDescendantsInstances = {
