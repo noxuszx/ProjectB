@@ -11,8 +11,8 @@ remoteEvent.OnServerEvent:Connect(function(player, targetCharacter, damage)
     if not targetCharacter or not targetCharacter:FindFirstChildOfClass("Humanoid") then return end
     if targetCharacter == player.Character then return end
     
-    local playerPos = player.Character.HumanoidRootPart.Position
-    local targetPos = targetCharacter.HumanoidRootPart.Position
+    local playerPos = player.Character.PrimaryPart.Position
+    local targetPos = targetCharacter.PrimaryPart.Position
     local distance = (playerPos - targetPos).Magnitude
     
     if distance > 15 then

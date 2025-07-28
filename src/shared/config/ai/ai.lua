@@ -43,10 +43,10 @@ local AIConfig = {
 		-- Passive Creatures
 		Rabbit = {
 			Type = "Passive",
-			Health = 50,
-			MoveSpeed = 16,
+			Health = 40,
+			MoveSpeed = 12,
 			DetectionRange = 20,
-			FleeSpeed = 24,
+			FleeSpeed = 13,
 			FleeDuration = 10,
 			RoamRadius = 15,
 			IdleTime = {5, 15},

@@ -48,8 +48,10 @@ CollectionServiceTags.tagItemsFolder()
 print("Initializing AI system...")
 local AIManager = require(script.Parent.ai.AIManager)
 local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
+local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
 
 AIManager.getInstance():init()
+FoodDropSystem.init()
 CreatureSpawner.init()
 
 print("Initializing weapon systems...")

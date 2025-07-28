@@ -3,8 +3,10 @@
 -- Provides common functionality and interface
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
 
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature
@@ -174,7 +176,8 @@ function BaseCreature:destroy()
 	
 	
 	if self.model and self.model.Parent then
-		self.model:Destroy()
+		-- Use Debris service to defer destruction to next frame, preventing lag spikes
+		Debris:AddItem(self.model, 0)
 	end
 end
 
@@ -230,8 +233,17 @@ function BaseCreature:die()
 			warn("[BaseCreature] Ragdoll failed for", self.creatureType, "- destroying normally")
 		end
 	else
-		-- Simple death for animals - destroy and drop food (future implementation)
+		-- Simple death for animals - destroy and drop food
 		print("[BaseCreature] Simple death for", self.creatureType)
+		local deathPosition = self.model.PrimaryPart.Position
+		
+		-- Drop food before destroying
+		local success = FoodDropSystem.dropFood(self.creatureType, deathPosition)
+		if success then
+			print("[BaseCreature] Dropped food for", self.creatureType)
+		else
+			print("[BaseCreature] No food drop for", self.creatureType)
+		end
 	end
 	
 	-- Fallback: destroy the model if ragdoll failed or not applicable

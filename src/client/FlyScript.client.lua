@@ -13,42 +13,19 @@ local flying = false
 local bodyVelocity = nil
 local flySpeed = 80
 
--- Function to set up a new character
-local function setupCharacter(newCharacter)
-    character = newCharacter
-    rootPart = character:WaitForChild("HumanoidRootPart")
-    humanoid = character:WaitForChild("Humanoid")
-
-    -- Ensure flying is disabled on respawn
-    if flying then
-        toggleFly() 
-    end
-
-    -- When the character dies, clean up the velocity
-    humanoid.Died:Connect(function()
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-            bodyVelocity = nil
-        end
-        flying = false
-    end)
-end
-
 -- Toggle flying
 local function toggleFly()
-    if not humanoid or humanoid.Health <= 0 then return end -- Prevent flying while dead
+    if not humanoid or humanoid.Health <= 0 then return end
 
     flying = not flying
     
     if flying then
-        -- Start flying
         bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = rootPart
         print("Flying ON")
     else
-        -- Stop flying
         if bodyVelocity then
             bodyVelocity:Destroy()
             bodyVelocity = nil
@@ -100,13 +77,32 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     end
 end)
 
--- Update every frame
-RunService.Heartbeat:Connect(updateMovement)
+local function setupCharacter(newCharacter)
+    character = newCharacter
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    humanoid = character:WaitForChild("Humanoid")
 
--- Handle initial character load and respawns
+    -- Ensure flying is disabled on respawn
+    if flying then
+        toggleFly() 
+    end
+
+    -- When the character dies, clean up the velocity
+    humanoid.Died:Connect(function()
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+            bodyVelocity = nil
+        end
+        flying = false
+    end)
+end
+
+
+RunService.Heartbeat:Connect(updateMovement)
 player.CharacterAdded:Connect(setupCharacter)
 
--- If character already exists when script runs, set it up
 if player.Character then
     setupCharacter(player.Character)
 end
+
+

@@ -24,6 +24,8 @@ This project implements a Minecraft-inspired chunk-based terrain generation syst
 - ✅ **AI Creature System**: Intelligent NPCs with behavior-driven AI
 - ✅ **Procedural Spawner Placement**: Noise-based creature distribution
 - ✅ **Drag & Drop System**: Interactive object manipulation with welding
+- ✅ **Food Drop System**: Animal hunting with cooking mechanics and hunger system
+- ✅ **Weapon System**: Player combat with creature damage integration
 - ✅ **Desert Theme**: Egypt Theme
 - ✅ **Performance Optimized**: Batched generation and smooth transitions
 - ✅ **Highly Configurable**: Easy customization of all systems
@@ -37,6 +39,8 @@ ProjectB/
 │   │   ├── dragdrop/
 │   │   │   ├── interactableHandler.client.lua  # Main drag-drop and rotation logic
 │   │   │   └── weldSystem.lua                  # Touch-based welding system
+│   │   ├── food/
+│   │   │   └── FoodConsumption.client.lua      # E key food consumption with highlighting
 │   │   ├── FlyScript.client.lua                # Flying controls (G to toggle)
 │   │   └── init.client.luau                    # Client-side initialization
 │   ├── server/
@@ -65,6 +69,12 @@ ProjectB/
 │   │   ├── environment/
 │   │   │   ├── DayNightCycle.lua     # Time management system
 │   │   │   └── LightingManager.lua   # Dynamic lighting transitions
+│   │   ├── loot/
+│   │   │   └── FoodDropSystem.lua    # Animal food drops and cooking system
+│   │   ├── food/
+│   │   │   └── FoodConsumptionServer.server.lua # Server-side food consumption
+│   │   ├── weapons/
+│   │   │   └── weaponServer.server.lua # Weapon damage system
 │   │   └── ChunkInit.server.lua      # Server initialization
 │   └── shared/
 │       ├── config/
@@ -233,6 +243,26 @@ To add creatures to your world:
 - **Dynamic Difficulty**: World becomes significantly more dangerous at night
 - **Spawner Visibility**: Colored debug parts show spawner locations (can be toggled off)
 
+### **Food Drop & Cooking System**
+- **Animal Hunting**: Kill passive creatures (Rabbit, Wolf, Lizard) to obtain food
+- **Automatic Food Drops**: Animals drop specific meat types when killed by weapons
+- **Raw vs Cooked States**: 
+  - **Raw Food**: Pink/red colored meat with lower hunger restoration
+  - **Cooked Food**: Brown colored meat with higher hunger restoration (automatically triggered when touching cooking surfaces)
+- **Cooking Surfaces**: Campfires, stoves, grills, and cooking pots trigger state changes
+- **Food Consumption**: Press E key near food to consume and restore hunger
+- **Drag-Drop Integration**: All food items are automatically draggable and weldable
+- **Hunger System**: Players have hunger stats displayed in leaderstats (0-100)
+- **Smart Coloring**: Only the "Meat" part changes color, bones and other parts remain unchanged
+- **No Food from Humanoids**: Villagers, mummies, and skeletons don't drop food (ragdoll instead)
+
+### **Weapon System Integration**
+- **Player Combat**: Weapon system deals damage to creatures through AI system
+- **Distance Validation**: 15-stud maximum range for weapon effectiveness
+- **Creature Integration**: Weapons trigger proper AI behaviors (fleeing for passive, aggression for hostile)
+- **PrimaryPart Targeting**: Uses model.PrimaryPart for accurate hitbox detection
+- **Damage Feedback**: Console logging shows successful hits and damage dealt
+
 ## 📈 Performance Metrics
 
 - **Generation Time**: ~2-3 seconds for full 7x7 grid
@@ -265,9 +295,15 @@ To add creatures to your world:
 - Enable debug mode to see spawner type distribution
 - Verify noise-based spawning is enabled in config
 
+### **Food System Issues**
+- **No Food Drops**: Ensure food models (RabbitMeat, WolfMeat, LizardMeat) exist in ReplicatedStorage.Items
+- **Can't Kill Animals**: Check that creature models have PrimaryPart set correctly
+- **Food Won't Cook**: Verify cooking surface models contain keywords "Campfire", "Stove", "Grill", or "CookingPot" in their names
+- **Can't Consume Food**: Make sure food models have a part named "Meat" for proper color changes
+
 ## 🏷️ Tags
 
-`roblox` `procedural-generation` `terrain` `chunks` `noise` `day-night-cycle` `item-spawning` `meshparts` `tools` `model-spawning` `desert` `fallout` `rojo` `lua`
+`roblox` `procedural-generation` `terrain` `chunks` `noise` `day-night-cycle` `item-spawning` `food-system` `cooking` `hunger` `weapons` `combat` `meshparts` `tools` `model-spawning` `desert` `fallout` `rojo` `lua`
 
 ---
 
@@ -276,6 +312,15 @@ To add creatures to your world:
 **Roblox Studio**: Compatible with current version
 
 ## 🆕 Recent Updates
+
+### **July 28, 2025 - Food Drop & Cooking System Implementation**
+- ✅ **Complete Food System**: Implemented animal hunting with food drops and cooking mechanics
+- ✅ **Animal-Specific Drops**: Rabbits drop RabbitMeat, Wolves drop WolfMeat, Lizards drop LizardMeat
+- ✅ **Cooking Mechanics**: Raw food (pink/red) automatically cooks to brown when touching cooking surfaces
+- ✅ **Hunger System**: Players have hunger stats with E key consumption and leaderstats display
+- ✅ **Smart Integration**: Food items automatically tagged for drag-drop system compatibility
+- ✅ **Weapon System Integration**: Fixed PrimaryPart targeting for accurate creature damage
+- ✅ **Color System**: Only "Meat" parts change color, bones and other parts remain unchanged
 
 ### **July 28, 2025 - Fleeing Behavior Improvements**
 - ✅ **Fixed Villager Fleeing**: Resolved erratic wiggling movement when fleeing from threats
