@@ -24,6 +24,9 @@ function ChasingBehavior:enter(creature)
 
 	self.chaseStartTime = tick()
 
+	-- Play walk animation when starting to chase
+	creature:playWalkAnimation()
+
 	if AIConfig.Debug.LogBehaviorChanges then
 		local targetName = self.targetPlayer and self.targetPlayer.Name or "Unknown"
 		print("[ChasingBehavior] " .. creature.creatureType .. " chasing " .. targetName)

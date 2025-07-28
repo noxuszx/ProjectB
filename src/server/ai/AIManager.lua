@@ -49,9 +49,7 @@ function AIManager:init()
 		self:updateAllCreatures()
 	end)
 	
-	if AIConfig.Settings.DebugMode then
-		print("[AIManager] AI system initialized")
-	end
+
 end
 
 -- Register a creature with the AI system
@@ -63,10 +61,6 @@ function AIManager:registerCreature(creature)
 	
 	table.insert(activeCreatures, creature)
 	self.totalCreatures = #activeCreatures
-	
-	if AIConfig.Settings.DebugMode then
-		print("[AIManager] Registered creature:", creature.creatureType, "Total:", self.totalCreatures)
-	end
 end
 
 -- Unregister a creature from the AI system
@@ -75,10 +69,6 @@ function AIManager:unregisterCreature(creature)
 		if activeCreature == creature then
 			table.remove(activeCreatures, i)
 			self.totalCreatures = #activeCreatures
-			
-			if AIConfig.Settings.DebugMode then
-				print("[AIManager] Unregistered creature:", creature.creatureType, "Total:", self.totalCreatures)
-			end
 			break
 		end
 	end
@@ -123,6 +113,16 @@ function AIManager:getCreaturesInRange(position, range)
 	end
 	
 	return creaturesInRange
+end
+
+-- Get creature instance by its Roblox model
+function AIManager:getCreatureByModel(model)
+	for _, creature in pairs(activeCreatures) do
+		if creature.model == model then
+			return creature
+		end
+	end
+	return nil
 end
 
 -- Get total number of active creatures

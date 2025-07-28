@@ -8,7 +8,7 @@ local ItemConfig = {
 		ScatterRadius = 5,
 		MaxScatterAttempts = 10,
 		SpawnHeight = 3,
-		DebugMode = true,
+		DebugMode = false,
 	},
 
 	SpawnTypes = {

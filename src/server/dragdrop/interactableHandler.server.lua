@@ -29,7 +29,6 @@ RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 			object.PrimaryPart.AssemblyLinearVelocity = velocity
 		end
 	else
-		-- Fallback - try to find the first BasePart
 		for _, child in pairs(object:GetDescendants()) do
 			if child:IsA("BasePart") then
 				if velocity then

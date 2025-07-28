@@ -11,6 +11,9 @@
         },
         "utilities": {
           "$path": "src/shared/utilities"
+        },
+        "modules": {
+          "$path": "src/shared/modules"
         }
       },
       "Items": {

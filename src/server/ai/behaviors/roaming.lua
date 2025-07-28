@@ -48,13 +48,22 @@ function RoamingBehavior:update(creature, deltaTime)
 		local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 
 		if creatureConfig and creatureConfig.Type == "Passive" then
-			-- Passive creatures only flee if player gets very close (within personal space)
-			local personalSpaceDistance = creatureConfig.DetectionRange * 0.4 -- 40% of detection range
-			if distance <= personalSpaceDistance then
-				local FleeingBehavior = require(script.Parent.fleeing)
-				creature:setBehavior(FleeingBehavior.new(nearestPlayer))
-				return
+			-- Check if this creature should flee on proximity (default: true)
+			local fleeOnProximity = creatureConfig.FleeOnProximity
+			if fleeOnProximity == nil then
+				fleeOnProximity = true -- Default behavior
 			end
+			
+			if fleeOnProximity then
+				-- Passive creatures only flee if player gets very close (within personal space)
+				local personalSpaceDistance = creatureConfig.DetectionRange * 0.4 -- 40% of detection range
+				if distance <= personalSpaceDistance then
+					local FleeingBehavior = require(script.Parent.fleeing)
+					creature:setBehavior(FleeingBehavior.new(nearestPlayer))
+					return
+				end
+			end
+			-- If FleeOnProximity is false, creature won't flee from player proximity
 
 		elseif creatureConfig and creatureConfig.Type == "Hostile" then
 			local ChasingBehavior = require(script.Parent.chasing)
@@ -79,6 +88,9 @@ function RoamingBehavior:startIdling(creature)
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	local idleTimeRange = creatureConfig and creatureConfig.IdleTime or {5, 15}
 	self.idleDuration = self:getRandomTime(idleTimeRange)
+
+	-- Play idle animation
+	creature:playIdleAnimation()
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		print("[RoamingBehavior] " .. creature.creatureType .. " idling for " .. string.format("%.1f", self.idleDuration) .. " seconds")
@@ -108,6 +120,9 @@ function RoamingBehavior:updateChoosingDestination(creature)
 	self.targetPosition = Vector3.new(targetX, centerPosition.Y, targetZ)
 
 	self.state = RoamingState.MOVING
+
+	-- Play walk animation when starting to move
+	creature:playWalkAnimation()
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		local distance = (self.targetPosition - creature.model.PrimaryPart.Position).Magnitude

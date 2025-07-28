@@ -8,7 +8,7 @@ local SpawnerPlacementConfig = {
 		SpawnerChunkChance = 0.6,
 		MaxPlacementAttempts = 10,
 		SpawnerHeight = 2,
-		DebugMode = true,
+		DebugMode = false,
 
 		UseNoiseBasedSpawning = true, -- false for random
 	},

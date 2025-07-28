@@ -271,13 +271,19 @@ To add creatures to your world:
 
 ---
 
-**Last Updated**: July 25, 2025
+**Last Updated**: July 28, 2025
 **Rojo Version**: 7.5.1
 **Roblox Studio**: Compatible with current version
 
-## 🆕 Recent Updates (July 25, 2025)
+## 🆕 Recent Updates
 
-### **AI Creature System Enhancements**
+### **July 28, 2025 - Fleeing Behavior Improvements**
+- ✅ **Fixed Villager Fleeing**: Resolved erratic wiggling movement when fleeing from threats
+- ✅ **Enhanced Damage System**: PassiveCreature takeDamage now properly passes threat source to fleeing behavior
+- ✅ **Weapon Integration**: Updated weapon system to correctly identify player as threat source
+- ✅ **Smooth Movement**: Villagers now flee smoothly and naturally from players when attacked
+
+### **July 25, 2025 - AI Creature System Enhancements**
 - ✅ **Time-Based Spawning**: Mummies and Skeletons now only spawn at night/dusk
 - ✅ **Pure Zone System**: Eliminated mixed spawning - Safe areas are truly safe, Dangerous areas are purely hostile
 - ✅ **Improved Spawner Placement**: Fixed raycast issues, spawners now place much closer to player spawn

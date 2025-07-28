@@ -17,27 +17,33 @@ local CreatureSpawnConfig = {
 	},
 
 	SpawnTypes = {
-		
 		Safe = {
-			MaxSpawns = 4, -- Maximum creatures per spawner
-			MinSpawns = 2, -- Minimum creatures per spawner
-			SpawnChance = 0.9, -- Chance this spawner will spawn creatures
+			MaxSpawns = 4,		-- Reduced from 4
+			MinSpawns = 2, 		-- Reduced from 2
+			SpawnChance = 1, 	-- Reduced from 0.9
 			PossibleCreatures = {
-				Lizard = 0.9, -- Desert lizards
-				Rabbit = 0.8, -- Desert rabbits
+				Rabbit = 0.8,
 			}
 		},
 
 		Dangerous = {
-			MaxSpawns = 5,
-			MinSpawns = 3,
-			SpawnChance = 0.95,
+			MaxSpawns = 2, 		-- Reduced from 5
+			MinSpawns = 1, 		-- Reduced from 3
+			SpawnChance = 0.9, 	-- Reduced from 0.95
 			PossibleCreatures = {
-				-- Only hostile desert creatures in dangerous areas
-				Wolf = 0.7, -- Desert wolves/jackals (increased since no passive creatures)
-				Mummy = 0.5, -- Desert mummies (night only)
-				Skeleton = 0.6, -- Desert skeletons (night only)
+				Wolf = 0.7,
+				Mummy = 0.5,
+				Skeleton = 0.6,
+			}
+		},
 
+		Village = {
+			MaxSpawns = 3,		-- 1-3 villagers per spawner
+			MinSpawns = 1,
+			SpawnChance = 0.8,	-- High chance for consistent village population
+			PossibleCreatures = {
+				Villager1 = 0.5,	-- 50% chance for first villager type
+				Villager2 = 0.5,	-- 50% chance for second villager type
 			}
 		},
 	},
@@ -86,3 +92,6 @@ local CreatureSpawnConfig = {
 }
 
 return CreatureSpawnConfig
+
+
+

@@ -1,41 +1,45 @@
 --[[
 	village.lua
 	Configuration for village spawning system
+	REFACTORED: Simplified from 15 parameters to 6 essential ones
 ]]--
 
 local village = {}
 
--- Village spawning parameters
-village.MIN_VILLAGES = 1					-- Minimum number of villages to spawn
-village.MAX_VILLAGES = 3					-- Maximum number of villages to spawn
+-- Essential village spawning parameters
+village.VILLAGES_TO_SPAWN = {1, 3}			-- Min and max villages to spawn
+village.STRUCTURES_PER_VILLAGE = {3, 8}		-- Min and max structures per village (reduced from {3,6})
+village.VILLAGE_RADIUS = 100					-- Maximum spread of structures in a village (increased from 50)
+village.STRUCTURE_SPACING = 50				-- Minimum distance between structures in village
 
--- Distance constraints
-village.MIN_VILLAGE_DISTANCE = 80			-- Minimum distance between villages (studs)
-village.MIN_SPAWN_DISTANCE = 100			-- Minimum distance from spawn point
-village.MAX_SPAWN_DISTANCE = 400			-- Maximum distance from spawn point
+-- NEW: Toggle-based rotation system
+village.ROTATION_MODE = "CARDINAL"			-- "RANDOM", "CARDINAL", "CENTER_FACING", "CARDINAL_VARIED"
+village.ROTATION_SETTINGS = {
+	CARDINAL = { 
+		angles = {0, 90, 180, 270} 
+	},
+	CENTER_FACING = { 
+		face_inward = true, 
+		angle_offset = 0 
+	},
+	CARDINAL_VARIED = { 
+		base_angles = {0, 90, 180, 270}, 
+		variance = 30 
+	},
+	RANDOM = {}
+}
 
--- Village structure parameters
-village.VILLAGE_RADIUS = 50					-- Maximum spread of structures in a village
-village.MIN_STRUCTURE_DISTANCE = 30			-- Minimum distance between structures in village
-village.MAX_STRUCTURE_DISTANCE = 50			-- Maximum distance between structures in village
+-- NEW: Edge spawning prevention
+village.EDGE_BUFFER = 1						-- Keep 1 chunk from world edge
+village.CENTER_BIAS = 0.3					-- Optional: 30% chance near spawn
 
+-- Static configuration (unchanged)
 village.VILLAGE_MODEL_FOLDER = "Models.Village"
-
 village.AVAILABLE_STRUCTURES = {
 	"House1",
 	"House2", 
 	"Shop"
 }
-
--- Village composition settings
-village.STRUCTURES_PER_VILLAGE = {3, 6} 	-- Min and max structures per village
-village.RANDOM_ROTATION = true 				-- Enable random Y-axis rotation
-
--- Obstacle detection
-village.OBSTACLE_CHECK_RADIUS = 15			-- Radius to check for large obstacles
-village.MAX_PLACEMENT_ATTEMPTS = 10			-- Max attempts to find valid village location
-
--- Performance settings
 village.SPAWN_DELAY = 0.1					-- Delay between structure spawns (seconds)
 
 return village

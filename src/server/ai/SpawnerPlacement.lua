@@ -26,11 +26,7 @@ local chunksProcessed = 0
 
 math.randomseed(SpawnerPlacementConfig.RandomSpawning.RandomSeed)
 
-local function debugPrint(message)
-	if SpawnerPlacementConfig.Settings.DebugMode then
-		print("[SpawnerPlacement]", message)
-	end
-end
+
 
 local function getSpawnType(chunkX, chunkZ)
 	if SpawnerPlacementConfig.Settings.UseNoiseBasedSpawning then
@@ -170,17 +166,6 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 
 			if spacingValid and villageValid then
 				return groundPosition
-			else
-				if SpawnerPlacementConfig.Settings.DebugMode then
-					local reasons = {}
-					if not spacingValid then table.insert(reasons, "spacing") end
-					if not villageValid then table.insert(reasons, "village_distance") end
-					debugPrint("Position rejected at " .. tostring(groundPosition) .. ": " .. table.concat(reasons, ", "))
-				end
-			end
-		else
-			if SpawnerPlacementConfig.Settings.DebugMode then
-				debugPrint("Raycast failed at " .. tostring(testPosition) .. " - no ground found")
 			end
 		end
 	end
@@ -214,8 +199,6 @@ local function createSpawnerPart(position, spawnType)
 	spawnerPart:SetAttribute(CreatureSpawnConfig.Settings.SpawnTypeAttribute, spawnType)
 
 	spawnersPlaced = spawnersPlaced + 1
-	debugPrint("Created " .. spawnType .. " spawner at " .. tostring(position))
-
 	return spawnerPart
 end
 
@@ -232,16 +215,10 @@ function SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
 
 	if spawnerPosition then
 		createSpawnerPart(spawnerPosition, spawnType)
-		debugPrint("Placed " .. spawnType .. " spawner in chunk (" .. chunkX .. ", " .. chunkZ .. ")")
-	else
-		debugPrint("No valid position found in chunk (" .. chunkX .. ", " .. chunkZ .. ") - all " .. SpawnerPlacementConfig.Settings.MaxPlacementAttempts .. " attempts failed")
 	end
 end
 
 function SpawnerPlacement.run()
-	local spawningMethod = SpawnerPlacementConfig.Settings.UseNoiseBasedSpawning and "noise-based" or "random"
-	debugPrint("Starting procedural spawner placement using " .. spawningMethod .. " method...")
-
 	spawnersPlaced = 0
 	chunksProcessed = 0
 	
@@ -278,7 +255,7 @@ function SpawnerPlacement.cleanup()
 	proceduralSpawnersFolder.Name = "ProceduralSpawners"
 	proceduralSpawnersFolder.Parent = workspace
 
-	debugPrint("Cleaned up all procedural spawners for new session")
+
 end
 
 return SpawnerPlacement

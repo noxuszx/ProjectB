@@ -10,11 +10,9 @@ local DragDropConfig = {
     CARRY_SMOOTHNESS = 0.06,            -- Smoothing factor for drag movement
     THROW_BOOST = 8,                    -- Velocity multiplier when throwing objects
     
-    -- Weld system settings
     WELD_DETECTION_RADIUS = 3.0,
     WELD_HOVER_UPDATE_THROTTLE = 0.1,
     
-    -- Object filtering
     SUSPICIOUS_NAMES = {
         "HumanoidRootPart",
         "Head", 
@@ -36,7 +34,6 @@ local DragDropConfig = {
     HOVER_HIGHLIGHT_COLOR = Color3.fromRGB(0, 162, 255),
     WELD_HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 0),
     
-    -- Performance settings
     MAX_CONCURRENT_DRAGS = 10,
     RAYCAST_FILTER_DESCENDANTS = true,
 }

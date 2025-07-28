@@ -21,7 +21,6 @@ ChunkManager.init()
 print("Chunk terrain system initialized")
 task.wait(1)
 
--- Initialize enhanced drag-drop system
 VillageSpawner.spawnVillages()
 print("Village spawning complete. Initializing item spawning...")
 task.wait(1)
@@ -42,16 +41,16 @@ print("Placing procedural creature spawners...")
 local SpawnerPlacement = require(script.Parent.ai.spawnerPlacement)
 SpawnerPlacement.run()
 
+print("Initializing drag-drop system tags...")
+CollectionServiceTags.initializeDefaultTags()
+CollectionServiceTags.tagItemsFolder()
+
 print("Initializing AI system...")
-local AIManager = require(script.Parent.ai.aiManager)
+local AIManager = require(script.Parent.ai.AIManager)
 local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
 
 AIManager.getInstance():init()
 CreatureSpawner.init()
-
-print("Initializing drag-drop system tags...")
-CollectionServiceTags.initializeDefaultTags()
-CollectionServiceTags.tagItemsFolder()
 
 print("Initializing weapon systems...")
 

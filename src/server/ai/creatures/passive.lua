@@ -32,11 +32,12 @@ function PassiveCreature:update(deltaTime)
 	BaseCreature.update(self, deltaTime)
 end
 
-function PassiveCreature:takeDamage(amount)
+function PassiveCreature:takeDamage(amount, threatSource)
 	BaseCreature.takeDamage(self, amount)
 
 	if self.health > 0 then
-		self:setBehavior(FleeingBehavior.new())
+		-- Pass threat source to fleeing behavior so it knows which direction to flee
+		self:setBehavior(FleeingBehavior.new(threatSource))
 	end
 end
 

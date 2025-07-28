@@ -27,6 +27,9 @@ function FleeingBehavior:enter(creature)
 	self.fleeDuration = creatureConfig and creatureConfig.FleeDuration or 10
 	self.fleeStartTime = tick()
 
+	-- Play walk animation when starting to flee
+	creature:playWalkAnimation()
+
 	if AIConfig.Debug.LogBehaviorChanges then
 		local threatName = "Unknown"
 		if self.threatSource and self.threatSource.Name then

@@ -6,11 +6,35 @@
 local CollectionService = game:GetService("CollectionService")
 local CollectionServiceTags = {}
 
+-- Tag constants
 CollectionServiceTags.DRAGGABLE = "Draggable"
 CollectionServiceTags.NON_DRAGGABLE = "NonDraggable"
 CollectionServiceTags.WELDABLE = "Weldable"
 CollectionServiceTags.NON_WELDABLE = "NonWeldable"
 
+
+function CollectionServiceTags.addTag(object, tag)
+    if not object or not tag then
+        return false
+    end
+    CollectionService:AddTag(object, tag)
+    return true
+end
+
+function CollectionServiceTags.removeTag(object, tag)
+    if not object or not tag then
+        return false
+    end
+    CollectionService:RemoveTag(object, tag)
+    return true
+end
+
+function CollectionServiceTags.hasTag(object, tag)
+    if not object or not tag then
+        return false
+    end
+    return CollectionService:HasTag(object, tag)
+end
 
 function CollectionServiceTags.isDraggable(object)
     if not object or not object.Parent then
@@ -24,12 +48,14 @@ function CollectionServiceTags.isDraggable(object)
     if CollectionServiceTags.hasTag(object, CollectionServiceTags.DRAGGABLE) then
         return true
     end
-
     local parent = object.Parent
     if parent and (parent.Name == "SpawnedVegetation" or
                    parent.Name == "SpawnedRocks" or
                    parent.Name == "SpawnedStructures" or
-                   parent.Name == "Chunks") then
+                   parent.Name == "Chunks" or
+                   parent.Name == "SpawnedCreatures" or
+                   parent.Name == "PassiveCreatures" or
+                   parent.Name == "HostileCreatures") then
         return false
     end
 
@@ -66,8 +92,18 @@ end
 
 function CollectionServiceTags.initializeDefaultTags()
     print("Initializing CollectionService tags...")
+    
+    -- Debug: Check what's in workspace when this runs
+    local creatureFolder = workspace:FindFirstChild("SpawnedCreatures")
+    if creatureFolder then
+        print("Found SpawnedCreatures folder with", #creatureFolder:GetChildren(), "children")
+        for _, child in pairs(creatureFolder:GetChildren()) do
+            print("  Creature folder child:", child.Name, child.ClassName)
+        end
+    end
 
-    local nonDraggableFolders = {"Chunks", "SpawnedVegetation", "SpawnedRocks", "SpawnedStructures", "SpawnedCreatures", "PassiveCreatures", "HostileCreatures"}
+    -- Tag terrain and environment objects (excluding creature folders since they're tagged individually when spawned)
+    local nonDraggableFolders = {"Chunks", "SpawnedVegetation", "SpawnedRocks", "SpawnedStructures"}
     for _, folderName in pairs(nonDraggableFolders) do
         local folder = workspace:FindFirstChild(folderName)
         if folder then
@@ -117,44 +153,7 @@ function CollectionServiceTags.tagItemsFolder()
     return count
 end
 
-function CollectionServiceTags.tagCreatureAsNonDraggable(creatureModel)
-    if not creatureModel or not creatureModel:IsA("Model") then
-        return false
-    end
 
-    CollectionServiceTags.addTag(creatureModel, CollectionServiceTags.NON_DRAGGABLE)
-    for _, descendant in pairs(creatureModel:GetDescendants()) do
-        if descendant:IsA("BasePart") then
-            CollectionServiceTags.addTag(descendant, CollectionServiceTags.NON_DRAGGABLE)
-        end
-    end
-
-    return true
-end
-
--- Basic tag operations
-function CollectionServiceTags.addTag(object, tag)
-    if not object or not tag then
-        return false
-    end
-    CollectionService:AddTag(object, tag)
-    return true
-end
-
-function CollectionServiceTags.removeTag(object, tag)
-    if not object or not tag then
-        return false
-    end
-    CollectionService:RemoveTag(object, tag)
-    return true
-end
-
-function CollectionServiceTags.hasTag(object, tag)
-    if not object or not tag then
-        return false
-    end
-    return CollectionService:HasTag(object, tag)
-end
 
 function CollectionServiceTags.isWeldable(object)
     if not object or not object.Parent then

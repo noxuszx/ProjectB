@@ -22,14 +22,13 @@ local itemFolder = Instance.new("Folder")
 itemFolder.Name = "SpawnedItems"
 itemFolder.Parent = workspace
 
-local function debugPrint(message)
-	if ItemConfig.Settings.DebugMode then
-		print("[ItemSpawner]", message)
-	end
-end
+-- Empty function to replace debugPrint calls
+local function debugPrint() end
+
+
 
 local function discoverAvailableItems()
-	debugPrint("Discovering available items...")
+
 
 	local itemsFolder = ReplicatedStorage:FindFirstChild(ItemConfig.Settings.ItemsFolder)
 	if not itemsFolder then
@@ -44,7 +43,7 @@ local function discoverAvailableItems()
 
 	-- Function to scan items in a folder
 	local function scanFolder(folder, folderName)
-		debugPrint("Scanning " .. folderName .. " folder...")
+
 		for _, item in pairs(folder:GetChildren()) do
 			if item:IsA("MeshPart") or item:IsA("Tool") then
 				local isValid = true
@@ -381,7 +380,6 @@ end
 
 -- Initialize the system (call this after world generation is complete)
 function ItemSpawner.Initialize()
-	debugPrint("ItemSpawner initialized")
 	-- For now, we'll populate immediately
 	-- In a real implementation, this might be called by a world generation system
 	ItemSpawner.PopulateWorld()

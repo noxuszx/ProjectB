@@ -4,6 +4,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local CreatureAnimationManager = require(ReplicatedStorage.Shared.modules.CreatureAnimationManager)
 
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature
@@ -12,34 +14,60 @@ BaseCreature.__index = BaseCreature
 function BaseCreature.new(model, creatureType, spawnPosition)
 	local self = setmetatable({}, BaseCreature)
 
-	-- Enhanced safety check for model and PrimaryPart
+	-- BULLETPROOF model and PrimaryPart validation
 	if not model then
 		error("[BaseCreature] No model provided for creature type: " .. (creatureType or "unknown"))
 	end
 
-	if not model.PrimaryPart then
-		-- Try to recover PrimaryPart before failing
-		local candidates = {"HumanoidRootPart", "Torso", "UpperTorso", "Head"}
-		local recovered = false
+	-- Store original model info for debugging
+	local originalParts = {}
+	for _, child in pairs(model:GetChildren()) do
+		if child:IsA("BasePart") then
+			table.insert(originalParts, child.Name)
+		end
+	end
+	
+	-- Debug: Creating creature (removed spam)
 
+	-- ALWAYS ensure PrimaryPart is set correctly (even if it exists, it might be invalid)
+	local function ensurePrimaryPart()
+		local candidates = {"HumanoidRootPart", "Torso", "UpperTorso", "LowerTorso", "Head", "Root"}
+
+		-- Try standard creature parts first
 		for _, partName in ipairs(candidates) do
 			local part = model:FindFirstChild(partName)
-			if part and part:IsA("BasePart") then
+			if part and part:IsA("BasePart") and part.Parent then
 				model.PrimaryPart = part
-				warn("[BaseCreature] Recovered PrimaryPart (" .. partName .. ") for " .. (creatureType or "unknown"))
-				recovered = true
-				break
+				return true, partName
 			end
 		end
 
-		if not recovered then
-			error("[BaseCreature] Invalid model or missing PrimaryPart for creature type: " .. (creatureType or "unknown") .. ". Model has no suitable BaseParts.")
+		for _, child in pairs(model:GetChildren()) do
+			if child:IsA("BasePart") and child.Parent then
+				model.PrimaryPart = child
+				return true, child.Name
+			end
 		end
+
+		for _, descendant in pairs(model:GetDescendants()) do
+			if descendant:IsA("BasePart") and descendant.Parent then
+				model.PrimaryPart = descendant
+				return true, descendant.Name
+			end
+		end
+
+		return false, nil
 	end
 
-	-- Validate PrimaryPart is still valid
-	if not model.PrimaryPart.Parent then
-		error("[BaseCreature] PrimaryPart reference is invalid for creature type: " .. (creatureType or "unknown"))
+	local success, partName = ensurePrimaryPart()
+	if not success then
+		error("[BaseCreature] CRITICAL: No valid BaseParts found in model for creature type: " .. (creatureType or "unknown"))
+	end
+
+	-- Debug: PrimaryPart set (removed spam)
+
+	if not model.PrimaryPart or not model.PrimaryPart.Parent then
+		error("[BaseCreature] PrimaryPart validation failed for creature type: " .. (creatureType or "unknown"))
 	end
 
 	-- Core properties
@@ -61,7 +89,20 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 	self.currentBehavior = nil
 	self.isActive = true
 	self.lastUpdateTime = tick()
-	
+	self.isDead = false
+
+	-- Initialize animation manager for humanoid creatures
+	if self:shouldHaveAnimations() then
+		self.animationManager = CreatureAnimationManager.new(self.model)
+		self.animationManager:setIdleAnimation() -- Start with idle
+	end
+
+	-- Prevent Roblox auto-cleanup of character parts
+	self:setupCharacterProtection()
+
+	-- Setup death event handling
+	self:setupDeathHandling()
+
 	return self
 end
 
@@ -70,9 +111,9 @@ function BaseCreature:update(deltaTime)
 		return
 	end
 
-	-- Additional safety check for PrimaryPart
 	if not self.model.PrimaryPart then
-		warn("[BaseCreature] PrimaryPart is missing for " .. self.creatureType)
+		print("[BaseCreature] Destroying", self.creatureType, "due to missing PrimaryPart")
+		self:destroy()
 		return
 	end
 
@@ -80,10 +121,8 @@ function BaseCreature:update(deltaTime)
 		self.currentBehavior:update(self, deltaTime)
 	end
 
-	-- Update position with safety check (redundant but safe)
-	if self.model.PrimaryPart then
-		self.position = self.model.PrimaryPart.Position
-	end
+	-- Update position
+	self.position = self.model.PrimaryPart.Position
 	self.lastUpdateTime = tick()
 end
 
@@ -99,10 +138,19 @@ function BaseCreature:setBehavior(newBehavior)
 end
 
 function BaseCreature:takeDamage(amount)
+	if self.isDead then return end
+	
 	self.health = math.max(0, self.health - amount)
 	
+	-- Update Humanoid health to match creature health
+	local humanoid = self.model:FindFirstChild("Humanoid")
+	if humanoid then
+		local healthPercentage = self.health / self.maxHealth
+		humanoid.Health = humanoid.MaxHealth * healthPercentage
+	end
+	
 	if self.health <= 0 then
-		self:destroy()
+		self:die()
 	end
 end
 
@@ -130,9 +178,122 @@ function BaseCreature:destroy()
 		self.currentBehavior = nil
 	end
 	
+	-- Cleanup animations
+	if self.animationManager then
+		self.animationManager:cleanup()
+		self.animationManager = nil
+	end
+	
 	if self.model and self.model.Parent then
 		self.model:Destroy()
 	end
+end
+
+function BaseCreature:setupCharacterProtection()
+	local humanoid = self.model:FindFirstChild("Humanoid")
+	if not humanoid then return end
+	
+	-- Prevent Roblox from auto-cleaning up character parts
+	humanoid.BreakJointsOnDeath = false
+	
+	-- Additional protection settings
+	humanoid.RequiresNeck = false  -- Don't break if neck is missing
+	
+	print("[BaseCreature] Protected", self.creatureType, "from Roblox character cleanup")
+end
+
+function BaseCreature:setupDeathHandling()
+	local humanoid = self.model:FindFirstChild("Humanoid")
+	if not humanoid then return end
+	
+	-- Connect to Humanoid.Died event
+	humanoid.Died:Connect(function()
+		if not self.isDead then
+			self:die()
+		end
+	end)
+end
+
+function BaseCreature:die()
+	if self.isDead then return end
+	
+	self.isDead = true
+	self.isActive = false
+	
+	print("[BaseCreature]", self.creatureType, "is dying")
+	
+	-- Stop current behavior
+	if self.currentBehavior then
+		self.currentBehavior:exit(self)
+		self.currentBehavior = nil
+	end
+	
+	-- Handle death based on creature type
+	local config = AIConfig.CreatureTypes[self.creatureType]
+	if self:shouldRagdoll() then
+		-- Ragdoll for humanoid creatures
+		print("[BaseCreature] Ragdolling", self.creatureType)
+		local success = RagdollModule.PermanentNpcRagdoll(self.model)
+		if success then
+			-- Keep model in world as ragdoll, don't destroy
+			return
+		else
+			warn("[BaseCreature] Ragdoll failed for", self.creatureType, "- destroying normally")
+		end
+	else
+		-- Simple death for animals - destroy and drop food (future implementation)
+		print("[BaseCreature] Simple death for", self.creatureType)
+	end
+	
+	-- Fallback: destroy the model if ragdoll failed or not applicable
+	self:destroy()
+end
+
+function BaseCreature:shouldRagdoll()
+	-- Ragdoll humanoid creatures: Villager1, Villager2, Mummy, Skeleton
+	local ragdollCreatures = {
+		["Villager1"] = true,
+		["Villager2"] = true,
+		["Mummy"] = true,
+		["Skeleton"] = true,
+	}
+	
+	return ragdollCreatures[self.creatureType] == true
+end
+
+function BaseCreature:shouldHaveAnimations()
+	-- Same creatures that can ragdoll should have animations (humanoid creatures)
+	return self:shouldRagdoll()
+end
+
+
+-- Animation control methods (kept for backward compatibility)
+function BaseCreature:playIdleAnimation()
+	if self.animationManager then
+		self.animationManager:setIdleAnimation()
+	end
+end
+
+function BaseCreature:playWalkAnimation()
+	if self.animationManager then
+		self.animationManager:setWalkAnimation()
+	end
+end
+
+function BaseCreature:stopAllAnimations()
+	if self.animationManager then
+		self.animationManager:stopAllAnimations()
+	end
+end
+
+function BaseCreature:setupHealthDisplay()
+	local humanoid = self.model:FindFirstChild("Humanoid")
+	if not humanoid then return end
+	
+	-- Hide nametags but allow health bars
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
+	-- Or use: Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
 end
 
 return BaseCreature

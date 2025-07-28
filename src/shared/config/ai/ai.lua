@@ -7,7 +7,7 @@ local AIConfig = {
 	Settings = {
 		MaxCreatures = 300, 		-- Maximum number of creatures in the world
 		UpdateBudgetMs = 5, 		-- Maximum milliseconds per frame for AI updates
-		DebugMode = true, 			-- Enable debug prints and visualizations
+		DebugMode = false, 			-- Enable debug prints and visualizations
 		SpatialGridSize = 50, 		-- Size of spatial grid cells for optimization (studs)
 		CreaturesFolder = "NPCs", 	-- Folder name in ReplicatedStorage where creature models are stored
 	},
@@ -43,7 +43,7 @@ local AIConfig = {
 		-- Passive Creatures
 		Rabbit = {
 			Type = "Passive",
-			Health = 25,
+			Health = 50,
 			MoveSpeed = 16,
 			DetectionRange = 20,
 			FleeSpeed = 24,
@@ -53,18 +53,44 @@ local AIConfig = {
 			ModelFolder = "PassiveCreatures",
 		},
 
+		Villager1 = {
+			Type = "Passive",
+			Health = 100,
+			MoveSpeed = 12,
+			DetectionRange = 15,
+			FleeSpeed = 18,
+			FleeDuration = 8,
+			RoamRadius = 30,
+			IdleTime = {2, 10},
+			ModelFolder = "PassiveCreatures",
+			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
+		},
+
+		Villager2 = {
+			Type = "Passive",
+			Health = 100,
+			MoveSpeed = 12,
+			DetectionRange = 15,
+			FleeSpeed = 16,
+			FleeDuration = 5,
+			RoamRadius = 30,
+			IdleTime = {2, 10},
+			ModelFolder = "PassiveCreatures",
+			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
+		},
+
 		-- Hostile Creatures
 		Wolf = {
 			Type = "Hostile",
 			Health = 100,
-			MoveSpeed = 18,
+			MoveSpeed = 16,
 			DetectionRange = 40,
-			TouchDamage = 15,
-			ChaseSpeed = 22,
+			TouchDamage = 0,
+			ChaseSpeed = 16,
 			RoamRadius = 25,
 			IdleTime = {5, 12},
 			ModelFolder = "HostileCreatures",
-			-- Touch damage settings
+			
 			DamageCooldown = 1.5, 
 		},
 		
@@ -106,13 +132,15 @@ local AIConfig = {
 		MaxDistanceFromPlayer = 150, 	-- Maximum distance from players when spawning (studs)
 		RespawnDelay = 300, 			-- Time before respawning creatures in empty areas (seconds)
 		
-		SpawnHeight = 3,
+		SpawnHeight = 1,
 		MaxSpawnAttempts = 10,
 		
 		-- Creature distribution weights (higher = more common)
 		CreatureWeights = {
 			-- Passive creatures (more common)
 			Rabbit = 2,
+			Villager1 = 3,
+			Villager2 = 3,
 			-- Hostile creatures (less common)
 			Wolf = 8,
 			Skeleton = 6,

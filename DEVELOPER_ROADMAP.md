@@ -51,11 +51,11 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [ ] Add water sources (wells, ponds) + refill mechanic  
 - [ ] Implement thirst + hunger decay  
 - [ ] Add lizard AI + drops (raw meat)  
-- [ ] Add wolf/sand hound AI + aggression  
+- [x] Add wolf/sand hound AI + aggression  
 - [ ] Add third hostile creature (Sandback – large meat source)  
 - [ ] Add cook/firepit system to prepare food
 - [x] Add weapon logic: knife, spear, machete
-- [ ] Damage balancing, basic combat feedback  
+- [x] Damage balancing, basic combat feedback  
 
 **Estimated time:** 7–14 days
 
@@ -74,7 +74,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 > Focus: Making enemies dynamic and fun
 
 - [ ] Improve enemy pathfinding + aggression logic  
-- [ ] Add weapon hit sounds  
+- [ ] Add weapon hit sounds
 - {OPTIONAL} [ ] Add stealth bonuses or backstab mechanics  
 
 ---
