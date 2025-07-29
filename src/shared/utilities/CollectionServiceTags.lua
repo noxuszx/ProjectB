@@ -11,6 +11,7 @@ CollectionServiceTags.DRAGGABLE = "Draggable"
 CollectionServiceTags.NON_DRAGGABLE = "NonDraggable"
 CollectionServiceTags.WELDABLE = "Weldable"
 CollectionServiceTags.NON_WELDABLE = "NonWeldable"
+CollectionServiceTags.WATER_REFILL_SOURCE = "WaterRefillSource"
 
 
 function CollectionServiceTags.addTag(object, tag)

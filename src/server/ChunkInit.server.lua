@@ -49,6 +49,10 @@ print("Initializing player stats system...")
 local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
 PlayerStatsManager.init()
 
+print("Initializing water refill system...")
+local WaterRefillManager = require(script.Parent.food.WaterRefillManager)
+WaterRefillManager.init()
+
 print("Initializing AI system...")
 local AIManager = require(script.Parent.ai.AIManager)
 local CreatureSpawner = require(script.Parent.ai.creatureSpawner)

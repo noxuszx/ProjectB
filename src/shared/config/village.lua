@@ -37,8 +37,9 @@ village.CENTER_BIAS = 0.3					-- Optional: 30% chance near spawn
 village.VILLAGE_MODEL_FOLDER = "Models.Village"
 village.AVAILABLE_STRUCTURES = {
 	"House1",
-	"House2", 
-	"Shop"
+	"House2",
+	"Shop",
+	"Well"
 }
 village.SPAWN_DELAY = 0.1					-- Delay between structure spawns (seconds)
 

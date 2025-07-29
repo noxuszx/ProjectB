@@ -37,6 +37,24 @@ if not requestCurrentUsesRemote then
 	requestCurrentUsesRemote.Parent = remotes
 end
 
+-- Remote for refill system
+local refillWaterBottleRemote = remotes:FindFirstChild("RefillWaterBottle")
+if not refillWaterBottleRemote then
+	refillWaterBottleRemote = Instance.new("RemoteEvent")
+	refillWaterBottleRemote.Name = "RefillWaterBottle"
+	refillWaterBottleRemote.Parent = remotes
+end
+
+-- BindableEvent for server-to-server communication
+local refillBindable = RP:FindFirstChild("RefillWaterBottleBindable")
+if not refillBindable then
+	refillBindable = Instance.new("BindableEvent")
+	refillBindable.Name = "RefillWaterBottleBindable"
+	refillBindable.Parent = RP
+end
+
+print("[WaterBottle] Found refill bindable:", refillBindable and refillBindable.Name or "nil")
+
 local function updateBottleVisual(player, usesLeft)
 	updateBottleStateRemote:FireClient(player, usesLeft)
 end
@@ -77,9 +95,26 @@ local function onDrinkWater(player)
 end
 
 local function refillBottle(player)
+	if not player then
+		return false
+	end
+	
+	-- Check if player has water bottle equipped
+	if not player.Character or not player.Character:FindFirstChild("Water Bottle") then
+		return false
+	end
+	
 	playerBottleUses[player.UserId] = MAX_BOTTLE_USES
 	print("[WaterBottle]", player.Name, "refilled bottle to", MAX_BOTTLE_USES .. "/" .. MAX_BOTTLE_USES, "uses")
 	updateBottleVisual(player, MAX_BOTTLE_USES)
+	return true
+end
+
+-- Handle refill requests from proximity prompts
+local function onRefillRequest(player)
+	print("[WaterBottle] Received refill request for", player.Name)
+	local success = refillBottle(player)
+	print("[WaterBottle] Refill result:", success)
 end
 
 game.Players.PlayerRemoving:Connect(function(player)
@@ -104,3 +139,8 @@ end
 
 drinkWaterRemote.OnServerEvent:Connect(onDrinkWater)
 requestCurrentUsesRemote.OnServerEvent:Connect(onRequestCurrentUses)
+refillWaterBottleRemote.OnServerEvent:Connect(onRefillRequest)
+
+print("[WaterBottle] Connecting to refill bindable...")
+refillBindable.Event:Connect(onRefillRequest)
+print("[WaterBottle] Connected to refill bindable!")

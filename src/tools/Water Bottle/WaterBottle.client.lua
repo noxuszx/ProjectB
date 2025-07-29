@@ -24,7 +24,6 @@ end
 
 local function updateWaterLevel(usesLeft)
 	if usesLeft <= 0 then
-		-- Empty bottle - make both water parts invisible
 		if largeWater then
 			largeWater.Transparency = 1.0
 		end
@@ -32,7 +31,6 @@ local function updateWaterLevel(usesLeft)
 			smallWater.Transparency = 1.0
 		end
 	elseif usesLeft <= 2 then
-		-- Low water (1-2 uses) - only small water visible
 		if largeWater then
 			largeWater.Transparency = 1.0
 		end
@@ -40,12 +38,11 @@ local function updateWaterLevel(usesLeft)
 			smallWater.Transparency = 0.4
 		end
 	else
-		-- High water (3-5 uses) - both parts visible
 		if largeWater then
 			largeWater.Transparency = 0.4
 		end
 		if smallWater then
-			smallWater.Transparency = 0.4
+			smallWater.Transparency = 1.0
 		end
 	end
 end
