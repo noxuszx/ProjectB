@@ -67,7 +67,9 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [ ] Populate world with lootable ruins and debris
 - [x] Implement basic loot system (rarities, random tables)  
 - [ ] Backpack and container upgrades
-
+- [ ] Add more weapons
+- [ ] Add Battle Towers
+- [ ] Add Ending Structure
 ---
 
 ## ⏳ Phase 4 – Combat & AI Polish
@@ -75,6 +77,8 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 
 - [x] Improve enemy pathfinding + aggression logic  
 - [ ] Add weapon hit sounds
+- [ ] Add Dev Products
+- [ ] More Loot and Furniture
 - {OPTIONAL} [ ] Add stealth bonuses or backstab mechanics  
 
 ---
@@ -103,9 +107,10 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [ ] Improve UI/UX (tooltips, animations, inventory)  
 - [ ] Add sound design: wind, steps, ambient tones  
 - [ ] Optimize chunk loading and memory use
-- [ ] Add optional tutorial hints or world signs  
 - [ ] Add respawn logic
-
+- [ ] Increase Max Rabbit and Wolf Spawns (Pooling Fix)
+- [ ] Add Cutscene at spawn of world
+- [ ] Add villager skins 
 ---
 
 ## 🌱 Creature Notes

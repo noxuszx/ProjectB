@@ -47,9 +47,47 @@ This document outlines potential improvements for various systems in the project
 *   **Suggestion**: Move the `isCooked` check to the beginning of the function to exit earlier and improve efficiency.
 
 ---
+## AIManager.lua Improvements
 
-## BaseCreature.lua Improvements
+### Performance / memory
 
-### [] 1. Deferred Destruction with `Debris` Service
-*   **Issue**: Destroying a creature's model (`model:Destroy()`) synchronously in the `die()` function can cause a lag spike.
-*   **Suggestion**: Use the `Debris` service (`Debris:AddItem(model, 0)`) to defer the destruction of the model to the next frame. This will prevent the main game thread from being blocked and will result in a smoother experience.
+* 1.1 **Re-use tables in getCreaturesInRange**
+    table.insert on an ever-growing array can allocate a lot of tiny tables every frame.
+    Keep a single “scratch” array, clear it with table.clear(scratch) (Luau built-in), then return a copy only if the caller actually needs to keep it.  
+    Example:
+
+```
+local scratchInRange = {}
+function AIManager:getCreaturesInRange(position, range)
+    table.clear(scratchInRange)
+    -- … fill scratchInRange …
+    -- If caller must mutate the list, return table.clone(scratchInRange)
+    return scratchInRange
+end
+```
+
+* 1.2  **Distance check vectorisation**
+    calculateLODLevel and getCreaturesInRange iterate all players for every creature.
+    If you have 200 creatures × 20 players you are doing 4 000 magnitude calculations each frame.
+    Cache the positions of all players every heartbeat:
+
+```
+local cachedPlayerData = {} -- [player] = {pos = Vector3, lastUpdate = number}
+local function updatePlayerCache()
+    for _, p in ipairs(Players:GetPlayers()) do
+        local char = p.Character
+        local root = char and char.PrimaryPart
+        cachedPlayerData[p] = root and {pos = root.Position, lastUpdate = tick()}
+    end
+end
+```
+
+Then calculateLODLevel becomes a small loop over 20 cached vectors instead of 20 root-part lookups.
+
+* 1.3  Replace tick() with os.clock() or workspace:GetServerTimeNow()
+    tick() is deprecated and slightly more expensive.
+    (If you need deterministic replays, prefer workspace:GetServerTimeNow()).
+
+*  1.4  Early-exit in update loop
+If the update budget is exhausted (deltaTime > self.updateBudget) skip all remaining creatures this frame.
+Right now you always finish the whole list.
