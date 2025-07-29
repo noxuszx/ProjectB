@@ -12,6 +12,7 @@ local DayNightCycle = require(script.Parent.Parent.environment.dayNightCycle)
 local PassiveCreature = require(script.Parent.creatures.passive)
 local HostileCreature = require(script.Parent.creatures.hostile)
 local AIManager = require(script.Parent.AIManager)
+local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
 
 
 local CreatureSpawner = {}
@@ -119,6 +120,10 @@ function CreatureSpawner.spawnCreature(creatureType, position)
 		HostileCreature.new(creatureModel, creatureType, position)
 
 	spawnedCreaturesCount = spawnedCreaturesCount + 1
+	
+	-- Register with pool manager for tracking
+	CreaturePoolManager.registerCreatureSpawn(creatureType)
+	
 	return aiController
 end
 

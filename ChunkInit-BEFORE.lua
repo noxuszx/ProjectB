@@ -5,13 +5,13 @@
 
 print("Chunk-based terrain system starting...")
 
-local ChunkManager          = require(script.Parent.terrain.ChunkManager)
-local CustomModelSpawner    = require(script.Parent.spawning.CustomModelSpawner) 
-local DayNightCycle         = require(script.Parent.environment.dayNightCycle)
-local VillageSpawner        = require(script.Parent.spawning.VillageSpawner)
-local ItemSpawner           = require(script.Parent.spawning.ItemSpawner)
-local LightingManager       = require(script.Parent.environment.lighting)
-local ChunkConfig           = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
+local ChunkManager = require(script.Parent.terrain.ChunkManager)
+local CustomModelSpawner = require(script.Parent.spawning.CustomModelSpawner) -- Enabled after manual setup
+local DayNightCycle = require(script.Parent.environment.dayNightCycle)
+local VillageSpawner = require(script.Parent.spawning.VillageSpawner)
+local ItemSpawner = require(script.Parent.spawning.ItemSpawner)
+local LightingManager = require(script.Parent.environment.lighting)
+local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 task.wait(2)
@@ -64,21 +64,12 @@ print("Initializing AI system...")
 local AIManager = require(script.Parent.ai.AIManager)
 local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
 local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
-local CreaturePoolManager = require(script.Parent.ai.CreaturePoolManager)
-
-print("Initializing creature pooling system...")
-CreaturePoolManager.init()
-task.wait(0.5)
 
 AIManager.getInstance():init()
 task.wait(0.5)
 FoodDropSystem.init()
 task.wait(0.5)
-CreatureSpawner.populateWorld()
-task.wait(0.5)
-
-print("Starting creature respawn loop...")
-CreaturePoolManager.startRespawnLoop()
+CreatureSpawner.init()
 
 print("Initializing weapon systems...")
 

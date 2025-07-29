@@ -48,13 +48,7 @@ local FoodConfig = {
 		MaxDropAttempts = 5
 	},
 	
-	-- Cooking surfaces that trigger state change
-	CookingSurfaces = {
-		"Campfire",
-		"Stove", 
-		"CookingPot",
-		"Grill"
-	}
+	-- Note: Cooking surfaces should be tagged with "CookingSurface" tag
 }
 
 -- Food storage folder
@@ -74,7 +68,9 @@ function FoodDropSystem.init()
 end
 
 -- Drop food when an animal dies
-function FoodDropSystem.dropFood(creatureType, position)
+function FoodDropSystem.dropFood(creatureType, position, dyingCreatureModel)
+	local totalStart = os.clock()
+	
 	local foodType = FoodConfig.AnimalFoods[creatureType]
 	if not foodType then
 		warn("[FoodDropSystem] No food configured for creature type:", creatureType)
@@ -82,6 +78,7 @@ function FoodDropSystem.dropFood(creatureType, position)
 	end
 	
 	-- Get food template from ReplicatedStorage.Items
+	local templateStart = os.clock()
 	local itemsFolder = ReplicatedStorage:FindFirstChild("Items")
 	if not itemsFolder then
 		warn("[FoodDropSystem] Items folder not found in ReplicatedStorage")
@@ -97,9 +94,13 @@ function FoodDropSystem.dropFood(creatureType, position)
 	-- Clone the food model
 	local foodModel = foodTemplate:Clone()
 	foodModel.Name = foodType .. "_" .. os.clock()
+	print("[FoodDropSystem] Template/Clone took:", (os.clock() - templateStart) * 1000, "ms")
 	
 	-- Position the food near the death location
-	local dropPosition = FoodDropSystem.getDropPosition(position)
+	local positionStart = os.clock()
+	local dropPosition = FoodDropSystem.getDropPosition(position, dyingCreatureModel)
+	print("[FoodDropSystem] Position calculation took:", (os.clock() - positionStart) * 1000, "ms")
+	
 	if foodModel.PrimaryPart then
 		foodModel:SetPrimaryPartCFrame(CFrame.new(dropPosition))
 	else
@@ -109,11 +110,14 @@ function FoodDropSystem.dropFood(creatureType, position)
 	end
 	
 	-- Set up food properties
+	local setupStart = os.clock()
 	FoodDropSystem.setupFoodModel(foodModel, foodType)
+	print("[FoodDropSystem] Model setup took:", (os.clock() - setupStart) * 1000, "ms")
 	
 	-- Parent to world
 	foodModel.Parent = foodFolder
 	
+	print("[FoodDropSystem] Total dropFood took:", (os.clock() - totalStart) * 1000, "ms")
 	print("[FoodDropSystem] Dropped", foodType, "at", dropPosition)
 	return true
 end
@@ -138,8 +142,9 @@ function FoodDropSystem.setupFoodModel(foodModel, foodType)
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.DRAGGABLE)
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.WELDABLE)
 	
-	-- Add consumption tag
+	-- Add consumption and meat state tags
 	CollectionService:AddTag(foodModel, "Consumable")
+	CollectionService:AddTag(foodModel, "RawMeat")
 end
 
 -- Set food state (raw or cooked)
@@ -167,12 +172,21 @@ function FoodDropSystem.setFoodState(foodModel, foodType, state)
 	foodModel:SetAttribute("IsCooked", isCooked)
 	foodModel:SetAttribute("HungerValue", hungerValue)
 	
+	-- Update meat state tags
+	if isCooked then
+		CollectionService:RemoveTag(foodModel, "RawMeat")
+		CollectionService:AddTag(foodModel, "CookedMeat")
+	else
+		CollectionService:RemoveTag(foodModel, "CookedMeat")
+		CollectionService:AddTag(foodModel, "RawMeat")
+	end
+	
 	print("[FoodDropSystem] Set", foodModel.Name, "to", state, "state (Hunger:", hungerValue .. ")")
 end
 
 
 -- Find a valid drop position near the death location
-function FoodDropSystem.getDropPosition(centerPosition)
+function FoodDropSystem.getDropPosition(centerPosition, dyingCreatureModel)
 	local settings = FoodConfig.DropSettings
 	
 	for attempt = 1, settings.MaxDropAttempts do
@@ -191,7 +205,11 @@ function FoodDropSystem.getDropPosition(centerPosition)
 		-- Raycast to find ground
 		local raycastParams = RaycastParams.new()
 		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-		raycastParams.FilterDescendantsInstances = {foodFolder}
+		local blacklist = {foodFolder}
+		if dyingCreatureModel then
+			table.insert(blacklist, dyingCreatureModel)
+		end
+		raycastParams.FilterDescendantsInstances = blacklist
 		
 		local rayOrigin = testPosition + Vector3.new(0, 10, 0)
 		local rayDirection = Vector3.new(0, -20, 0)
@@ -229,18 +247,9 @@ function FoodDropSystem.setupCookingForFood(foodModel)
 	if not foodModel.PrimaryPart then return end
 	
 	local function onTouched(hit)
-		-- Check if we hit a cooking surface
-		local hitModel = hit.Parent
-		if not hitModel or not hitModel:IsA("Model") then return end
-		
-		-- Check if it's a cooking surface
-		local isCookingSurface = false
-		for _, surfaceName in pairs(FoodConfig.CookingSurfaces) do
-			if string.find(string.lower(hitModel.Name), string.lower(surfaceName)) then
-				isCookingSurface = true
-				break
-			end
-		end
+		-- Check if the hit part or its parent is tagged as a cooking surface
+		local isCookingSurface = CollectionService:HasTag(hit, "CookingSurface") or 
+								 CollectionService:HasTag(hit.Parent, "CookingSurface")
 		
 		if not isCookingSurface then return end
 		
@@ -252,7 +261,7 @@ function FoodDropSystem.setupCookingForFood(foodModel)
 		local foodType = foodModel:GetAttribute("FoodType")
 		if foodType then
 			FoodDropSystem.setFoodState(foodModel, foodType, "cooked")
-			print("[FoodDropSystem]", foodModel.Name, "was cooked by", hitModel.Name)
+			print("[FoodDropSystem]", foodModel.Name, "was cooked by", hit.Parent.Name or hit.Name)
 		end
 	end
 	

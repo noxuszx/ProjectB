@@ -7,6 +7,7 @@ local Debris = game:GetService("Debris")
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
+local CreaturePoolManager = require(script.Parent.Parent.CreaturePoolManager)
 
 -- Get RemoteEvent for health updates (will be created if it doesn't exist)
 local function getUpdateCreatureHealthRemote()
@@ -251,6 +252,8 @@ end
 function BaseCreature:die()
 	if self.isDead then return end
 	
+	local totalStart = os.clock()
+	
 	self.isDead = true
 	self.isActive = false
 	
@@ -279,21 +282,38 @@ function BaseCreature:die()
 			warn("[BaseCreature] Ragdoll failed for", self.creatureType, "- destroying normally")
 		end
 	else
-		-- Simple death for animals - destroy and drop food
+		-- Simple death for animals - pool or destroy and drop food
 		print("[BaseCreature] Simple death for", self.creatureType)
 		local deathPosition = self.model.PrimaryPart.Position
 		
-		-- Drop food before destroying
-		local success = FoodDropSystem.dropFood(self.creatureType, deathPosition)
+		-- Drop food before pooling/destroying
+		local success = FoodDropSystem.dropFood(self.creatureType, deathPosition, self.model)
 		if success then
 			print("[BaseCreature] Dropped food for", self.creatureType)
 		else
 			print("[BaseCreature] No food drop for", self.creatureType)
 		end
+		
+		-- Try to pool creature instead of destroying
+		if CreaturePoolManager.isPooledCreature(self.creatureType) then
+			local poolSuccess = CreaturePoolManager.poolCreature(self.model, self.creatureType)
+			if poolSuccess then
+				print("[BaseCreature] Pooled", self.creatureType, "instead of destroying")
+				-- Don't call destroy() - creature is now pooled
+				print("[BaseCreature] Total die() for", self.creatureType, "took:", (os.clock() - totalStart) * 1000, "ms")
+				return
+			else
+				warn("[BaseCreature] Failed to pool", self.creatureType, "- falling back to destroy")
+			end
+		end
 	end
 	
-	-- Fallback: destroy the model if ragdoll failed or not applicable
+	-- Fallback: destroy the model if ragdoll failed, not pooled, or pooling failed
+	local destroyStart = os.clock()
 	self:destroy()
+	print("[BaseCreature] Model destruction took:", (os.clock() - destroyStart) * 1000, "ms")
+	
+	print("[BaseCreature] Total die() for", self.creatureType, "took:", (os.clock() - totalStart) * 1000, "ms")
 end
 
 function BaseCreature:shouldRagdoll()

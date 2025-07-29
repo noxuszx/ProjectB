@@ -38,8 +38,8 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [x] Chunk-based world spawning  
 - [x] One village structure
 - [x] Drag and drop + Weld system
-- [ ] Basic player movement + thirst/hunger/health system
-- [ ] Simple UI: Health, thirst, hunger, item slots
+- [x] Basic player movement + thirst/hunger/health system
+- [x] Simple UI: Health, thirst, hunger, item slots
 
 **Estimated time:** 3–5 days
 
@@ -48,14 +48,14 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 ## ⏳ Phase 2 – Survival Loop
 > Focus: Playable core survival experience
 
-- [ ] Add water sources (wells, ponds) + refill mechanic  
-- [ ] Implement thirst + hunger decay  
+- [x] Add water sources (wells, ponds) + refill mechanic  
+- [x] Implement thirst + hunger decay  
 - [x] Add lizard AI + drops (raw meat)  
 - [x] Add wolf/sand hound AI + aggression  
 - [ ] Add third hostile creature (Sandback – large meat source)  
-- [ ] Add cook/firepit system to prepare food
+- [x] Add cook/firepit system to prepare food
 - [x] Add weapon logic: knife, spear, machete
-- [x] Damage balancing, basic combat feedback  
+- [x] Damage balancing, basic combat feedback
 
 **Estimated time:** 7–14 days
 

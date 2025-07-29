@@ -1,23 +1,24 @@
-Fix: clamp the minimum height (or use a MeshPart with a special mesh so the geometry doesn’t vanish).
+I thought it was bc of the model that might have lots of parts but with only two BaseParts the model itself is trivial, so the framedrop has to come from something that happens every time a rabbit dies but not when a wolf dies.
+Let’s look at the only two things that differ between the two cases:
+The rabbit carcass (the original NPC itself) is still in Workspace when you call dropFood.
+The raycast in getDropPosition is done with a blacklist that currently only contains foodFolder; the rabbit (or its debris) is not blacklisted, so the ray is hitting the dead rabbit’s parts and the engine has to check collisions against every physics part in the carcass.
+When a wolf dies, its body is either removed immediately or is so large that the ray hits the ground first and short-circuits.
+Rabbits are small, so the ray often starts inside the body and has to sweep through several of its parts before reaching open air, causing a burst of physics queries → framedrop.
+## Fix
+Blacklist the dying creature itself (or simply wait one frame so the corpse is already gone).
+
 ```lua
-Copy
-local minHeight = 0.05
-local rawHeight   = originalWaterSize.Y * waterPercentage
-local newHeight   = math.max(rawHeight, minHeight)
-```
-or, more simply, stop shrinking once it’s almost empty:
-```lua
-Copy
-if usesLeft <= 0 then
-    waterPart.Transparency = 1
-else
-    local pct = math.max(usesLeft / 5, 0.05)   -- never less than 5 %
-    waterPart.Size = Vector3.new(
-        originalWaterSize.X,
-        originalWaterSize.Y * pct,
-        originalWaterSize.Z
-    )
-    waterPart.Transparency = 0.4
+local blacklist = {foodFolder}
+if dyingCreatureModel then
+    table.insert(blacklist, dyingCreatureModel)
 end
+raycastParams.FilterDescendantsInstances = blacklist
 ```
-After clamping (or increasing the original cylinder height in Studio) the part will remain visible down to the last drop.
+or, if the NPC framework removes the corpse a frame later:
+
+```lua
+task.defer(function()
+    foodModel.Parent = foodFolder
+end)
+```
+Either change will stop the ray from scanning the rabbit corpse and should remove the framedrop.
