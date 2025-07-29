@@ -8,6 +8,25 @@ local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
 
+-- Get RemoteEvent for health updates (will be created if it doesn't exist)
+local function getUpdateCreatureHealthRemote()
+	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
+	if not remotesFolder then
+		remotesFolder = Instance.new("Folder")
+		remotesFolder.Name = "Remotes"
+		remotesFolder.Parent = ReplicatedStorage
+	end
+	
+	local updateCreatureHealthRemote = remotesFolder:FindFirstChild("UpdateCreatureHealth")
+	if not updateCreatureHealthRemote then
+		updateCreatureHealthRemote = Instance.new("RemoteEvent")
+		updateCreatureHealthRemote.Name = "UpdateCreatureHealth"
+		updateCreatureHealthRemote.Parent = remotesFolder
+	end
+	
+	return updateCreatureHealthRemote
+end
+
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature
 
@@ -89,7 +108,7 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 	self.detectionRange = config.DetectionRange or 20
 	self.currentBehavior = nil
 	self.isActive = true
-	self.lastUpdateTime = tick()
+	self.lastUpdateTime = os.clock()
 	self.isDead = false
 
 
@@ -98,6 +117,14 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 
 	-- Setup death event handling
 	self:setupDeathHandling()
+	
+	-- Setup debug GUI if enabled
+	self:setupDebugGUI()
+	
+	-- Send initial health to clients (in case creature spawns damaged)
+	if self.health < self.maxHealth then
+		self:sendHealthUpdate()
+	end
 
 	return self
 end
@@ -119,7 +146,10 @@ function BaseCreature:update(deltaTime)
 
 	-- Update position
 	self.position = self.model.PrimaryPart.Position
-	self.lastUpdateTime = tick()
+	self.lastUpdateTime = os.clock()
+	
+	-- Update debug GUI if enabled
+	self:updateDebugGUI()
 end
 
 function BaseCreature:setBehavior(newBehavior)
@@ -130,6 +160,13 @@ function BaseCreature:setBehavior(newBehavior)
 	self.currentBehavior = newBehavior
 	if newBehavior then
 		newBehavior:enter(self)
+	end
+end
+
+function BaseCreature:sendHealthUpdate()
+	local updateRemote = getUpdateCreatureHealthRemote()
+	if updateRemote then
+		updateRemote:FireAllClients(self.model, self.health, self.maxHealth)
 	end
 end
 
@@ -144,6 +181,9 @@ function BaseCreature:takeDamage(amount)
 		local healthPercentage = self.health / self.maxHealth
 		humanoid.Health = humanoid.MaxHealth * healthPercentage
 	end
+	
+	-- Send health update to all clients for health bar display
+	self:sendHealthUpdate()
 	
 	if self.health <= 0 then
 		self:die()
@@ -174,6 +214,8 @@ function BaseCreature:destroy()
 		self.currentBehavior = nil
 	end
 	
+	-- Clean up debug GUI
+	self:destroyDebugGUI()
 	
 	if self.model and self.model.Parent then
 		-- Use Debris service to defer destruction to next frame, preventing lag spikes
@@ -213,6 +255,10 @@ function BaseCreature:die()
 	self.isActive = false
 	
 	print("[BaseCreature]", self.creatureType, "is dying")
+	
+	-- Send health update to remove health bars before destruction
+	self.health = 0
+	self:sendHealthUpdate()
 	
 	-- Stop current behavior
 	if self.currentBehavior then
@@ -277,6 +323,125 @@ function BaseCreature:setupHealthDisplay()
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
 	-- Or use: Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
+end
+
+-- ============================================
+-- DEBUG VISUALIZATION FUNCTIONS
+-- ============================================
+
+function BaseCreature:setupDebugGUI()
+	if not AIConfig.Debug.ShowStateLabels then
+		return
+	end
+	
+	if not self.model or not self.model.PrimaryPart then
+		return
+	end
+	
+	-- Create BillboardGui for debug info
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Name = "CreatureDebugGUI"
+	billboardGui.Size = UDim2.new(3, 0, 1, 0)
+	billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+	billboardGui.Parent = self.model.PrimaryPart
+	
+	-- LOD Level Label
+	local lodLabel = Instance.new("TextLabel")
+	lodLabel.Name = "LODLabel"
+	lodLabel.Size = UDim2.new(1, 0, 0.3, 0)
+	lodLabel.Position = UDim2.new(0, 0, 0, 0)
+	lodLabel.BackgroundTransparency = 0.3
+	lodLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	lodLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	lodLabel.TextScaled = true
+	lodLabel.Font = Enum.Font.SourceSansBold
+	lodLabel.Text = "LOD: Unknown"
+	lodLabel.Parent = billboardGui
+	
+	-- Behavior State Label
+	local stateLabel = Instance.new("TextLabel")
+	stateLabel.Name = "StateLabel"
+	stateLabel.Size = UDim2.new(1, 0, 0.3, 0)
+	stateLabel.Position = UDim2.new(0, 0, 0.35, 0)
+	stateLabel.BackgroundTransparency = 0.3
+	stateLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	stateLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	stateLabel.TextScaled = true
+	stateLabel.Font = Enum.Font.SourceSans
+	stateLabel.Text = "State: Idle"
+	stateLabel.Parent = billboardGui
+	
+	-- Update Rate Label
+	local rateLabel = Instance.new("TextLabel")
+	rateLabel.Name = "RateLabel"
+	rateLabel.Size = UDim2.new(1, 0, 0.3, 0)
+	rateLabel.Position = UDim2.new(0, 0, 0.7, 0)
+	rateLabel.BackgroundTransparency = 0.3
+	rateLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	rateLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	rateLabel.TextScaled = true
+	rateLabel.Font = Enum.Font.SourceSans
+	rateLabel.Text = "Rate: --Hz"
+	rateLabel.Parent = billboardGui
+	
+	self.debugGUI = billboardGui
+end
+
+function BaseCreature:updateDebugGUI()
+	if not AIConfig.Debug.ShowStateLabels or not self.debugGUI then
+		return
+	end
+	
+	local lodLabel = self.debugGUI:FindFirstChild("LODLabel")
+	local stateLabel = self.debugGUI:FindFirstChild("StateLabel")
+	local rateLabel = self.debugGUI:FindFirstChild("RateLabel")
+	
+	-- Update LOD level and color
+	if lodLabel then
+		local lodLevel = self.lodLevel or "Unknown"
+		local lodRate = self.lodUpdateRate or 0
+		
+		lodLabel.Text = "LOD: " .. lodLevel
+		
+		-- Color code by LOD level
+		if lodLevel == "Close" then
+			lodLabel.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Green
+		elseif lodLevel == "Medium" then
+			lodLabel.BackgroundColor3 = Color3.fromRGB(255, 165, 0) -- Orange
+		elseif lodLevel == "Far" then
+			lodLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red
+		else
+			lodLabel.BackgroundColor3 = Color3.fromRGB(100, 100, 100) -- Gray
+		end
+	end
+	
+	-- Update behavior state
+	if stateLabel then
+		local stateName = "Idle"
+		if self.currentBehavior then
+			if self.currentBehavior.name then
+				stateName = self.currentBehavior.name
+				-- Add sub-state for roaming behavior
+				if self.currentBehavior.state then
+					stateName = stateName .. ":" .. self.currentBehavior.state
+				end
+			end
+		end
+		stateLabel.Text = "State: " .. stateName
+	end
+	
+	-- Update rate
+	if rateLabel then
+		local rate = self.lodUpdateRate or 0
+		rateLabel.Text = "Rate: " .. string.format("%.1f", rate) .. "Hz"
+	end
+end
+
+function BaseCreature:destroyDebugGUI()
+	if self.debugGUI then
+		self.debugGUI:Destroy()
+		self.debugGUI = nil
+	end
 end
 
 return BaseCreature

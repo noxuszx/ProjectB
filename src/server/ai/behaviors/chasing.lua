@@ -22,7 +22,7 @@ end
 function ChasingBehavior:enter(creature)
 	AIBehavior.enter(self, creature)
 
-	self.chaseStartTime = tick()
+	self.chaseStartTime = os.clock()
 
 
 	if AIConfig.Debug.LogBehaviorChanges then
@@ -35,7 +35,7 @@ function ChasingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
 	-- Check if we've been chasing too long
-	if tick() - self.chaseStartTime > self.maxChaseTime then
+	if os.clock() - self.chaseStartTime > self.maxChaseTime then
 		self:giveUpChase(creature, "Chase timeout")
 		return
 	end

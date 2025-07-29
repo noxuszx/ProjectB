@@ -45,6 +45,10 @@ print("Initializing drag-drop system tags...")
 CollectionServiceTags.initializeDefaultTags()
 CollectionServiceTags.tagItemsFolder()
 
+print("Initializing player stats system...")
+local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
+PlayerStatsManager.init()
+
 print("Initializing AI system...")
 local AIManager = require(script.Parent.ai.AIManager)
 local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
@@ -56,5 +60,5 @@ CreatureSpawner.init()
 
 print("Initializing weapon systems...")
 
-print("All systems initialized. Day/night cycle active, world populated with items, procedural spawners, creatures, and weapons.")
+print("All systems initialized. Player stats, day/night cycle, world populated with items, procedural spawners, creatures, and weapons.")
 

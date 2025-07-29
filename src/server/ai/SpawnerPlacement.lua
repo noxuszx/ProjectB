@@ -180,7 +180,7 @@ local function createSpawnerPart(position, spawnType)
 	end
 
 	local spawnerPart = Instance.new("Part")
-	spawnerPart.Name = "ProceduralSpawner_" .. spawnType .. "_" .. tick()
+	spawnerPart.Name = "ProceduralSpawner_" .. spawnType .. "_" .. os.clock()
 	spawnerPart.Size = Vector3.new(5, 5, 5)
 	spawnerPart.Position = position
 	spawnerPart.Transparency = SpawnerPlacementConfig.Debug.ShowSpawnerParts and 0.5 or 1

@@ -100,7 +100,7 @@ function CreatureSpawner.spawnCreature(creatureType, position)
 	if not template then return nil end
 
 	local creatureModel = template:Clone()
-	creatureModel.Name = creatureType .. "_" .. tick()
+	creatureModel.Name = creatureType .. "_" .. os.clock()
 	
 	-- Debug: Model destruction tracking (removed spam)
 	
@@ -128,7 +128,7 @@ local function getRandomSpawnPosition(spawnerPart, usedPositions, creatureModel)
 	local maxAttempts = CreatureSpawnConfig.Settings.MaxScatterAttempts
 	
 	-- Calculate dynamic height offset based on creature model size
-	local heightOffset = 0.5 -- Default fallback
+	local heightOffset = 0.5
 	if creatureModel then
 		local success, cframe, size = pcall(function()
 			return creatureModel:GetBoundingBox()
@@ -212,12 +212,10 @@ local function processSpawner(spawnerPart)
 	local usedPositions = {}
 
 	for _, creatureType in pairs(creaturesToSpawn) do
-		-- Get creature template for height calculation
 		local template = CreatureSpawner.getCreatureTemplate(creatureType)
 		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions, template)
 		local aiController = CreatureSpawner.spawnCreature(creatureType, spawnPosition)
 
-		-- Register with AI Manager
 		if aiController then
 			AIManager.getInstance():registerCreature(aiController)
 		end

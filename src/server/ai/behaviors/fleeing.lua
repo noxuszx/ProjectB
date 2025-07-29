@@ -25,7 +25,7 @@ function FleeingBehavior:enter(creature)
 
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	self.fleeDuration = creatureConfig and creatureConfig.FleeDuration or 10
-	self.fleeStartTime = tick()
+	self.fleeStartTime = os.clock()
 
 
 	if AIConfig.Debug.LogBehaviorChanges then
@@ -42,7 +42,7 @@ function FleeingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
 	-- Simple time-based fleeing - no complex distance calculations
-	local timeElapsed = tick() - self.fleeStartTime
+	local timeElapsed = os.clock() - self.fleeStartTime
 	if timeElapsed >= self.fleeDuration then
 		self:stopFleeing(creature, "time expired")
 		return

@@ -42,7 +42,7 @@ RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 	task.spawn(function()
 		task.wait(0.5)
 
-		if object and object.Parent then -- Check if object still exists
+		if object and object.Parent then
 			if object:IsA("MeshPart") or object:IsA("Part") then
 				object:SetNetworkOwner(nil)
 			elseif object.PrimaryPart then

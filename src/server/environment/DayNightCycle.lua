@@ -10,10 +10,9 @@ local TimeConfig = require(ReplicatedStorage.Shared.config.time)
 
 local dayNightCycle = {}
 local currentTime = TimeConfig.START_TIME
-local cycleStartTime = tick()
+local cycleStartTime = os.clock()
 local timeCallbacks = {}
 
--- Time period tracking
 local currentPeriod = nil
 local lastPeriod = nil
 
@@ -47,20 +46,18 @@ local function getTimePeriod(gameHours)
 end
 
 local function updateTime()
-	local currentTick = tick()
+	local currentTick = os.clock()
 	local elapsedTime = currentTick - cycleStartTime
-	
 	local gameTimeProgress = (elapsedTime / TimeConfig.DAY_LENGTH) * 24
+
 	currentTime = (TimeConfig.START_TIME + gameTimeProgress) % 24
-	
 	local Lighting = game:GetService("Lighting")
 	Lighting.ClockTime = currentTime
-	
 	local newPeriod = getTimePeriod(currentTime)
+
 	if newPeriod ~= currentPeriod then
 		lastPeriod = currentPeriod
 		currentPeriod = newPeriod
-		-- Period changed - other systems can check getCurrentPeriod() if needed
 	end
 end
 
@@ -77,7 +74,7 @@ function dayNightCycle.getFormattedTime()
 end
 
 function dayNightCycle.getTimeProgress()
-	local elapsedTime = tick() - cycleStartTime
+	local elapsedTime = os.clock() - cycleStartTime
 	return (elapsedTime / TimeConfig.DAY_LENGTH) % 1
 end
 
@@ -88,7 +85,7 @@ end
 
 function dayNightCycle.setTime(gameHours)
 	currentTime = gameHours % 24
-	cycleStartTime = tick() - ((currentTime - TimeConfig.START_TIME) / 24) * TimeConfig.DAY_LENGTH
+	cycleStartTime = os.clock() - ((currentTime - TimeConfig.START_TIME) / 24) * TimeConfig.DAY_LENGTH
 	updateTime()
 end
 
@@ -122,7 +119,7 @@ end
 function dayNightCycle.init()
 	
 	currentTime = TimeConfig.START_TIME
-	cycleStartTime = tick()
+	cycleStartTime = os.clock()
 	currentPeriod = getTimePeriod(currentTime)
 	
 	RunService.Heartbeat:Connect(function()

@@ -14,15 +14,12 @@ local function onPlayerAdded(player)
 	local function onCharacterAdded(character)
 		local humanoid = character:WaitForChild("Humanoid")
 		
-		-- Connect to death event
 		humanoid.Died:Connect(function()
 			if ragdolledPlayers[player.UserId] then
-				return -- Already ragdolled
+				return
 			end
 			
 			print("[PlayerDeathHandler] Player", player.Name, "died - applying ragdoll")
-			
-			-- Apply ragdoll using the existing module function
 			local success = RagdollModule.Ragdoll(character)
 			
 			if success then

@@ -25,8 +25,8 @@ function AIBehavior:enter(creature)
 	end
 	
 	self.isActive = true
-	self.enterTime = tick()
-	self.lastTransitionTime = tick()
+	self.enterTime = os.clock()
+	self.lastTransitionTime = os.clock()
 end
 
 function AIBehavior:update(creature, deltaTime)
@@ -47,7 +47,7 @@ function AIBehavior:getActiveTime()
 	if not self.isActive then
 		return 0
 	end
-	return tick() - self.enterTime
+	return os.clock() - self.enterTime
 end
 
 function AIBehavior:hasBeenActiveFor(seconds)

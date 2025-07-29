@@ -60,7 +60,7 @@ function HostileCreature:onTouch(hit)
 	end
 	
 	-- Check damage cooldown
-	local currentTime = tick()
+	local currentTime = os.clock()
 	if self.lastDamageTime[player.UserId] and 
 	   currentTime - self.lastDamageTime[player.UserId] < self.damageCooldown then
 		return

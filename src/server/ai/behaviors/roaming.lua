@@ -83,7 +83,7 @@ end
 
 function RoamingBehavior:startIdling(creature)
 	self.state = RoamingState.IDLE
-	self.idleStartTime = tick()
+	self.idleStartTime = os.clock()
 
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	local idleTimeRange = creatureConfig and creatureConfig.IdleTime or {5, 15}
@@ -96,7 +96,7 @@ function RoamingBehavior:startIdling(creature)
 end
 
 function RoamingBehavior:updateIdling()
-	local timeIdling = tick() - self.idleStartTime
+	local timeIdling = os.clock() - self.idleStartTime
 
 	if timeIdling >= self.idleDuration then
 		self.state = RoamingState.CHOOSING_DESTINATION

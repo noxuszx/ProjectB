@@ -5,7 +5,7 @@
 local AIConfig = {
 	-- Global AI system settings
 	Settings = {
-		MaxCreatures = 300, 		-- Maximum number of creatures in the world
+		MaxCreatures = 200, 		-- Maximum number of creatures in the world
 		UpdateBudgetMs = 5, 		-- Maximum milliseconds per frame for AI updates
 		DebugMode = false, 			-- Enable debug prints and visualizations
 		SpatialGridSize = 50, 		-- Size of spatial grid cells for optimization (studs)
@@ -15,23 +15,23 @@ local AIConfig = {
 	-- Performance optimization settings
 	Performance = {
 		-- Distance-based Level of Detail (LOD) system
+		-- Optimized rates after performance improvements (July 2025)
 		LOD = {
 			Close = {
 				Distance = 50, -- 0-50 studs
-				UpdateRate = 30, -- Updates per second
+				UpdateRate = 30, -- Updates per second (unchanged - already good)
 			},
 			Medium = {
 				Distance = 100, -- 50-100 studs  
-				UpdateRate = 10, -- Updates per second
+				UpdateRate = 15, -- Updates per second (increased from 10 for smoother roaming)
 			},
 			Far = {
-				Distance = 200, -- 100-200 studs
-				UpdateRate = 2, -- Updates per second
+				Distance = 250, -- 100-250 studs (extended for 224x224 world)
+				UpdateRate = 2, -- Updates per second (increased from 2 for visible movement)
 			},
-			-- Beyond 200 studs: creatures are paused/culled
 		},
 		
-		MaxCreaturesPerFrame = 10, 		-- Maximum creatures to update per frame
+		MaxCreaturesPerFrame = 25, 		-- Maximum creatures to update per frame (increased from 10)
 		CreaturePoolSize = 50,		 	-- Number of creature instances to keep in memory pool
 		
 		EnableSpatialPartitioning = true,
@@ -40,7 +40,6 @@ local AIConfig = {
 
 	-- Creature type definitions
 	CreatureTypes = {
-		-- Passive Creatures
 		Rabbit = {
 			Type = "Passive",
 			Health = 40,
@@ -61,7 +60,7 @@ local AIConfig = {
 			FleeSpeed = 18,
 			FleeDuration = 8,
 			RoamRadius = 30,
-			IdleTime = {2, 10},
+			IdleTime = {2, 3},
 			ModelFolder = "PassiveCreatures",
 			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
 		},
@@ -74,7 +73,7 @@ local AIConfig = {
 			FleeSpeed = 16,
 			FleeDuration = 5,
 			RoamRadius = 30,
-			IdleTime = {2, 10},
+			IdleTime = {2, 3},
 			ModelFolder = "PassiveCreatures",
 			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
 		},

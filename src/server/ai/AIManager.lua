@@ -1,27 +1,48 @@
 -- src/server/ai/AIManager.lua
 -- Central AI management system - handles creature lifecycle and updates
 -- Singleton pattern for global access
+-- Optimized with modular architecture and player position caching
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local LODPolicy = require(script.Parent.LODPolicy)
+local AICreatureRegistry = require(script.Parent.AICreatureRegistry)
+local AIDebugger = require(script.Parent.AIDebugger)
 
 local AIManager = {}
 AIManager.__index = AIManager
 local instance = nil
 
--- Private properties
+-- ============================================
+-- CORE STATE MANAGEMENT
+-- ============================================
 local activeCreatures = {}
 local lastUpdateTime = 0
 local updateConnection = nil
 
--- LOD system properties
-local lodUpdateIndex = 1 -- Current creature index for LOD checking
-local lodUpdateBatchSize = 15 -- Number of creatures to check LOD per frame
-local lodCacheDuration = 0.5 -- How long to cache LOD results (seconds)
+-- ============================================  
+-- PLAYER POSITION CACHING SYSTEM
+-- ============================================
+local cachedPlayerPositions = {}
+local lastPlayerCacheUpdate = 0
+local playerCacheUpdateInterval = 0.1 -- Update every 0.1 seconds
 
--- Singleton access
+-- ============================================
+-- LOD (LEVEL OF DETAIL) SYSTEM
+-- ============================================
+local lodUpdateIndex = 1
+local lodUpdateBatchSize = 15
+local lodCacheDuration = 0.5
+
+-- ============================================
+-- PERFORMANCE OPTIMIZATION
+-- ============================================
+local scratchArray = {}
+local toRemoveIndices = {}
+
 function AIManager.getInstance()
 	if not instance then
 		instance = AIManager.new()
@@ -34,10 +55,39 @@ function AIManager.new()
 	
 	self.isInitialized = false
 	self.totalCreatures = 0
-	self.updateBudget = AIConfig.Settings.UpdateBudgetMs / 1000 -- Convert to seconds
+	self.updateBudget = AIConfig.Settings.UpdateBudgetMs / 1000
 	
 	return self
 end
+
+-- ============================================
+-- PLAYER POSITION CACHING FUNCTIONS
+-- ============================================
+
+-- Update cached player positions for performance optimization
+local function updatePlayerPositionCache()
+	local currentTime = os.clock()
+	
+	-- Only update if enough time has passed
+	if currentTime - lastPlayerCacheUpdate < playerCacheUpdateInterval then
+		return
+	end
+	
+	-- Clear and rebuild the cache
+	table.clear(cachedPlayerPositions)
+	
+	for _, player in pairs(Players:GetPlayers()) do
+		if player.Character and player.Character.PrimaryPart then
+			table.insert(cachedPlayerPositions, player.Character.PrimaryPart.Position)
+		end
+	end
+	
+	lastPlayerCacheUpdate = currentTime
+end
+
+-- ============================================
+-- INITIALIZATION
+-- ============================================
 
 -- Initialize the AI system
 function AIManager:init()
@@ -47,7 +97,10 @@ function AIManager:init()
 	end
 	
 	self.isInitialized = true
-	lastUpdateTime = tick()
+	lastUpdateTime = os.clock()
+	
+	-- Initialize player position cache
+	updatePlayerPositionCache()
 	
 	-- Start update loop
 	updateConnection = RunService.Heartbeat:Connect(function()
@@ -57,73 +110,45 @@ function AIManager:init()
 
 end
 
--- Calculate LOD level for a creature based on nearest player distance
-local function calculateLODLevel(creature)
-	local nearestPlayerDistance = math.huge
-	
-	-- Find nearest player
-	for _, player in pairs(game.Players:GetPlayers()) do
-		if player.Character and player.Character.PrimaryPart then
-			local distance = (creature.position - player.Character.PrimaryPart.Position).Magnitude
-			nearestPlayerDistance = math.min(nearestPlayerDistance, distance)
-		end
-	end
-	
-	-- Determine LOD level based on distance
-	local lodConfig = AIConfig.Performance.LOD
-	if nearestPlayerDistance <= lodConfig.Close.Distance then
-		return "Close", lodConfig.Close.UpdateRate
-	elseif nearestPlayerDistance <= lodConfig.Medium.Distance then
-		return "Medium", lodConfig.Medium.UpdateRate
-	elseif nearestPlayerDistance <= lodConfig.Far.Distance then
-		return "Far", lodConfig.Far.UpdateRate
-	else
-		return "Culled", 0 -- Beyond max distance, don't update
-	end
-end
 
 -- Register a creature with the AI system
+-- ============================================
+-- CREATURE LIFECYCLE MANAGEMENT
+-- ============================================
+
 function AIManager:registerCreature(creature)
-	if not creature then
-		warn("[AIManager] Attempted to register nil creature")
-		return
+	local success = AICreatureRegistry.registerCreature(creature, activeCreatures)
+	if success then
+		self.totalCreatures = #activeCreatures
 	end
-	
-	-- Initialize LOD properties
-	creature.lodLevel = "Close"
-	creature.lodUpdateRate = 30
-	creature.lodLastUpdate = 0
-	creature.lodNextUpdate = 0
-	
-	table.insert(activeCreatures, creature)
-	self.totalCreatures = #activeCreatures
+	return success
 end
 
--- Unregister a creature from the AI system
 function AIManager:unregisterCreature(creature)
-	for i, activeCreature in ipairs(activeCreatures) do
-		if activeCreature == creature then
-			table.remove(activeCreatures, i)
-			self.totalCreatures = #activeCreatures
-			break
-		end
+	local success = AICreatureRegistry.unregisterCreature(creature, activeCreatures)
+	if success then
+		self.totalCreatures = #activeCreatures
 	end
+	return success
 end
 
 -- Staggered LOD update system - updates a batch of creatures' LOD levels each frame
 function AIManager:updateCreatureLOD()
 	if #activeCreatures == 0 then return end
 	
-	local currentTime = tick()
+	local currentTime = os.clock()
 	local endIndex = math.min(lodUpdateIndex + lodUpdateBatchSize - 1, #activeCreatures)
 	
-	-- Update LOD for current batch of creatures
+	-- Update LOD for current batch of creatures using cached player positions
 	for i = lodUpdateIndex, endIndex do
 		local creature = activeCreatures[i]
 		if creature and creature.isActive then
 			-- Only recalculate LOD if cache has expired
 			if currentTime - creature.lodLastUpdate >= lodCacheDuration then
-				creature.lodLevel, creature.lodUpdateRate = calculateLODLevel(creature)
+				creature.lodLevel, creature.lodUpdateRate = LODPolicy.calculateLODLevel(
+					creature.position, 
+					cachedPlayerPositions
+				)
 				creature.lodLastUpdate = currentTime
 				creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
 			end
@@ -138,89 +163,111 @@ function AIManager:updateCreatureLOD()
 end
 
 -- Main update loop for all creatures with LOD system
+-- ============================================
+-- MAIN UPDATE LOOP WITH BUDGET MANAGEMENT
+-- ============================================
+
 function AIManager:updateAllCreatures()
 	if not self.isInitialized or #activeCreatures == 0 then
 		return
 	end
 	
-	local currentTime = tick()
+	local frameStartTime = os.clock()
+	local currentTime = frameStartTime
 	local deltaTime = currentTime - lastUpdateTime
 	lastUpdateTime = currentTime
 	
-	-- Update LOD levels for a batch of creatures each frame
+	updatePlayerPositionCache()
 	self:updateCreatureLOD()
 	
-	-- Batch cleanup system to prevent lag spikes from multiple table.remove() calls
-	local toRemove = {}  -- Collect indices of creatures to remove
+	local elapsedTime = os.clock() - frameStartTime
+	if elapsedTime >= self.updateBudget then
+		AIDebugger.logPerformanceWarning(elapsedTime, self.updateBudget, "LOD updates", 0, #activeCreatures)
+		return
+	end
 	
-	-- Update creatures based on their LOD level and update rate
-	for i = 1, #activeCreatures do
-		local creature = activeCreatures[i]
-		
-		if creature and creature.isActive and creature.model.Parent then
-			-- Check if this creature should be updated this frame based on LOD
-			local shouldUpdate = false
-			
-			if creature.lodLevel == "Culled" then
-				-- Don't update culled creatures
-				shouldUpdate = false
-			elseif creature.lodUpdateRate >= 30 then
-				-- Close creatures: update every frame
-				shouldUpdate = true
-			else
-				-- Medium/Far creatures: update based on their scheduled time
-				shouldUpdate = currentTime >= creature.lodNextUpdate
-				if shouldUpdate then
-					creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
-				end
-			end
-			
+	local updatedCreatures = 0
+	
+	-- Build per-LOD queues for fair budget allocation
+	local queues = {
+		Close = {},
+		Medium = {},
+		Far = {}
+	}
+	
+	for _, creature in ipairs(activeCreatures) do
+		if creature and creature.isActive and creature.model.Parent and creature.lodLevel ~= "Culled" then
+			local shouldUpdate = (creature.lodUpdateRate >= 30) or (currentTime >= creature.lodNextUpdate)
 			if shouldUpdate then
-				creature:update(deltaTime)
+				table.insert(queues[creature.lodLevel], creature)
 			end
-			
-			-- Check if creature became inactive during update (e.g., missing PrimaryPart)
-			if not creature.isActive then
-				table.insert(toRemove, i)
-			end
-		else
-			-- Mark inactive or destroyed creatures for removal
-			table.insert(toRemove, i)
 		end
 	end
 	
-	-- Batch remove all inactive creatures (in reverse order to avoid index shifting issues)
-	for i = #toRemove, 1, -1 do
-		table.remove(activeCreatures, toRemove[i])
+	-- Allocate guaranteed budget per LOD band
+	local BUDGET = {
+		Close = 25,  -- Always serve close creatures first
+		Medium = 15,
+		Far = 10,
+	}
+	local MAX_TOTAL = 50  -- Safety cap
+	
+	local toUpdateThisFrame = {}
+	local total = 0
+	
+	for level, list in pairs(queues) do
+		local limit = math.min(#list, BUDGET[level])
+		for i = 1, limit do
+			if total >= MAX_TOTAL then break end
+			table.insert(toUpdateThisFrame, list[i])
+			total = total + 1
+		end
 	end
 	
-	-- Update total count once after batch removal
-	if #toRemove > 0 then
+	-- Update the selected creatures
+	for _, creature in ipairs(toUpdateThisFrame) do
+		elapsedTime = os.clock() - frameStartTime
+		if elapsedTime >= self.updateBudget then
+			AIDebugger.logPerformanceWarning(elapsedTime, self.updateBudget, "creature updates", updatedCreatures, #activeCreatures)
+			break
+		end
+		
+		creature:update(deltaTime)
+		updatedCreatures = updatedCreatures + 1
+		
+		-- Update next update time for timed creatures
+		if creature.lodUpdateRate < 30 then
+			creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
+		end
+	end
+	
+	-- Batch cleanup using the new registry system
+	AICreatureRegistry.collectInactiveCreatures(activeCreatures, toRemoveIndices)
+	if #toRemoveIndices > 0 then
+		AICreatureRegistry.batchRemoveCreatures(activeCreatures, toRemoveIndices)
 		self.totalCreatures = #activeCreatures
+		
 		-- Reset LOD index if it's beyond the new array size
 		if lodUpdateIndex > #activeCreatures then
 			lodUpdateIndex = 1
 		end
 	end
+	
+	-- Performance logging (if debug enabled)
+	local totalFrameTime = os.clock() - frameStartTime
+	AIDebugger.logFramePerformance(totalFrameTime, self.updateBudget, updatedCreatures, #activeCreatures)
 end
 
 -- Get all creatures within a certain range of a position
+-- ============================================
+-- CREATURE QUERY FUNCTIONS
+-- ============================================
+
 function AIManager:getCreaturesInRange(position, range)
-	local creaturesInRange = {}
-	
-	for _, creature in pairs(activeCreatures) do
-		if creature.isActive and creature.model.Parent then
-			local distance = (creature.position - position).Magnitude
-			if distance <= range then
-				table.insert(creaturesInRange, creature)
-			end
-		end
-	end
-	
-	return creaturesInRange
+	local tempPositionCache = {position}
+	return LODPolicy.getCreaturesInRange(activeCreatures, tempPositionCache, range, scratchArray)
 end
 
--- Get creature instance by its Roblox model
 function AIManager:getCreatureByModel(model)
 	for _, creature in pairs(activeCreatures) do
 		if creature.model == model then
@@ -230,54 +277,32 @@ function AIManager:getCreatureByModel(model)
 	return nil
 end
 
--- Get total number of active creatures
 function AIManager:getCreatureCount()
 	return self.totalCreatures
 end
 
--- Get debug information
 function AIManager:getDebugInfo()
-	-- Calculate LOD distribution
-	local lodBreakdown = {Close = 0, Medium = 0, Far = 0, Culled = 0}
-	for _, creature in pairs(activeCreatures) do
-		if creature.isActive then
-			lodBreakdown[creature.lodLevel] = (lodBreakdown[creature.lodLevel] or 0) + 1
-		end
-	end
-	
-	return {
-		totalCreatures = self.totalCreatures,
-		isInitialized = self.isInitialized,
-		updateBudget = self.updateBudget,
-		activeCreatureTypes = self:getCreatureTypeBreakdown(),
-		lodDistribution = lodBreakdown,
-		lodUpdateIndex = lodUpdateIndex,
-		lodBatchSize = lodUpdateBatchSize
-	}
+	return AIDebugger.getDebugInfo(
+		activeCreatures,
+		cachedPlayerPositions,
+		self.totalCreatures,
+		self.isInitialized,
+		self.updateBudget,
+		lodUpdateIndex,
+		lodUpdateBatchSize
+	)
 end
 
--- Get breakdown of creature types
 function AIManager:getCreatureTypeBreakdown()
-	local breakdown = {}
-	
-	for _, creature in pairs(activeCreatures) do
-		if creature.isActive then
-			local creatureType = creature.creatureType
-			breakdown[creatureType] = (breakdown[creatureType] or 0) + 1
-		end
-	end
-	
-	return breakdown
+	return AIDebugger.getCreatureTypeBreakdown(activeCreatures)
 end
 
--- Cleanup and shutdown
 function AIManager:shutdown()
 	if updateConnection then
 		updateConnection:Disconnect()
 		updateConnection = nil
 	end
 	
-	-- Cleanup all creatures
 	for _, creature in pairs(activeCreatures) do
 		if creature and creature.destroy then
 			creature:destroy()

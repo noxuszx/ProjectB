@@ -185,11 +185,9 @@ function module.PermanentNpcRagdoll(char : Model) -- Permanent ragdoll for creat
 		-- Set humanoid to physics state
 		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 		
-		-- Tag the character as ragdolled to prevent cleanup
 		char:SetAttribute("Ragdolled", true)
-		char:SetAttribute("RagdollTime", tick())
+		char:SetAttribute("RagdollTime", os.clock())
 		
-		-- Make the ragdolled body draggable and weldable (only tag the character model)
 		CollectionService:AddTag(char, "Draggable")
 		CollectionService:AddTag(char, "Weldable")
 		

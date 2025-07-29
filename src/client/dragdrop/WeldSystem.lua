@@ -80,7 +80,7 @@ local function removeHoverHighlight()
 end
 
 function WeldSystem.updateHoveredObject(isDragging, isDraggableObjectFunc)
-    local currentTime = tick()
+    local currentTime = os.clock()
     local target = mouse.Target
     
     if target == lastTarget and (currentTime - lastUpdateTime) < UPDATE_THROTTLE then
@@ -169,7 +169,7 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
     local bestTarget = weldTargets[1]
     local weldTarget = bestTarget.part
 
-    local weldId = tick() .. "_" .. math.random(1000, 9999)
+    local weldId = os.clock() .. "_" .. math.random(1000, 9999)
     local weldName = "DragDropWeld_" .. weldId
 
     local weld = Instance.new("WeldConstraint")

@@ -96,7 +96,7 @@ function FoodDropSystem.dropFood(creatureType, position)
 	
 	-- Clone the food model
 	local foodModel = foodTemplate:Clone()
-	foodModel.Name = foodType .. "_" .. tick()
+	foodModel.Name = foodType .. "_" .. os.clock()
 	
 	-- Position the food near the death location
 	local dropPosition = FoodDropSystem.getDropPosition(position)
