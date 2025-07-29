@@ -9,11 +9,11 @@ local PlayerStatsConfig = {
 	MAX_THIRST = 100,
 	
 	-- Stat decay system settings
-	TICK_INTERVAL = 5, -- Seconds between each decay tick
+	TICK_INTERVAL = 1, -- Seconds between each decay tick (faster for testing)
 	
 	-- Decay rates per tick (how much stats decrease each interval)
-	HUNGER_DECAY_PER_TICK = 0.5, -- Hunger decreases by 0.5 every 5 seconds
-	THIRST_DECAY_PER_TICK = 1.0, -- Thirst decreases by 1.0 every 5 seconds (faster than hunger)
+	HUNGER_DECAY_PER_TICK = 0.5, -- Hunger decreases by 0.5 every 1 second
+	THIRST_DECAY_PER_TICK = 5.0, -- Thirst decreases by 5.0 every 1 second (much faster for testing)
 	
 	-- Damage dealt when stats reach 0
 	STARVATION_DAMAGE_PER_TICK = 2, -- Health damage when Hunger = 0
@@ -40,7 +40,7 @@ local PlayerStatsConfig = {
 	},
 	
 	-- Debug settings
-	DEBUG_MODE = false, -- Enable console logging for stat changes
+	DEBUG_MODE = true, -- Enable console logging for stat changes
 	SHOW_EXACT_VALUES = false, -- Show precise decimal values in debug (vs rounded)
 }
 

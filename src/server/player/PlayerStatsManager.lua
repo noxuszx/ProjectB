@@ -59,7 +59,6 @@ end
 function PlayerStatsManager.onPlayerRemoving(player)
 	local userId = player.UserId
 	
-	-- Clean up player data
 	playerStats[userId] = nil
 	ragdolledPlayers[userId] = nil
 	
@@ -102,10 +101,7 @@ function PlayerStatsManager.processStatDecay()
 		stats.Hunger = math.max(0, stats.Hunger - hungerDecay)
 		stats.Thirst = math.max(0, stats.Thirst - thirstDecay)
 		
-		-- Check for starvation/dehydration damage
 		PlayerStatsManager.checkStarvationDamage(player, stats)
-		
-		-- Update client with new stats
 		PlayerStatsManager.updateClientStats(player)
 		
 		if PlayerStatsConfig.DEBUG_MODE then
