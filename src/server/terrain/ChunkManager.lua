@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
-local terrain = require(game.ReplicatedStorage.Shared.utilities.terrain)
+local terrain = require(game.ReplicatedStorage.Shared.utilities.Terrain)
 
 local ChunkManager = {}
 local chunks = {}

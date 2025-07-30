@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local ModelSpawnerConfig = require(ReplicatedStorage.Shared.config.ModelSpawnerConfig)
-local terrain = require(ReplicatedStorage.Shared.utilities.terrain)
+local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
 
 local CustomModelSpawner = {}
 local spawnedObjects = {}

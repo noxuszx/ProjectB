@@ -392,6 +392,7 @@ function BaseCreature:updateDebugGUI()
 		if self.currentBehavior then
 			if self.currentBehavior.name then
 				stateName = self.currentBehavior.name
+				
 				if self.currentBehavior.state then
 					stateName = stateName .. ":" .. self.currentBehavior.state
 				end

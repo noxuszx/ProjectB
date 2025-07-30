@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local villageConfig = require(ReplicatedStorage.Shared.config.Village)
-local terrain = require(ReplicatedStorage.Shared.utilities.terrain)
+local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 
 local VillageSpawner = {}
