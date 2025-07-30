@@ -1,14 +1,14 @@
 --[[
-	dayNightCycle.lua
+	DayNightCycle.lua
 	Core day/night cycle system managing game time and events
 ]]--
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local TimeConfig = require(ReplicatedStorage.Shared.config.time)
+local TimeConfig = require(ReplicatedStorage.Shared.config.Time)
 
-local dayNightCycle = {}
+local DayNightCycle = {}
 local currentTime = TimeConfig.START_TIME
 local cycleStartTime = os.clock()
 local timeCallbacks = {}
@@ -61,36 +61,36 @@ local function updateTime()
 	end
 end
 
-function dayNightCycle.getCurrentTime()
+function DayNightCycle.getCurrentTime()
 	return currentTime
 end
 
-function dayNightCycle.getCurrentPeriod()
+function DayNightCycle.getCurrentPeriod()
 	return currentPeriod or getTimePeriod(currentTime)
 end
 
-function dayNightCycle.getFormattedTime()
+function DayNightCycle.getFormattedTime()
 	return formatTime(currentTime)
 end
 
-function dayNightCycle.getTimeProgress()
+function DayNightCycle.getTimeProgress()
 	local elapsedTime = os.clock() - cycleStartTime
 	return (elapsedTime / TimeConfig.DAY_LENGTH) % 1
 end
 
-function dayNightCycle.getCurrentLightingPreset()
-	local period = dayNightCycle.getCurrentPeriod()
+function DayNightCycle.getCurrentLightingPreset()
+	local period = DayNightCycle.getCurrentPeriod()
 	return TimeConfig.LIGHTING_PRESETS[period]
 end
 
-function dayNightCycle.setTime(gameHours)
+function DayNightCycle.setTime(gameHours)
 	currentTime = gameHours % 24
 	cycleStartTime = os.clock() - ((currentTime - TimeConfig.START_TIME) / 24) * TimeConfig.DAY_LENGTH
 	updateTime()
 end
 
-function dayNightCycle.skipToNextPeriod()
-	local period = dayNightCycle.getCurrentPeriod()
+function DayNightCycle.skipToNextPeriod()
+	local period = DayNightCycle.getCurrentPeriod()
 	local targetTime
 	
 	if period == "NIGHT" then
@@ -113,10 +113,10 @@ function dayNightCycle.skipToNextPeriod()
 		targetTime = TimeConfig.DAWN_START
 	end
 	
-	dayNightCycle.setTime(targetTime)
+	DayNightCycle.setTime(targetTime)
 end
 
-function dayNightCycle.init()
+function DayNightCycle.init()
 	
 	currentTime = TimeConfig.START_TIME
 	cycleStartTime = os.clock()
@@ -129,11 +129,11 @@ function dayNightCycle.init()
 	print("Day/Night cycle initialized...")
 end
 
-function dayNightCycle.getDebugInfo()
+function DayNightCycle.getDebugInfo()
 	return {
 		currentPeriod = currentPeriod,
 		gameTime = currentTime
 	}
 end
 
-return dayNightCycle
+return DayNightCycle

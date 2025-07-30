@@ -2,6 +2,7 @@
 -- Configuration file for the AI System
 -- This file defines creature types, behaviors, performance settings, and spawn parameters
 
+
 local AIConfig = {
 	-- Global AI system settings
 	Settings = {
@@ -18,21 +19,28 @@ local AIConfig = {
 		-- Optimized rates after performance improvements (July 2025)
 		LOD = {
 			Close = {
-				Distance = 50, -- 0-50 studs
-				UpdateRate = 30, -- Updates per second (unchanged - already good)
+				Distance = 50,
+				UpdateRate = 30,
 			},
 			Medium = {
-				Distance = 100, -- 50-100 studs  
-				UpdateRate = 15, -- Updates per second (increased from 10 for smoother roaming)
+				Distance = 100,
+				UpdateRate = 15,
 			},
 			Far = {
-				Distance = 250, -- 100-250 studs (extended for 224x224 world)
-				UpdateRate = 2, -- Updates per second (increased from 2 for visible movement)
+				Distance = 250,
+				UpdateRate = 2,
 			},
 		},
 		
-		MaxCreaturesPerFrame = 25, 		-- Maximum creatures to update per frame (increased from 10)
-		CreaturePoolSize = 50,		 	-- Number of creature instances to keep in memory pool
+		-- Parallel processing settings
+		Parallel = {
+			EnableParallelLOD = true,		-- Enable parallel LOD calculations
+			LODBatchSize = 25,				-- Creatures per parallel batch
+			MinCreaturesForParallel = 10,	-- Minimum creatures before using parallel processing
+		},
+		
+		MaxCreaturesPerFrame = 25, 			-- Maximum creatures to update per frame (increased from 10)
+		CreaturePoolSize = 50,		 		-- Number of creature instances to keep in memory pool
 		
 		EnableSpatialPartitioning = true,
 		SpatialUpdateFrequency = 5,
@@ -62,7 +70,7 @@ local AIConfig = {
 			RoamRadius = 30,
 			IdleTime = {2, 3},
 			ModelFolder = "PassiveCreatures",
-			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
+			FleeOnProximity = false,
 		},
 
 		Villager2 = {
@@ -75,7 +83,7 @@ local AIConfig = {
 			RoamRadius = 30,
 			IdleTime = {2, 3},
 			ModelFolder = "PassiveCreatures",
-			FleeOnProximity = false,  -- Don't flee from player proximity, only when hurt
+			FleeOnProximity = false,
 		},
 
 		-- Hostile Creatures
@@ -136,6 +144,7 @@ local AIConfig = {
 		
 		-- Creature distribution weights (higher = more common)
 		CreatureWeights = {
+
 			-- Passive creatures (more common)
 			Rabbit = 2,
 			Villager1 = 3,
@@ -159,7 +168,6 @@ local AIConfig = {
 		-- Most complex settings removed for simplicity and performance
 		-- Humanoid:MoveTo handles pathfinding, obstacle avoidance, and stuck detection
 
-		-- Return behavior settings (if needed in future)
 		ReturnToSpawnThreshold = 50, 	-- Distance from spawn before returning (studs)
 		ReturnSpeed = 1.2, 				-- Speed multiplier when returning to spawn
 	},
@@ -167,12 +175,12 @@ local AIConfig = {
 	-- Debugging and visualization settings
 	Debug = {
 		ShowDetectionRanges = false, -- Visualize detection ranges
-		ShowWaypoints = false, -- Show creature waypoints
-		ShowStateLabels = false, -- Show current behavior state above creatures
-		ShowPerformanceStats = false, -- Display performance statistics
-		LogBehaviorChanges = false, -- Print behavior state changes (DISABLED to reduce spam)
-		LogSpawning = false, -- Print creature spawning events
-		LogStuckDetection = false, -- Print stuck detection events (separate from behavior changes)
+		ShowWaypoints = false, 		 -- Show creature waypoints
+		ShowStateLabels = false, 	 -- Show current behavior state above creatures
+		ShowPerformanceStats = false,-- Display performance statistics
+		LogBehaviorChanges = false,	 -- Print behavior state changes (DISABLED to reduce spam)
+		LogSpawning = false, 		 -- Print creature spawning events
+		LogStuckDetection = false,   -- Print stuck detection events (separate from behavior changes)
 	},
 }
 

@@ -6,14 +6,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local villageConfig = require(ReplicatedStorage.Shared.config.village)
+local villageConfig = require(ReplicatedStorage.Shared.config.Village)
 local terrain = require(ReplicatedStorage.Shared.utilities.terrain)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 
 local VillageSpawner = {}
 local random = Random.new()
 
--- Create organized folder for spawned villages
+-- Create organized folder for spawned villagesS
 local villageFolder = Instance.new("Folder")
 villageFolder.Name = "SpawnedVillages"
 villageFolder.Parent = Workspace

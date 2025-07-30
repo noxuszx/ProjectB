@@ -153,7 +153,7 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 
 		if not tooClose then
 			local raycastParams = RaycastParams.new()
-			raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+			raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 			raycastParams.FilterDescendantsInstances = {spawnerPart}
 
 			local raycastResult = workspace:Raycast(

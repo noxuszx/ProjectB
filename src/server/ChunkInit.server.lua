@@ -7,10 +7,10 @@ print("Chunk-based terrain system starting...")
 
 local ChunkManager          = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner    = require(script.Parent.spawning.CustomModelSpawner) 
-local DayNightCycle         = require(script.Parent.environment.dayNightCycle)
+local DayNightCycle         = require(script.Parent.environment.DayNightCycle)
 local VillageSpawner        = require(script.Parent.spawning.VillageSpawner)
 local ItemSpawner           = require(script.Parent.spawning.ItemSpawner)
-local LightingManager       = require(script.Parent.environment.lighting)
+local LightingManager       = require(script.Parent.environment.Lighting)
 local ChunkConfig           = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 

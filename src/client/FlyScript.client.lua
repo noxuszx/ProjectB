@@ -61,7 +61,6 @@ local function updateMovement()
         moveVector = moveVector + Vector3.new(0, -1, 0)
     end
 
-    -- Normalize the vector to prevent diagonal speed boost and apply camera direction
     if moveVector.Magnitude > 0 then
         moveVector = camera.CFrame:VectorToWorldSpace(moveVector.Unit)
     end

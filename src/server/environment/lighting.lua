@@ -1,26 +1,26 @@
 --[[
 	LightingManager.lua
-	Handles lighting transitions based on time of day
+	Handles Lighting transitions based on time of day
 ]]--
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Lighting = game:GetService("Lighting")
+local LightingService = game:GetService("Lighting")
 
-local TimeConfig = require(ReplicatedStorage.Shared.config.time)
-local DayNightCycle = require(script.Parent.dayNightCycle)
+local TimeConfig = require(ReplicatedStorage.Shared.config.Time)
+local DayNightCycle = require(script.Parent.DayNightCycle)
 
 local TweenService = game:GetService("TweenService")
 
-local lighting = {}
+local Lighting = {}
 local currentTween = nil
 local lastPeriod = nil
 
 local function applyLightingPreset(preset)
-	Lighting.Ambient = preset.Ambient
-	Lighting.Brightness = preset.Brightness
-	Lighting.ColorShift_Bottom = preset.ColorShift_Bottom
-	Lighting.ColorShift_Top = preset.ColorShift_Top
-	Lighting.OutdoorAmbient = preset.OutdoorAmbient
+	LightingService.Ambient = preset.Ambient
+	LightingService.Brightness = preset.Brightness
+	LightingService.ColorShift_Bottom = preset.ColorShift_Bottom
+	LightingService.ColorShift_Top = preset.ColorShift_Top
+	LightingService.OutdoorAmbient = preset.OutdoorAmbient
 end
 
 local function tweenLighting(preset)
@@ -30,7 +30,7 @@ local function tweenLighting(preset)
 	
 	local tweenInfo = TweenInfo.new(TimeConfig.TRANSITION_DURATION, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 	
-	local tween = TweenService:Create(Lighting, tweenInfo, {
+	local tween = TweenService:Create(LightingService, tweenInfo, {
 		Ambient = preset.Ambient,
 		Brightness = preset.Brightness,
 		ColorShift_Bottom = preset.ColorShift_Bottom,
@@ -51,8 +51,8 @@ local function updateLighting()
 	end
 end
 
-function lighting.init()
-	print("Initializing lighting manager...")
+function Lighting.init()
+	print("Initializing Lighting manager...")
 	
 	local initialPreset = DayNightCycle.getCurrentLightingPreset()
 	applyLightingPreset(initialPreset)
@@ -62,4 +62,4 @@ function lighting.init()
 	end)
 end
 
-return lighting
+return Lighting

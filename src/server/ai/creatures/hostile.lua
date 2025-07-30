@@ -4,12 +4,12 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local BaseCreature = require(script.Parent.base)
+local BaseCreature = require(script.Parent.Base)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 -- Import behavior classes
-local RoamingBehavior = require(script.Parent.Parent.behaviors.roaming)
-local ChasingBehavior = require(script.Parent.Parent.behaviors.chasing)
+local RoamingBehavior = require(script.Parent.Parent.behaviors.Roaming)
+local ChasingBehavior = require(script.Parent.Parent.behaviors.Chasing)
 
 local HostileCreature = setmetatable({}, {__index = BaseCreature})
 HostileCreature.__index = HostileCreature

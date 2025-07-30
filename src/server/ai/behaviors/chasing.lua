@@ -14,7 +14,7 @@ function ChasingBehavior.new(targetPlayer)
 
 	self.targetPlayer = targetPlayer
 	self.chaseStartTime = 0
-	self.maxChaseTime = 30 -- Give up chase after 30 seconds
+	self.maxChaseTime = 30
 
 	return self
 end
@@ -34,19 +34,16 @@ end
 function ChasingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
-	-- Check if we've been chasing too long
 	if os.clock() - self.chaseStartTime > self.maxChaseTime then
 		self:giveUpChase(creature, "Chase timeout")
 		return
 	end
 
-	-- Check if target is still valid
 	if not self:isTargetValid() then
 		self:giveUpChase(creature, "Target lost")
 		return
 	end
 
-	-- Check if target is still within range and get position
 	if not (self.targetPlayer and self.targetPlayer.Character and self.targetPlayer.Character.PrimaryPart) then
 		self:giveUpChase(creature, "Target invalid")
 		return
@@ -91,7 +88,7 @@ function ChasingBehavior:giveUpChase(creature, reason)
 		print("[ChasingBehavior] " .. creature.creatureType .. " giving up chase: " .. reason)
 	end
 
-	local RoamingBehavior = require(script.Parent.roaming)
+	local RoamingBehavior = require(script.Parent.Roaming)
 	creature:setBehavior(RoamingBehavior.new())
 end
 

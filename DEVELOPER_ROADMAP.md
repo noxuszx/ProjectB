@@ -88,7 +88,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 
 - [ ] Design boss creature (theme, stats, abilities)  
 - [ ] Build boss arena structure (temple, crater, etc.)  
-- [ ] Add unlocking mechanic (key, puzzle, event)  
+- [ ] Add unlocking mechanic (key, puzzle, event)
 - [ ] Create boss fight arena logic (barriers, loot drop)  
 - [ ] Add rare rewards after defeat
 

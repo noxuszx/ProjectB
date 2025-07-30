@@ -21,19 +21,16 @@ local carrying = false
 local currentWeld = nil -- Track current weld state
 
 -- Rotation system state
-local currentRotationAxis = 1 -- 1=X, 2=Y, 3=Z
-local rotationCount = {0, 0, 0} -- Track rotations for each axis [X, Y, Z]
-local originalCFrame = nil -- Store original orientation when picked up
-local rotationStep = math.rad(15) -- 15 degrees in radians
+local currentRotationAxis = 1
+local rotationCount = {0, 0, 0}
+local originalCFrame = nil
+local rotationStep = math.rad(15)
 
--- Helper function to show welding feedback (console only)
 local function showWeldFeedback(message, duration)
 	print("[WeldSystem]", message)
 end
 
--- Helper function to check if object or its welded assembly has anchored parts
 local function hasAnchoredParts(object)
-	-- Handle different object types to get a BasePart
 	local partToCheck = nil
 
 	if object:IsA("BasePart") then
@@ -50,8 +47,6 @@ local function hasAnchoredParts(object)
 		end
 	end
 
-	-- Use Roblox's built-in Assembly system - if any part in the welded assembly
-	-- is anchored, the AssemblyRootPart will be anchored
 	if partToCheck and partToCheck.AssemblyRootPart then
 		return partToCheck.AssemblyRootPart.Anchored
 	end
@@ -59,7 +54,6 @@ local function hasAnchoredParts(object)
 	return false
 end
 
--- Helper function to calculate current rotation based on rotation counts
 local function getCurrentRotation()
 	local xRotation = CFrame.Angles(rotationCount[1] * rotationStep, 0, 0)
 	local yRotation = CFrame.Angles(0, rotationCount[2] * rotationStep, 0)
@@ -85,16 +79,12 @@ UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		LeftClick()
 	elseif input.KeyCode == Enum.KeyCode.Z then
-		-- Weld/Unweld objects
 		if currTargs then
 			local oldWeld = currentWeld
 			currentWeld, _ = WeldSystem.weldObject(currTargs, currentWeld)
 
-			-- Provide feedback based on weld result
 			if currentWeld and not oldWeld then
 				showWeldFeedback("Objects welded together!", 2)
-
-				-- Check if we just welded to anchored parts - if so, drop the item
 				if hasAnchoredParts(currTargs) then
 					showWeldFeedback("Welded to anchored object - dropping item", 2)
 					DropItem(false)
@@ -106,13 +96,11 @@ UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 			end
 		end
 	elseif input.KeyCode == Enum.KeyCode.R then
-		-- Rotate object around current axis
 		if carrying and currTargs then
 			rotationCount[currentRotationAxis] = rotationCount[currentRotationAxis] + 1
 			print("Rotated around axis", currentRotationAxis, "- Count:", rotationCount[currentRotationAxis])
 		end
 	elseif input.KeyCode == Enum.KeyCode.X then
-		-- Switch rotation axis
 		if carrying and currTargs then
 			currentRotationAxis = (currentRotationAxis % 3) + 1
 			local axisNames = {"X", "Y", "Z"}
@@ -140,7 +128,6 @@ UIS.TouchEnded:Connect(function(touchPositions: {any}, gameProcessedEvent: boole
 	if carrying then
 		LeftUnClick()
 	end
-	
 end)
 
 RS.RenderStepped:Connect(function(dT)
@@ -168,18 +155,15 @@ RS.RenderStepped:Connect(function(dT)
 	end
 	
 	if carrying and currTargs ~= nil then
-		-- Check if the object is welded to anchored parts
 		if hasAnchoredParts(currTargs) then
-			-- Object is attached to anchored parts, can't move it
 			showWeldFeedback("Can't move - attached to anchored object", 1)
-			DropItem(false) -- Drop the item since we can't move it
+			DropItem(false)
 			return
 		end
 
 		targetPos = camera.CFrame.Position + (camera.CFrame.LookVector * carryDistance)
 
 		if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
-			-- Calculate target position and apply rotation
 			local positionCFrame = CFrame.new(targetPos)
 			local rotationCFrame = originalCFrame.Rotation * getCurrentRotation()
 			local targetCFrame = positionCFrame * rotationCFrame
@@ -193,7 +177,6 @@ RS.RenderStepped:Connect(function(dT)
 				DropItem(false)
 			end
 		elseif currTargs.PrimaryPart then
-			-- Calculate target position and apply rotation
 			local positionCFrame = CFrame.new(targetPos)
 			local rotationCFrame = originalCFrame.Rotation * getCurrentRotation()
 			local targetCFrame = positionCFrame * rotationCFrame
@@ -216,7 +199,6 @@ RS.RenderStepped:Connect(function(dT)
 		end
 	end
 
-	-- Update WeldSystem for hover detection and visual feedback
 	WeldSystem.updateHoveredObject(carrying, CS_tags.isDraggable)
 
 end)

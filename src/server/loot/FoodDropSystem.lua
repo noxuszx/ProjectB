@@ -204,7 +204,7 @@ function FoodDropSystem.getDropPosition(centerPosition, dyingCreatureModel)
 		
 		-- Raycast to find ground
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		local blacklist = {foodFolder}
 		if dyingCreatureModel then
 			table.insert(blacklist, dyingCreatureModel)

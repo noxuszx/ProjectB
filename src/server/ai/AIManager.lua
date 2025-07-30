@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local LODPolicy = require(script.Parent.LODPolicy)
 local AICreatureRegistry = require(script.Parent.AICreatureRegistry)
 local AIDebugger = require(script.Parent.AIDebugger)
@@ -28,7 +28,7 @@ local updateConnection = nil
 -- ============================================
 local cachedPlayerPositions = {}
 local lastPlayerCacheUpdate = 0
-local playerCacheUpdateInterval = 0.1 -- Update every 0.1 seconds
+local playerCacheUpdateInterval = 0.1
 
 -- ============================================
 -- LOD (LEVEL OF DETAIL) SYSTEM
@@ -67,13 +67,9 @@ end
 -- Update cached player positions for performance optimization
 local function updatePlayerPositionCache()
 	local currentTime = os.clock()
-	
-	-- Only update if enough time has passed
 	if currentTime - lastPlayerCacheUpdate < playerCacheUpdateInterval then
 		return
 	end
-	
-	-- Clear and rebuild the cache
 	table.clear(cachedPlayerPositions)
 	
 	for _, player in pairs(Players:GetPlayers()) do
@@ -98,11 +94,8 @@ function AIManager:init()
 	
 	self.isInitialized = true
 	lastUpdateTime = os.clock()
-	
-	-- Initialize player position cache
+	LODPolicy.initParallel()
 	updatePlayerPositionCache()
-	
-	-- Start update loop
 	updateConnection = RunService.Heartbeat:Connect(function()
 		self:updateAllCreatures()
 	end)
@@ -132,33 +125,39 @@ function AIManager:unregisterCreature(creature)
 	return success
 end
 
--- Staggered LOD update system - updates a batch of creatures' LOD levels each frame
+-- Parallel LOD update system - processes all creatures using parallel actors
 function AIManager:updateCreatureLOD()
 	if #activeCreatures == 0 then return end
 	
 	local currentTime = os.clock()
-	local endIndex = math.min(lodUpdateIndex + lodUpdateBatchSize - 1, #activeCreatures)
+	local creaturesToUpdate = {}
 	
-	-- Update LOD for current batch of creatures using cached player positions
-	for i = lodUpdateIndex, endIndex do
-		local creature = activeCreatures[i]
+	-- Collect creatures that need LOD updates
+	for _, creature in ipairs(activeCreatures) do
 		if creature and creature.isActive then
 			-- Only recalculate LOD if cache has expired
 			if currentTime - creature.lodLastUpdate >= lodCacheDuration then
-				creature.lodLevel, creature.lodUpdateRate = LODPolicy.calculateLODLevel(
-					creature.position, 
-					cachedPlayerPositions
-				)
-				creature.lodLastUpdate = currentTime
-				creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
+				table.insert(creaturesToUpdate, creature)
 			end
 		end
 	end
 	
-	-- Move to next batch, wrap around if we've reached the end
-	lodUpdateIndex = endIndex + 1
-	if lodUpdateIndex > #activeCreatures then
-		lodUpdateIndex = 1
+	-- Process LOD updates in parallel batches
+	if #creaturesToUpdate > 0 then
+		local lodResults = LODPolicy.calculateLODBatch(creaturesToUpdate, cachedPlayerPositions)
+		
+		-- Apply results back to creatures
+		for _, creature in ipairs(creaturesToUpdate) do
+			local creatureId = tostring(creature.model)
+			local result = lodResults[creatureId]
+			
+			if result then
+				creature.lodLevel = result.lodLevel
+				creature.lodUpdateRate = result.updateRate
+				creature.lodLastUpdate = currentTime
+				creature.lodNextUpdate = currentTime + (1 / math.max(creature.lodUpdateRate, 0.1))
+			end
+		end
 	end
 end
 

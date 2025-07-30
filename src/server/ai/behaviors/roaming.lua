@@ -58,7 +58,7 @@ function RoamingBehavior:update(creature, deltaTime)
 				-- Passive creatures only flee if player gets very close (within personal space)
 				local personalSpaceDistance = creatureConfig.DetectionRange * 0.4 -- 40% of detection range
 				if distance <= personalSpaceDistance then
-					local FleeingBehavior = require(script.Parent.fleeing)
+					local FleeingBehavior = require(script.Parent.Fleeing)
 					creature:setBehavior(FleeingBehavior.new(nearestPlayer))
 					return
 				end
@@ -66,7 +66,7 @@ function RoamingBehavior:update(creature, deltaTime)
 			-- If FleeOnProximity is false, creature won't flee from player proximity
 
 		elseif creatureConfig and creatureConfig.Type == "Hostile" then
-			local ChasingBehavior = require(script.Parent.chasing)
+			local ChasingBehavior = require(script.Parent.Chasing)
 			creature:setBehavior(ChasingBehavior.new(nearestPlayer))
 			return
 		end

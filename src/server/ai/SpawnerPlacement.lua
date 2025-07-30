@@ -8,8 +8,8 @@ local Workspace = game:GetService("Workspace")
 
 local NoiseGenerator = require(ReplicatedStorage.Shared.utilities.NoiseGenerator)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
-local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.creatureSpawning)
-local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.spawnerPlacing)
+local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
+local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.SpawnerPlacing)
 
 local SpawnerPlacement = {}
 
@@ -84,7 +84,7 @@ end
 
 local function hasGround(position)
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	raycastParams.FilterDescendantsInstances = {proceduralSpawnersFolder}
 
 	local rayOrigin = position + Vector3.new(0, 10, 0)
@@ -151,7 +151,7 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 
 		-- Raycast to find ground
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		raycastParams.FilterDescendantsInstances = {proceduralSpawnersFolder}
 
 		local raycastDistance = 30 -- Enough to reach ground from Y=20

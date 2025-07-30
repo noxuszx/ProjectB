@@ -11,14 +11,16 @@ A Roblox survival game with procedural terrain, intelligent AI creatures, huntin
 - **Interactive Building** - Drag, drop, weld, and rotate objects
 - **Village Exploration** - Discover settlements with NPCs and resources
 - **Combat System** - Weapon-based combat with multiple creature types
-- **Performance Optimized** - LOD system handles 100+ creatures smoothly
+- **Creature Pooling** - Seamless respawning system with population control
+- **Performance Optimized** - LOD system and pooling handle 100+ creatures smoothly
 
 ## 🎯 Gameplay
 
 ### Survival
 - Hunt rabbits, wolves, and other creatures for food
-- Cook raw meat using campfires, stoves, or grills
+- Cook raw meat using campfires, stoves, or grills to increase hunger value
 - Press E near food to consume and restore hunger
+- Animals automatically respawn from pools after being killed
 - Explore villages for resources and building materials
 
 ### Combat
@@ -52,25 +54,26 @@ src/
 │   ├── ai/                  # AI system and creature behaviors
 │   │   ├── behaviors/       # AI behavior implementations
 │   │   │   ├── AIBehavior.lua
-│   │   │   ├── chasing.lua
-│   │   │   ├── fleeing.lua
-│   │   │   └── roaming.lua
+│   │   │   ├── Chasing.lua
+│   │   │   ├── Fleeing.lua
+│   │   │   └── Roaming.lua
 │   │   ├── creatures/       # Creature type definitions
-│   │   │   ├── base.lua
-│   │   │   ├── hostile.lua
-│   │   │   └── passive.lua
+│   │   │   ├── Base.lua
+│   │   │   ├── Hostile.lua
+│   │   │   └── Passive.lua
 │   │   ├── AICreatureRegistry.lua
 │   │   ├── AIDebugger.lua
 │   │   ├── AIManager.lua
 │   │   ├── creatureSpawner.lua
+│   │   ├── CreaturePoolManager.lua
 │   │   ├── LODPolicy.lua
 │   │   └── spawnerPlacement.lua
 │   ├── dragdrop/            # Server-side drag & drop
 │   │   ├── collisions.server.lua
 │   │   └── interactableHandler.server.lua
 │   ├── environment/         # Environmental systems
-│   │   ├── dayNightCycle.lua
-│   │   └── lighting.lua
+│   │   ├── DayNightCycle.lua
+│   │   └── Lighting.lua
 │   ├── food/                # Server-side food management
 │   │   └── FoodConsumptionServer.server.lua
 │   ├── loot/                # Loot drop systems
@@ -98,8 +101,8 @@ src/
     │   ├── ItemConfig.lua
     │   ├── ModelSpawnerConfig.lua
     │   ├── PlayerStatsConfig.lua
-    │   ├── time.lua
-    │   └── village.lua
+    │   ├── Time.lua
+    │   └── Village.lua
     ├── modules/             # Shared modules
     │   └── RagdollModule.lua
     └── utilities/           # Utility functions
@@ -120,15 +123,16 @@ src/
 
 ### AI & Creatures
 - **`AICreatureRegistry.lua`** - Centralized creature tracking and management
-- **`base.lua`** - Base creature class with shared behaviors
-- **`passive.lua`** - Peaceful creatures (rabbits, deer)
-- **`hostile.lua`** - Aggressive creatures (wolves, mummies)
-- **`creatureSpawner.lua`** - Handles creature spawning logic
+- **`CreaturePoolManager.lua`** - Handles creature pooling, respawning, and population limits
+- **`Base.lua`** - Base creature class with shared behaviors
+- **`Passive.lua`** - Peaceful creatures (rabbits, deer)
+- **`Hostile.lua`** - Aggressive creatures (wolves, mummies)
+- **`CreatureSpawner.lua`** - Handles creature spawning logic
 
 ### Behaviors
-- **`roaming.lua`** - Random movement patterns for idle creatures
-- **`chasing.lua`** - Pursuit behavior for hostile creatures
-- **`fleeing.lua`** - Escape behavior for passive creatures
+- **`Roaming.lua`** - Random movement patterns for idle creatures
+- **`Chasing.lua`** - Pursuit behavior for hostile creatures
+- **`Fleeing.lua`** - Escape behavior for passive creatures
 
 ### Client UI
 - **`StatsDisplay.client.lua`** - Player hunger/thirst bars
@@ -142,6 +146,10 @@ src/
 
 ## 🚀 Recent Improvements
 
+- **Creature Pooling System**: Eliminates frame drops by reusing creature models instead of destroying them
+- **Food & Cooking Mechanics**: Tag-based cooking system with raw/cooked meat states and hunger benefits
+- **Automatic Respawning**: Population-controlled respawning maintains world creature density
+- **Performance Optimization**: Frame drops eliminated through model pooling and optimized initialization
 - **AI Performance**: LOD system with fair budget allocation prevents creatures from getting stuck
 - **Timing Consistency**: Unified `os.clock()` timing throughout codebase  
 - **Modular Architecture**: Extracted LODPolicy, AICreatureRegistry, and AIDebugger modules

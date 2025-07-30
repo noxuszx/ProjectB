@@ -39,8 +39,6 @@ local SpawnerPlacementConfig = {
 		},
 	},
 
-	-- Biome classification thresholds
-	-- Noise values are normalized to [0, 1] range
 	BiomeThresholds = {
 
 		HighTemperature = 0.6,
@@ -71,7 +69,6 @@ local SpawnerPlacementConfig = {
 		},
 	},
 
-	-- Random spawning settings (used when UseNoiseBasedSpawning = false)
 	RandomSpawning = {
 		SpawnTypeProbabilities = {
 			Safe = 0.7,

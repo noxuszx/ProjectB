@@ -8,9 +8,9 @@ local PhysicsService = game:GetService("PhysicsService")
 
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.creatureSpawning)
-local DayNightCycle = require(script.Parent.Parent.environment.dayNightCycle)
-local PassiveCreature = require(script.Parent.creatures.passive)
-local HostileCreature = require(script.Parent.creatures.hostile)
+local DayNightCycle = require(script.Parent.Parent.environment.DayNightCycle)
+local PassiveCreature = require(script.Parent.creatures.Passive)
+local HostileCreature = require(script.Parent.creatures.Hostile)
 local AIManager = require(script.Parent.AIManager)
 local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
 

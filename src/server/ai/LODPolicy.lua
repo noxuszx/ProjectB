@@ -1,11 +1,32 @@
 -- src/server/ai/LODPolicy.lua
 -- Pure LOD (Level of Detail) calculation functions
--- Optimized with cached player positions to avoid expensive Character.PrimaryPart lookups
+-- Optimized with cached player positions and parallel processing support
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 local LODPolicy = {}
+
+-- Parallel processing support
+local parallelActor = nil
+local parallelEnabled = false
+
+-- Initialize parallel LOD processing
+function LODPolicy.initParallel()
+	local success, actor = pcall(function()
+		return script.Parent.ParallelLODActor
+	end)
+	
+	if success and actor then
+		parallelActor = actor
+		parallelEnabled = true
+		print("[LODPolicy] Parallel LOD processing enabled")
+		return true
+	else
+		warn("[LODPolicy] Parallel LOD processing not available, falling back to sequential")
+		return false
+	end
+end
 
 -- Calculate LOD level based on creature position and cached player positions
 -- @param creaturePosition Vector3 - The creature's current position
@@ -37,6 +58,83 @@ function LODPolicy.calculateLODLevel(creaturePosition, cachedPlayerPositions)
 	else
 		return "Culled", 0 -- Beyond max distance, don't update
 	end
+end
+
+-- Batch calculate LOD levels using parallel processing
+-- @param creatures table - Array of creature objects
+-- @param cachedPlayerPositions table - Array of cached player position vectors
+-- @param batchSize number - Number of creatures to process per batch (optional)
+-- @return table - Map of creature ID to {lodLevel: string, updateRate: number}
+function LODPolicy.calculateLODBatch(creatures, cachedPlayerPositions, batchSize)
+	local minCreatures = AIConfig.Performance.Parallel.MinCreaturesForParallel or 10
+	
+	if not parallelEnabled or not AIConfig.Performance.Parallel.EnableParallelLOD or #creatures < minCreatures then
+		-- Fall back to sequential processing for small batches
+		return LODPolicy.calculateLODSequential(creatures, cachedPlayerPositions)
+	end
+	
+	batchSize = batchSize or AIConfig.Performance.Parallel.LODBatchSize or 25
+	local results = {}
+	local batches = {}
+	
+	-- Split creatures into batches
+	for i = 1, #creatures, batchSize do
+		local batch = {}
+		local endIndex = math.min(i + batchSize - 1, #creatures)
+		
+		for j = i, endIndex do
+			local creature = creatures[j]
+			if creature and creature.isActive and creature.position then
+				table.insert(batch, {
+					id = tostring(creature.model), -- Use model as unique ID
+					position = creature.position
+				})
+			end
+		end
+		
+		if #batch > 0 then
+			table.insert(batches, batch)
+		end
+	end
+	
+	-- Process batches in parallel
+	local batchResults = {}
+	for i = 1, #batches do
+		local batchResult = require(parallelActor).calculateLODBatch(batches[i], cachedPlayerPositions)
+		table.insert(batchResults, batchResult)
+	end
+	
+	-- Combine results
+	for _, batchResult in ipairs(batchResults) do
+		for _, result in ipairs(batchResult) do
+			results[result.id] = {
+				lodLevel = result.lodLevel,
+				updateRate = result.updateRate
+			}
+		end
+	end
+	
+	return results
+end
+
+-- Sequential LOD calculation (fallback)
+-- @param creatures table - Array of creature objects
+-- @param cachedPlayerPositions table - Array of cached player position vectors
+-- @return table - Map of creature ID to {lodLevel: string, updateRate: number}
+function LODPolicy.calculateLODSequential(creatures, cachedPlayerPositions)
+	local results = {}
+	
+	for _, creature in ipairs(creatures) do
+		if creature and creature.isActive and creature.position then
+			local lodLevel, updateRate = LODPolicy.calculateLODLevel(creature.position, cachedPlayerPositions)
+			results[tostring(creature.model)] = {
+				lodLevel = lodLevel,
+				updateRate = updateRate
+			}
+		end
+	end
+	
+	return results
 end
 
 -- Get creatures within range of any cached player position

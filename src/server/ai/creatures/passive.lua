@@ -3,12 +3,12 @@
 -- Uses behavior system for state management
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local BaseCreature = require(script.Parent.base)
+local BaseCreature = require(script.Parent.Base)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
 
 -- Import behavior classes
-local RoamingBehavior = require(script.Parent.Parent.behaviors.roaming)
-local FleeingBehavior = require(script.Parent.Parent.behaviors.fleeing)
+local RoamingBehavior = require(script.Parent.Parent.behaviors.Roaming)
+local FleeingBehavior = require(script.Parent.Parent.behaviors.Fleeing)
 
 local PassiveCreature = setmetatable({}, {__index = BaseCreature})
 PassiveCreature.__index = PassiveCreature
