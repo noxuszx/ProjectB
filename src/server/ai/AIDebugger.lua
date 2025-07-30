@@ -3,7 +3,7 @@
 -- Pure functions for analyzing AI performance and state
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local LODPolicy = require(script.Parent.LODPolicy)
 
 local AIDebugger = {}

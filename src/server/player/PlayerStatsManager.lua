@@ -104,10 +104,11 @@ function PlayerStatsManager.processStatDecay()
 		PlayerStatsManager.checkStarvationDamage(player, stats)
 		PlayerStatsManager.updateClientStats(player)
 		
-		if PlayerStatsConfig.DEBUG_MODE then
-			print("[PlayerStatsManager] Decay tick for", player.Name, 
-				"- Hunger:", math.floor(stats.Hunger), "Thirst:", math.floor(stats.Thirst))
-		end
+		-- Debug log removed to reduce spam
+		-- if PlayerStatsConfig.DEBUG_MODE then
+		-- 	print("[PlayerStatsManager] Decay tick for", player.Name, 
+		-- 		"- Hunger:", math.floor(stats.Hunger), "Thirst:", math.floor(stats.Thirst))
+		-- end
 	end
 end
 
@@ -134,9 +135,10 @@ function PlayerStatsManager.checkStarvationDamage(player, stats)
 	if totalDamage > 0 then
 		humanoid.Health = math.max(0, humanoid.Health - totalDamage)
 		
-		if PlayerStatsConfig.DEBUG_MODE then
-			print("[PlayerStatsManager]", player.Name, "took", totalDamage, "starvation/dehydration damage")
-		end
+		-- Debug log removed to reduce spam
+		-- if PlayerStatsConfig.DEBUG_MODE then
+		-- 	print("[PlayerStatsManager]", player.Name, "took", totalDamage, "starvation/dehydration damage")
+		-- end
 	end
 end
 

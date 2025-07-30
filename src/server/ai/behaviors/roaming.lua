@@ -4,7 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIBehavior = require(script.Parent.AIBehavior)
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
 local RoamingBehavior = setmetatable({}, {__index = AIBehavior})
 RoamingBehavior.__index = RoamingBehavior

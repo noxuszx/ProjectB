@@ -4,7 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BaseCreature = require(script.Parent.Base)
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
 -- Import behavior classes
 local RoamingBehavior = require(script.Parent.Parent.behaviors.Roaming)

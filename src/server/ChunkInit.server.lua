@@ -52,7 +52,7 @@ WaterRefillManager.init()
 task.wait(0.5)
 
 print("Placing procedural creature spawners...")
-local SpawnerPlacement = require(script.Parent.ai.spawnerPlacement)
+local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
 SpawnerPlacement.run()
 task.wait(1)
 
@@ -63,7 +63,7 @@ task.wait(1)
 print("Initializing AI system...")
 local AIManager = require(script.Parent.ai.AIManager)
 local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
-local CreatureSpawner = require(script.Parent.ai.creatureSpawner)
+local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
 local CreaturePoolManager = require(script.Parent.ai.CreaturePoolManager)
 
 print("Initializing creature pooling system...")

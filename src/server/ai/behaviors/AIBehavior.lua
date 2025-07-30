@@ -3,7 +3,7 @@
 -- Provides the interface that all concrete behaviors must implement
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
 local AIBehavior = {}
 AIBehavior.__index = AIBehavior

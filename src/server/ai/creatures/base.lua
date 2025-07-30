@@ -4,7 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIManager)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
 local CreaturePoolManager = require(script.Parent.Parent.CreaturePoolManager)
@@ -382,7 +382,9 @@ function BaseCreature:updateDebugGUI()
 			lodLabel.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 		elseif lodLevel == "Far" then
 			lodLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+		else
 			lodLabel.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+		end
 	end
 	
 	if stateLabel then

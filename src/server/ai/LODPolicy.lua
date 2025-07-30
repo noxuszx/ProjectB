@@ -3,7 +3,7 @@
 -- Optimized with cached player positions and parallel processing support
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
 local LODPolicy = {}
 

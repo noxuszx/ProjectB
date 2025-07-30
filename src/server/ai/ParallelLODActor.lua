@@ -5,7 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Import AI config for LOD thresholds
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
 local ParallelLODActor = {}
 

@@ -6,8 +6,8 @@ local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 local PhysicsService = game:GetService("PhysicsService")
 
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.ai)
-local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.creatureSpawning)
+local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
+local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
 local DayNightCycle = require(script.Parent.Parent.environment.DayNightCycle)
 local PassiveCreature = require(script.Parent.creatures.Passive)
 local HostileCreature = require(script.Parent.creatures.Hostile)
@@ -155,7 +155,7 @@ local function getRandomSpawnPosition(spawnerPart, usedPositions, creatureModel)
 		)
 
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		raycastParams.FilterDescendantsInstances = {spawnerPart}
 		local rayOrigin = testPosition + Vector3.new(0, 10, 0)
 		local rayDirection = Vector3.new(0, -20, 0)
