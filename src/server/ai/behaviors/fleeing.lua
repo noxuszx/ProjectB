@@ -126,7 +126,7 @@ function FleeingBehavior:stopFleeing(creature, reason)
 		print("[FleeingBehavior] " .. creature.creatureType .. " stopping flee" .. reasonText)
 	end
 
-	local RoamingBehavior = require(script.Parent.roaming)
+	local RoamingBehavior = require(script.Parent.Roaming)
 	creature:setBehavior(RoamingBehavior.new())
 end
 

@@ -3,7 +3,7 @@ local UIS = game:GetService("UserInputService")
 local RP = game:GetService("ReplicatedStorage")
 
 local CS_tags = require(RP.Shared.utilities.CollectionServiceTags)
-local WeldSystem = require(script.Parent.weldSystem)
+local WeldSystem = require(script.Parent.WeldSystem)
 
 local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
