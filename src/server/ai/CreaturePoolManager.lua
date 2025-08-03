@@ -229,7 +229,6 @@ end
 function CreaturePoolManager.registerCreatureSpawn(creatureType)
 	if CreaturePoolManager.isPooledCreature(creatureType) then
 		activeCreatureCounts[creatureType] = activeCreatureCounts[creatureType] + 1
-		print("[CreaturePoolManager] Registered", creatureType, "spawn - Active count:", activeCreatureCounts[creatureType])
 	end
 end
 

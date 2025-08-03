@@ -43,9 +43,9 @@ local function scanAvailableModels()
 		
 		if folder then
 			for _, model in ipairs(folder:GetChildren()) do
-				if model:IsA("Model") then
+				if model:IsA("Model") or model:IsA("MeshPart") then
 					table.insert(availableModels[category], model)
-					print("Found", category, "model:", model.Name)
+					print("Found", category, model:IsA("Model") and "model:" or "meshpart:", model.Name)
 				end
 			end
 		end
