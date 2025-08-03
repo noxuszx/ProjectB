@@ -52,7 +52,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [x] Implement thirst + hunger decay  
 - [x] Add lizard AI + drops (raw meat)  
 - [x] Add wolf/sand hound AI + aggression  
-- [ ] Add third hostile creature (Sandback – large meat source)  
+- [x] Add third hostile creature (Scorpion – large meat source)  
 - [x] Add cook/firepit system to prepare food
 - [x] Add weapon logic: knife, spear, machete
 - [x] Damage balancing, basic combat feedback
@@ -66,10 +66,14 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 
 - [ ] Populate world with lootable ruins and debris
 - [x] Implement basic loot system (rarities, random tables)  
-- [ ] Backpack and container upgrades
+- [x] Backpack and container upgrades
 - [ ] Add more weapons
 - [ ] Add Battle Towers
-- [ ] Add Ending Structure
+- [x] Add Ending Structure
+- [ ] Add Store to villages
+- [ ] Add Long Range Enemies
+- [ ] Add Health Supply
+
 ---
 
 ## ⏳ Phase 4 – Combat & AI Polish

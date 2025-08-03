@@ -12,6 +12,8 @@ local humanoid
 local flying = false
 local bodyVelocity = nil
 local flySpeed = 80
+local flyAnimation = nil
+local flyAnimationTrack = nil
 
 -- Toggle flying
 local function toggleFly()
@@ -24,12 +26,27 @@ local function toggleFly()
         bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = rootPart
+        
+        -- Play fly animation
+        if flyAnimation and humanoid then
+            flyAnimationTrack = humanoid:LoadAnimation(flyAnimation)
+            flyAnimationTrack:Play()
+            flyAnimationTrack.Looped = true
+        end
+        
         print("Flying ON")
     else
         if bodyVelocity then
             bodyVelocity:Destroy()
             bodyVelocity = nil
         end
+        
+        -- Stop fly animation
+        if flyAnimationTrack then
+            flyAnimationTrack:Stop()
+            flyAnimationTrack = nil
+        end
+        
         print("Flying OFF")
     end
 end
@@ -81,16 +98,24 @@ local function setupCharacter(newCharacter)
     rootPart = character:WaitForChild("HumanoidRootPart")
     humanoid = character:WaitForChild("Humanoid")
 
+    -- Load fly animation (you can replace this asset ID with your own flying animation)
+    flyAnimation = Instance.new("Animation")
+    flyAnimation.AnimationId = "http://www.roblox.com/asset/?id=124037494586828" -- Default swimming animation as placeholder
+    
     -- Ensure flying is disabled on respawn
     if flying then
         toggleFly() 
     end
 
-    -- When the character dies, clean up the velocity
+    -- When the character dies, clean up the velocity and animation
     humanoid.Died:Connect(function()
         if bodyVelocity then
             bodyVelocity:Destroy()
             bodyVelocity = nil
+        end
+        if flyAnimationTrack then
+            flyAnimationTrack:Stop()
+            flyAnimationTrack = nil
         end
         flying = false
     end)

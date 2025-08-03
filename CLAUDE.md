@@ -267,6 +267,6 @@ The game features a LIFO (Last In, First Out) sack-based inventory system with o
 ### Usage Pattern
 1. Equip sack tool to show UI
 2. Look at storable objects and press E to store
-3. Press F to retrieve (drops 5 studs in front, 0.5 studs up)
+3. Press R to retrieve (drops 5 studs in front, 0.5 studs up)
 4. Dead humanoid creatures automatically get storable tags when ragdolled
 5. Pooled creatures (rabbit, scorpion, coyote) use separate food drop system

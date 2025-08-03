@@ -36,24 +36,23 @@ corner.Parent = crosshair
 
 -- Add subtle black outline
 local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.new(0, 0, 0)  -- Black outline
-stroke.Thickness = 1
+stroke.Color = Color3.new(0.2, 0.196078, 0.196078)  -- Black outline
+stroke.Thickness = 0.6
 stroke.Parent = crosshair
 
--- Check if player is in first person
+
 local function isFirstPerson()
     local character = player.Character
     if not character then return false end
-    
+
     local humanoid = character:FindFirstChild("Humanoid")
     if not humanoid then return false end
-    
-    -- Check camera subject and zoom distance
+
     if camera.CameraSubject == humanoid then
         local head = character:FindFirstChild("Head")
         if head then
             local distance = (camera.CFrame.Position - head.Position).Magnitude
-            return distance < 1  -- Very close = first person
+            return distance < 1
         end
     end
     
