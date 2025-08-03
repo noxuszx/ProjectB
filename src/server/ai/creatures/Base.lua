@@ -104,6 +104,7 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 
 	self:setupCharacterProtection()
 	self:setupDeathHandling()
+	self:setupHealthDisplay()
 	self:setupDebugGUI()
 	
 	if self.health < self.maxHealth then
@@ -298,10 +299,11 @@ function BaseCreature:setupHealthDisplay()
 	local humanoid = self.model:FindFirstChild("Humanoid")
 	if not humanoid then return end
 	
-	-- Hide nametags but allow health bars
+	-- Hide default Roblox UI elements completely (we have custom health bars)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
-	-- Or use: Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
+	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+	humanoid.NameDisplayDistance = 0
+	humanoid.HealthDisplayDistance = 0
 end
 
 -- ============================================
