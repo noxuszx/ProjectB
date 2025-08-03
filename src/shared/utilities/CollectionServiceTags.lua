@@ -12,6 +12,7 @@ CollectionServiceTags.NON_DRAGGABLE = "NonDraggable"
 CollectionServiceTags.WELDABLE = "Weldable"
 CollectionServiceTags.NON_WELDABLE = "NonWeldable"
 CollectionServiceTags.WATER_REFILL_SOURCE = "WaterRefillSource"
+CollectionServiceTags.STORABLE = "Storable"
 
 
 function CollectionServiceTags.addTag(object, tag)
@@ -128,6 +129,7 @@ function CollectionServiceTags.initializeDefaultTags()
                    not CollectionServiceTags.hasTag(child, CollectionServiceTags.NON_DRAGGABLE) then
                 CollectionServiceTags.addTag(child, CollectionServiceTags.DRAGGABLE)
                 CollectionServiceTags.addTag(child, CollectionServiceTags.WELDABLE)
+                CollectionServiceTags.addTag(child, CollectionServiceTags.STORABLE)
             end
         end
     end
@@ -146,11 +148,12 @@ function CollectionServiceTags.tagItemsFolder()
         if item:IsA("MeshPart") or item:IsA("Tool") then
             CollectionServiceTags.addTag(item, CollectionServiceTags.DRAGGABLE)
             CollectionServiceTags.addTag(item, CollectionServiceTags.WELDABLE)
+            CollectionServiceTags.addTag(item, CollectionServiceTags.STORABLE)
             count = count + 1
         end
     end
 
-    print("Tagged", count, "items as draggable")
+    print("Tagged", count, "items as draggable and storable")
     return count
 end
 

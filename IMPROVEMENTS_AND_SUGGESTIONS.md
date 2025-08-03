@@ -91,3 +91,12 @@ Then calculateLODLevel becomes a small loop over 20 cached vectors instead of 20
 *  1.4  Early-exit in update loop
 If the update budget is exhausted (deltaTime > self.updateBudget) skip all remaining creatures this frame.
 Right now you always finish the whole list.
+
+
+PROBLEMS:
+
+  13:04:10.155  [Backpack] Stored Gold Crown  -  Client - BackpackController:80
+  13:04:11.375  Can only call Network Ownership API on a part that is descendent of Workspace  -  Server - interactableHandler:47
+  13:04:11.375  Stack Begin  -  Studio
+  13:04:11.375  Script 'ServerScriptService.Server.dragdrop.interactableHandler', Line 47  -  Studio - interactableHandler:47
+  13:04:11.375  Stack End  -  Studio

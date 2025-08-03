@@ -89,11 +89,12 @@ The project file structure is defined in `default.project.json` and should be bu
 - No cross-dependencies between creatures - fully isolated behavior
 - Easy to debug individual creature types
 
-**Removed Components (Migrated Away From)**
-- ❌ `AIManager.lua` - Centralized AI controller (replaced by LODManager)
-- ❌ `behaviors/` folder - Complex behavior class system
-- ❌ `creatures/` folder - Creature class hierarchy
-- ❌ `AICreatureRegistry.lua` - Manual creature registration
+**Current AI Architecture (Hybrid System)**
+- ✅ `AIManager.lua` - Centralized creature registry and management
+- ✅ `BaseCreature.lua` - Base class for common creature functionality
+- ✅ Individual creature AI scripts - Self-contained behavior patterns
+- ✅ `LODManager.lua` - Performance optimization system
+- ✅ `CreaturePoolManager.lua` - Memory pooling for specific creatures
 
 ### Performance Optimization Systems
 
@@ -132,6 +133,7 @@ All systems are driven by configuration files in `src/shared/config/`:
 - Building system (drag/drop, welding, item interactions)
 - Player stats synchronization
 - Combat/weapon damage events
+- Backpack/inventory system (LIFO sack with object pooling)
 
 **Client-Server Separation**
 - Server: AI logic, spawning, physics, game state
@@ -243,3 +245,28 @@ SpawnSettings = {
 The creature will automatically be tracked by LODManager and respect performance optimization.
 
 The codebase follows a self-contained modular architecture where each creature manages its own behavior independently, while LODManager handles global performance optimization.
+
+## Backpack/Inventory System
+
+The game features a LIFO (Last In, First Out) sack-based inventory system with object pooling:
+
+### Key Features
+- **10-slot capacity** with LIFO stack behavior
+- **Object pooling** - Items moved to ServerStorage instead of destroyed/recreated
+- **Dead creature storage** - Ragdolled creatures (Villager1, Villager2, Mummy, Skeleton) can be stored
+- **Safety checks** - Prevents storing alive creatures
+- **Multi-player support** - Each player has isolated inventory
+- **Responsive UI** - Simple counter with black outline, shows only when sack is equipped
+
+### Architecture
+- `BackpackService.lua` - Server-side LIFO stack management and object pooling
+- `BackpackHandler.server.lua` - RemoteEvent handling for client-server communication
+- `BackpackUI.client.lua` - Minimalist UI showing item count
+- Uses `CollectionService` tags (STORABLE, DRAGGABLE) for item validation
+
+### Usage Pattern
+1. Equip sack tool to show UI
+2. Look at storable objects and press E to store
+3. Press F to retrieve (drops 5 studs in front, 0.5 studs up)
+4. Dead humanoid creatures automatically get storable tags when ragdolled
+5. Pooled creatures (rabbit, scorpion, coyote) use separate food drop system

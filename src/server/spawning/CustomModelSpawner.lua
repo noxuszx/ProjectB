@@ -29,10 +29,8 @@ local random = Random.new()
 
 local function scanAvailableModels()
 	print("Scanning for available models...")
-	
 	for category, folderPath in pairs(ModelSpawnerConfig.MODEL_FOLDERS) do
 		local folder = ReplicatedStorage
-		
 		for part in folderPath:gmatch("[^%.]+") do
 			folder = folder:FindFirstChild(part)
 			if not folder then
@@ -40,7 +38,6 @@ local function scanAvailableModels()
 				break
 			end
 		end
-		
 		if folder then
 			for _, model in ipairs(folder:GetChildren()) do
 				if model:IsA("Model") or model:IsA("MeshPart") then
@@ -50,8 +47,7 @@ local function scanAvailableModels()
 			end
 		end
 	end
-	
-	-- Print summary
+
 	for category, models in pairs(availableModels) do
 		print(category .. " models found:", #models)
 	end
@@ -59,27 +55,28 @@ end
 
 
 
-local function isPositionValid(x, z, category, minDistance)
-	local chunkKey = math.floor(x/32) .. "," .. math.floor(z/32)
+local function isPositionValid(x, z, category, minDistance, chunkSize)
+	chunkSize = chunkSize or 32
+	local chunkKey = math.floor(x/chunkSize) .. "," .. math.floor(z/chunkSize)
 	if not spawnedObjects[chunkKey] then
 		return true
 	end
-	
+
 	if not spawnedObjects[chunkKey][category] then
 		return true
 	end
-	
+
 	for _, existingPos in ipairs(spawnedObjects[chunkKey][category]) do
 		local distance = math.sqrt((x - existingPos.x)^2 + (z - existingPos.z)^2)
 		if distance < minDistance then
 			return false
 		end
 	end
-	
 	return true
 end
 
-local function selecRnum(category)
+
+local function selectRandom(category)
 	local models = availableModels[category]
 	if #models == 0 then
 		return nil
@@ -89,31 +86,39 @@ local function selecRnum(category)
 end
 
 -- Check if an area is clear of existing objects using bounding box detection
-local function isAreaClear(position, templateModel)
+local function isAreaClear(position, templateModel, excludeModel)
 	-- Get the bounding box of the template model
 	local success, cframe, size = pcall(function()
-		return templateModel:GetBoundingBox()
+		if templateModel:IsA("Model") then
+			return templateModel:GetBoundingBox()
+		elseif templateModel:IsA("MeshPart") then
+			return templateModel.CFrame, templateModel.Size
+		end
 	end)
 	
 	if not success or not size then
-		-- If we can't get bounding box, allow spawning (fallback behavior)
 		return true
 	end
-	
+
 	local checkSize = size * 1.2
 	local checkCFrame = CFrame.new(position)
-	
+
 	local overlapParams = OverlapParams.new()
 	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
-	overlapParams.FilterDescendantsInstances = {
+	local excludeList = {
 		Workspace.Terrain,
 		objectFolders.Vegetation,
 		objectFolders.Rocks,
 		objectFolders.Structures
 	}
-	
+
+	if excludeModel then
+		table.insert(excludeList, excludeModel)
+	end
+
+	overlapParams.FilterDescendantsInstances = excludeList
+
 	local overlappingParts = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, overlapParams)
-	
 	if #overlappingParts > 0 then
 		for _, part in pairs(overlappingParts) do
 			local parent = part.Parent
@@ -131,15 +136,14 @@ local function isAreaClear(position, templateModel)
 	return true
 end
 
-local function spawnModel(originalModel, x, z, category)
-	if not originalModel then return nil end
+local function spawnModel(originalModel, x, z, category, chunkSize)
 	
+	if not originalModel then return nil end
 	local terrainHeight = terrain.getTerrainHeight(x, z)
 	
-	-- Pre-check: Test if area is clear before cloning model
 	local testPosition = Vector3.new(x, terrainHeight, z)
-	if not isAreaClear(testPosition, originalModel) then
-		return nil -- Area is occupied, skip spawning
+	if not isAreaClear(testPosition, originalModel, originalModel) then
+		return nil
 	end
 	
 	local model = originalModel:Clone()
@@ -156,14 +160,39 @@ local function spawnModel(originalModel, x, z, category)
 	
 	local scale = random:NextNumber(scaleRange[1], scaleRange[2])
 	local initialPosition = Vector3.new(x, terrainHeight, z)
-	model:SetPrimaryPartCFrame(CFrame.new(initialPosition))
+	
+	if model:IsA("Model") then
+		if not model.PrimaryPart then
+			local firstPart = model:FindFirstChildOfClass("BasePart")
+			if firstPart then
+				model.PrimaryPart = firstPart
+			else
+				warn("Model", model.Name, "has no BaseParts, skipping spawn")
+				model:Destroy()
+				return nil
+			end
+		end
+		model:SetPrimaryPartCFrame(CFrame.new(initialPosition))
+	elseif model:IsA("MeshPart") then
+		model.CFrame = CFrame.new(initialPosition)
+	end
 	
 	if scale ~= 1 then
 		local scaleFactor = scale
-		model:ScaleTo(scaleFactor)
+		if model:IsA("Model") then
+			model:ScaleTo(scaleFactor)
+		elseif model:IsA("MeshPart") then
+			model.Size = model.Size * scaleFactor
+		end
 	end
 	
-	local cf, size = model:GetBoundingBox()
+	local cf, size
+	if model:IsA("Model") then
+		cf, size = model:GetBoundingBox()
+	elseif model:IsA("MeshPart") then
+		cf = model.CFrame
+		size = model.Size
+	end
 	local modelBottom = cf.Position.Y - (size.Y / 2)
 	local embedOffset = 0
 	if category == "Vegetation" then
@@ -177,15 +206,31 @@ local function spawnModel(originalModel, x, z, category)
 	local targetGroundLevel = terrainHeight - embedOffset
 	local yOffset = targetGroundLevel - modelBottom
 	
-	local currentCFrame = model:GetPrimaryPartCFrame()
-	model:SetPrimaryPartCFrame(currentCFrame + Vector3.new(0, yOffset, 0))
+	-- Handle positioning adjustments differently for Models vs MeshParts
+	local currentCFrame
+	if model:IsA("Model") then
+		if model.PrimaryPart then
+			currentCFrame = model:GetPrimaryPartCFrame()
+			model:SetPrimaryPartCFrame(currentCFrame + Vector3.new(0, yOffset, 0))
+		end
+	elseif model:IsA("MeshPart") then
+		currentCFrame = model.CFrame
+		model.CFrame = currentCFrame + Vector3.new(0, yOffset, 0)
+	end
 	
 	if ModelSpawnerConfig.RANDOM_ROTATION then
 		local randomYRotation = random:NextNumber(0, 360)
-		model:SetPrimaryPartCFrame(model:GetPrimaryPartCFrame() * CFrame.Angles(0, math.rad(randomYRotation), 0))
+		if model:IsA("Model") then
+			if model.PrimaryPart then
+				model:SetPrimaryPartCFrame(model:GetPrimaryPartCFrame() * CFrame.Angles(0, math.rad(randomYRotation), 0))
+			end
+		elseif model:IsA("MeshPart") then
+			model.CFrame = model.CFrame * CFrame.Angles(0, math.rad(randomYRotation), 0)
+		end
 	end
 	
-	local chunkKey = math.floor(x/32) .. "," .. math.floor(z/32)
+	chunkSize = chunkSize or 32  -- Default fallback
+	local chunkKey = math.floor(x/chunkSize) .. "," .. math.floor(z/chunkSize)
 	if not spawnedObjects[chunkKey] then
 		spawnedObjects[chunkKey] = {}
 	end
@@ -226,14 +271,14 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 								minDistance = ModelSpawnerConfig.MIN_STRUCTURE_DISTANCE
 							end
 							
-							if isPositionValid(worldX, worldZ, category, minDistance) then
+							if isPositionValid(worldX, worldZ, category, minDistance, chunkSize) then
 								local subSize = chunkSize / subdivisions
 								local offsetX = random:NextNumber(-subSize/3, subSize/3)
 								local offsetZ = random:NextNumber(-subSize/3, subSize/3)
 								
-								local modelToSpawn = selecRnum(category)
+								local modelToSpawn = selectRandom(category)
 								if modelToSpawn then
-									spawnModel(modelToSpawn, worldX + offsetX, worldZ + offsetZ, category)
+									spawnModel(modelToSpawn, worldX + offsetX, worldZ + offsetZ, category, chunkSize)
 									counters[category] = counters[category] + 1
 								end
 							end

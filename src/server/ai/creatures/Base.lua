@@ -8,6 +8,7 @@ local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
 local CreaturePoolManager = require(script.Parent.Parent.CreaturePoolManager)
+local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local function getUpdateCreatureHealthRemote()
 	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
@@ -242,6 +243,10 @@ function BaseCreature:die()
 		print("[BaseCreature] Ragdolling", self.creatureType)
 		local success = RagdollModule.PermanentNpcRagdoll(self.model)
 		if success then
+			-- Make ragdolled (dead) creatures storable
+			CS_tags.addTag(self.model, CS_tags.STORABLE)
+			CS_tags.addTag(self.model, CS_tags.DRAGGABLE)
+			print("[BaseCreature] Made ragdolled", self.creatureType, "storable")
 			return
 		else
 			warn("[BaseCreature] Ragdoll failed for", self.creatureType, "- destroying normally")
