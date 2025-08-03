@@ -63,11 +63,11 @@ local function isWeldableTarget(part)
 end
 
 local function createHoverHighlight(object)
-    local highlight = Instance.new("SelectionBox")
-    highlight.Adornee = object
-    highlight.Color3 = Color3.fromRGB(255, 255, 0)
-    highlight.Transparency = 0.5
-    highlight.LineThickness = 0.15
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0.15
     highlight.Parent = object
     return highlight
 end

@@ -8,11 +8,12 @@ local WeldSystem = require(script.Parent.WeldSystem)
 local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-local highlight = Instance.new("SelectionBox")
+local highlight = Instance.new("Highlight")
 	  highlight.Name = "DragDropHighlight"
-	  highlight.Color3 = Color3.fromRGB(0, 162, 255)
-	  highlight.LineThickness = 0.2
-	  highlight.Transparency = 0.8
+	  highlight.FillColor = Color3.fromRGB(0, 162, 255)
+	  highlight.OutlineColor = Color3.fromRGB(0, 162, 255)
+	  highlight.FillTransparency = 0.8
+	  highlight.OutlineTransparency = 0.2
 
 local isMobile = true
 
@@ -146,11 +147,9 @@ RS.RenderStepped:Connect(function(dT)
 
 	if targObj and not carrying and targObj ~= currTargs then
 		currTargs = targObj
-		highlight.Adornee = targObj
-		highlight.Parent = workspace
+		highlight.Parent = targObj
 	elseif not targObj and currTargs ~= nil and not carrying then
 		currTargs = nil
-		highlight.Adornee = nil
 		highlight.Parent = nil
 	end
 	
@@ -309,3 +308,13 @@ function DropItem(AddForce : boolean ?)
 		end
 	end)
 end
+
+-- Function to get current highlighted target for backpack system
+function GetCurrentTarget()
+	return currTargs
+end
+
+-- Export for other scripts to use
+_G.InteractableHandler = {
+	GetCurrentTarget = GetCurrentTarget
+}

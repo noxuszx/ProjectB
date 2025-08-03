@@ -25,7 +25,7 @@ local Config = {
 }
 
 local highlightedFood = nil
-local selectionBox 	  = nil
+local highlight 	  = nil
 
 --=====================================================================
 
@@ -45,10 +45,11 @@ function FoodConsumption.onInputBegan(input, gameProcessed)
 end
 
 function FoodConsumption.setupFoodHighlighting()
-	selectionBox = Instance.new("SelectionBox")
-	selectionBox.Color3 = Color3.fromRGB(0, 255, 0)
-	selectionBox.Transparency = 0.7
-	selectionBox.Parent = workspace
+	highlight = Instance.new("Highlight")
+	highlight.FillColor = Color3.fromRGB(0, 255, 0)
+	highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+	highlight.FillTransparency = 0.7
+	highlight.OutlineTransparency = 0.2
 	game:GetService("RunService").Heartbeat:Connect(function()
 		FoodConsumption.updateHighlight()
 	end)
@@ -87,7 +88,7 @@ end
 -- Highlight a specific food item
 function FoodConsumption.highlightFood(food)
 	highlightedFood = food
-	selectionBox.Adornee = food.PrimaryPart
+highlight.Parent = food.PrimaryPart
 	-- Show interaction hint (you could create a GUI for this)
 	-- For now, just print to console
 	local foodType = food:GetAttribute("FoodType") or "Food"
@@ -101,7 +102,7 @@ end
 
 function FoodConsumption.clearHighlight()
 	highlightedFood = nil
-	selectionBox.Adornee = nil
+highlight.Parent = nil
 end
 
 function FoodConsumption.attemptConsumption()
