@@ -76,25 +76,26 @@ The project file structure is defined in `default.project.json` and should be bu
 
 ### Core Systems Architecture
 
-**Self-Contained AI System (`src/server/ai/`)**
-- `LODManager.lua` - Global performance controller tracking all creatures via CollectionService
-- `CreatureSpawner.lua` - Modified to tag spawned creatures for LOD tracking
-- `CreaturePoolManager.lua` - Memory pooling system preventing frame drops
-- `LODPolicy.lua` - Distance-based performance optimization (30Hz close, 2Hz far)
+**Centralized AI System (`src/server/ai/`)**
+- `AIManager.lua` - Singleton pattern central coordinator handling creature lifecycle and updates
+- `AICreatureRegistry.lua` - Centralized creature tracking and management registry
+- `CreaturePoolManager.lua` - Memory pooling system preventing frame drops by reusing models
+- `LODPolicy.lua` - Distance-based performance optimization (30Hz close, 2Hz far)  
 - `ParallelLODActor.lua` - Parallel processing for large creature populations
+- `CreatureSpawner.lua` - Spawns creatures using class-based system with pooling integration
 
-**Individual Creature Scripts (Self-Contained Pattern)**
-- Each creature type has its own AI script (e.g., `RabbitAI.server.lua`, `CoyoteAI.server.lua`)
-- Scripts respond to LOD attributes: `LOD_Active`, `LOD_Level`, `LOD_UpdateRate`
-- No cross-dependencies between creatures - fully isolated behavior
-- Easy to debug individual creature types
+**Class-Based Creature Architecture**
+- `BaseCreature.lua` - Abstract base class providing common functionality and interface
+- `PassiveCreature.lua` - Inherits from BaseCreature, handles roaming and fleeing behaviors
+- `HostileCreature.lua` - Inherits from BaseCreature, handles chasing and attacking behaviors
+- Behavior system with modular state classes (`Roaming.lua`, `Chasing.lua`, `Fleeing.lua`)
+- No individual creature scripts - all logic handled through class inheritance
 
-**Current AI Architecture (Hybrid System)**
-- ✅ `AIManager.lua` - Centralized creature registry and management
-- ✅ `BaseCreature.lua` - Base class for common creature functionality
-- ✅ Individual creature AI scripts - Self-contained behavior patterns
-- ✅ `LODManager.lua` - Performance optimization system
-- ✅ `CreaturePoolManager.lua` - Memory pooling for specific creatures
+**Performance Optimization Systems**
+- `AIDebugger.lua` - Performance monitoring and debugging tools
+- Player position caching system eliminates expensive character lookups
+- Batched LOD updates with time-budgeted processing
+- Registry-based creature management with efficient cleanup
 
 ### Performance Optimization Systems
 
@@ -143,36 +144,38 @@ All systems are driven by configuration files in `src/shared/config/`:
 ## Key Development Patterns
 
 ### AI Creature Development
-When working with creatures, follow the self-contained pattern:
-1. Define creature stats in `AIConfig.lua` first
-2. Create individual AI scripts following the template pattern (see `Self-Contained-Creature-System-Documentation.md`)
-3. Scripts must check `LOD_Active` attribute and respect `LOD_UpdateRate` for performance
-4. Use CollectionService "Creature" tag for automatic LOD tracking
-5. Leverage the pooling system for performance (creatures are reused, not destroyed)
-6. Test with high creature counts (100+) to ensure performance
+When working with creatures, follow the class-based inheritance pattern:
+1. **Define creature stats** in `AIConfig.lua` first with all creature type configurations
+2. **Extend creature classes** - Modify `PassiveCreature.lua` or `HostileCreature.lua` for new behaviors
+3. **Create behavior classes** - Add new behavior modules in `behaviors/` folder if needed
+4. **Update CreatureSpawner** - Add new creature types to spawning logic
+5. **Leverage pooling system** - Creatures are reused via `CreaturePoolManager`, not destroyed
+6. **Test with high counts** - Verify performance with 100+ creatures
 
-**Self-Contained AI Script Template:**
+**Class-Based Creature Example:**
 ```lua
--- Example: CamelAI.server.lua
-local model = script.Parent
-local humanoid = model:WaitForChild("Humanoid")
-local creatureType = model:GetAttribute("CreatureType")
-local config = require(game.ReplicatedStorage.Shared.config.ai.AIConfig).CreatureTypes[creatureType]
-
--- Main AI loop
-while model.Parent do
-    local isActive = model:GetAttribute("LOD_Active")
-    local updateRate = model:GetAttribute("LOD_UpdateRate") or 1
+-- Example: Adding new behavior to PassiveCreature
+function PassiveCreature:update(deltaTime)
+    -- Base creature update
+    BaseCreature.update(self, deltaTime)
     
-    if isActive then
-        -- Run creature-specific AI logic here
-        performCreatureAI()
-        wait(1/updateRate)
-    else
-        wait(1) -- Paused when far from players
+    -- Passive-specific logic
+    if self.health <= self.maxHealth * 0.3 then
+        self:setBehavior(FleeingBehavior.new())
+    elseif self.currentBehavior:getType() ~= "Roaming" then
+        self:setBehavior(RoamingBehavior.new())
     end
+    
+    -- Update current behavior
+    self.currentBehavior:update(self, deltaTime)
 end
 ```
+
+**Adding New Creature Types:**
+1. Add creature definition to `AIConfig.lua`
+2. Determine if it extends `PassiveCreature` or `HostileCreature`
+3. Create new class file if significantly different behavior needed
+4. Update `CreatureSpawner.lua` to include in spawning logic
 
 ### Building System Integration
 The drag/drop system uses:
@@ -183,21 +186,21 @@ The drag/drop system uses:
 
 ### Performance Considerations
 - Always use `os.clock()` for timing consistency
-- Self-contained AI scripts must respect LOD system (check `LOD_Active`, use `LOD_UpdateRate`)
-- Use LOD principles for any distance-based systems
-- Cache expensive calculations (player positions, etc.)
-- LODManager automatically handles performance optimization - don't override its decisions
+- AI classes are managed by `AIManager` singleton - avoid direct creature instantiation
+- LOD system is handled automatically by `LODPolicy` - creatures receive optimized update rates
+- Use cached player positions from `AIManager` instead of expensive character lookups
+- Leverage `CreaturePoolManager` for creature reuse instead of destruction/creation
 
 ## Testing and Verification
 
 When making changes:
 1. Test with 100+ creatures spawned to verify performance
-2. Verify LOD system is working (`LODManager.getLODStats()` for debugging)
-3. Ensure creature AI scripts respect LOD attributes properly
-4. Verify day/night cycle affects creature behavior appropriately  
+2. Verify LOD system is working (`AIDebugger` for performance statistics)
+3. Ensure creature classes properly inherit from `BaseCreature`
+4. Verify day/night cycle affects creature spawning appropriately  
 5. Test building system interactions (drag, weld, rotate)
 6. Check player stats UI updates correctly
-7. Ensure creatures properly pool/reuse without memory leaks
+7. Ensure creatures properly pool/reuse without memory leaks via `CreaturePoolManager`
 
 ## File Organization Conventions
 
@@ -206,7 +209,7 @@ When making changes:
 - **Configs**: Centralized in `src/shared/config/` with clear hierarchies
 - **Tags**: Use `CollectionService` tags defined in `CollectionServiceTags.lua`
 - **Remotes**: Defined in project structure, accessed via ReplicatedStorage.Remotes
-- **Creature AI Scripts**: Individual scripts per creature type, following self-contained pattern
+- **Creature Classes**: Class-based inheritance system extending from `BaseCreature`
 
 ## Adding New Creature Types
 
@@ -226,12 +229,11 @@ CreatureTypes = {
 }
 ```
 
-2. **Create individual AI script** (e.g., `WolfAI.server.lua`):
-- Follow the self-contained template pattern
-- Check `LOD_Active` and respect `LOD_UpdateRate`
-- Implement creature-specific behavior logic
+2. **Determine creature class** - Decide if Wolf extends `PassiveCreature` or `HostileCreature`
 
-3. **Add to spawn weights** (optional):
+3. **Update CreatureSpawner** - Add Wolf to the spawning logic in `CreatureSpawner.lua`
+
+4. **Add to spawn weights** (optional):
 ```lua
 SpawnSettings = {
     CreatureWeights = {
@@ -240,11 +242,11 @@ SpawnSettings = {
 }
 ```
 
-4. **Place script in creature model** in ReplicatedStorage or inject at runtime
+5. **Create custom behaviors** (if needed) - Add new behavior classes in `behaviors/` folder
 
-The creature will automatically be tracked by LODManager and respect performance optimization.
+The creature will automatically be managed by `AIManager` and tracked by the registry system for performance optimization.
 
-The codebase follows a self-contained modular architecture where each creature manages its own behavior independently, while LODManager handles global performance optimization.
+The codebase follows a centralized class-based architecture where `AIManager` coordinates all creatures using inheritance patterns, with `CreaturePoolManager` handling efficient reuse and `LODPolicy` managing performance optimization.
 
 ## Performance & Instance Creation Optimization
 

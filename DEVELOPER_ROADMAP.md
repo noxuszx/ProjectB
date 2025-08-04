@@ -68,11 +68,13 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [x] Implement basic loot system (rarities, random tables)  
 - [x] Backpack and container upgrades
 - [x] Add more weapons
-- [ ] Add Battle Towers
+- [x] Add Battle Towers
+    - [ ] Add Battle Tower Event
 - [x] Add Ending Structure
-- [ ] Add Store to villages
+    - [ ] Add Ending Event
+- [x] Add Store to villages
 - [ ] Add Long Range Enemies
-- [ ] Add Health Supply
+- [x] Add Health Supply
 
 ---
 
