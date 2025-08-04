@@ -19,6 +19,9 @@
       "Items": {
         "$className": "Folder"
       },
+      "Money": {
+        "$className": "Folder"
+      },
       "NPCs": {
         "$className": "Folder",
         "PassiveCreatures": {
@@ -26,6 +29,63 @@
         },
         "HostileCreatures": {
           "$className": "Folder"
+        }
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "BackpackEvent": {
+          "$className": "RemoteEvent"
+        },
+        "DrinkWater": {
+          "$className": "RemoteEvent"
+        },
+        "DropItem": {
+          "$className": "RemoteEvent"
+        },
+        "PickupItem": {
+          "$className": "RemoteEvent"
+        },
+        "Ragdoll": {
+          "$className": "RemoteEvent"
+        },
+        "RefillWaterBottle": {
+          "$className": "RemoteEvent"
+        },
+        "RequestCurrentUses": {
+          "$className": "RemoteEvent"
+        },
+        "StartRide": {
+          "$className": "RemoteEvent"
+        },
+        "StopRide": {
+          "$className": "RemoteEvent"
+        },
+        "UpdateCreatureHealth": {
+          "$className": "RemoteEvent"
+        },
+        "UpdatePlayerStats": {
+          "$className": "RemoteEvent"
+        },
+        "WeaponDamage": {
+          "$className": "RemoteEvent"
+        },
+        "Economy": {
+          "$className": "Folder",
+          "SellItem": {
+            "$className": "RemoteEvent"
+          },
+          "BuyItem": {
+            "$className": "RemoteEvent"
+          },
+          "UpdateMoney": {
+            "$className": "RemoteEvent"
+          },
+          "RefreshBuyZones": {
+            "$className": "RemoteEvent"
+          },
+          "CollectCash": {
+            "$className": "RemoteEvent"
+          }
         }
       }
     },

@@ -13,6 +13,8 @@ A Roblox survival game with procedural terrain, intelligent AI creatures, huntin
 - **Combat System** - Weapon-based combat with multiple creature types
 - **Creature Pooling** - Seamless respawning system with population control
 - **Performance Optimized** - LOD system and pooling handle 100+ creatures smoothly
+- **Economy System** - Buy/sell zones with proximity prompts and cash collection
+- **Backpack System** - LIFO sack inventory with ProximityPrompt UI integration
 
 ## 🎯 Gameplay
 
@@ -33,20 +35,40 @@ A Roblox survival game with procedural terrain, intelligent AI creatures, huntin
 - Press Z to weld touching objects
 - Press R to rotate, X to change rotation axis
 
+### Economy & Trading
+- **Sell items** by dragging them into sell zones (tagged with `SELL_ZONE`)
+- **Collect cash** from spawned cash meshparts using proximity prompts
+- **Buy items** using proximity prompts on items in buy zones (tagged with `BUY_ZONE`)
+- **Session-based money** - resets each game join for roguelike experience
+
+### Inventory Management
+- **Equip Sack tool** to access 10-slot LIFO inventory
+- **Press E** to store highlighted items (look at item first)
+- **Press F** to retrieve last stored item (drops in front of player)
+- **Mobile support** - Touch buttons appear automatically on mobile devices
+
 ## 🏗️ Project Structure
 
 ```
 src/
 ├── client/                   # Client-side scripts and UI
+│   ├── backpack/            # Inventory system
+│   │   └── BackpackController.client.lua
 │   ├── dragdrop/            # Drag & drop mechanics
 │   │   ├── interactableHandler.client.lua
 │   │   └── weldSystem.lua
+│   ├── economy/             # Economy system UI
+│   │   ├── EconomyUI.client.lua
+│   │   └── ItemHoverHighlighting.client.lua
 │   ├── food/                # Client-side food consumption
 │   │   └── FoodConsumption.client.lua
 │   ├── ragdoll/             # Ragdoll effects
 │   │   └── RagdollClient.client.lua
 │   ├── ui/                  # UI components
-│   │   └── CreatureHealthBars.client.lua
+│   │   ├── BackpackUI.client.lua
+│   │   ├── CreatureHealthBars.client.lua
+│   │   ├── Crosshair.client.lua
+│   │   └── EconomyUI.client.lua
 │   ├── FlyScript.client.lua
 │   ├── init.client.luau
 │   └── StatsDisplay.client.lua
@@ -71,16 +93,26 @@ src/
 │   ├── dragdrop/            # Server-side drag & drop
 │   │   ├── collisions.server.lua
 │   │   └── interactableHandler.server.lua
+│   ├── economy/             # Economy system
+│   │   ├── BuyZoneHandler.server.lua
+│   │   ├── CashCollectionHandler.server.lua
+│   │   ├── CashPoolManager.lua
+│   │   └── SellZoneHandler.server.lua
 │   ├── environment/         # Environmental systems
 │   │   ├── DayNightCycle.lua
 │   │   └── Lighting.lua
 │   ├── food/                # Server-side food management
-│   │   └── FoodConsumptionServer.server.lua
+│   │   ├── FoodConsumeServ.server.lua
+│   │   └── WaterRefillManager.lua
 │   ├── loot/                # Loot drop systems
 │   │   └── FoodDropSystem.lua
 │   ├── player/              # Player management
+│   │   ├── BackpackHandler.server.lua
+│   │   ├── BackpackService.lua
 │   │   ├── PlayerDeathHandler.server.lua
 │   │   └── PlayerStatsManager.lua
+│   ├── services/            # Core services
+│   │   └── EconomyService.lua
 │   ├── spawning/            # Spawning systems
 │   │   ├── CustomModelSpawner.lua
 │   │   ├── ItemSpawner.lua
@@ -93,16 +125,18 @@ src/
 └── shared/                  # Shared code and configuration
     ├── config/              # Configuration files
     │   ├── ai/              # AI-specific configs
-    │   │   ├── ai.lua
-    │   │   ├── creatureSpawning.lua
-    │   │   └── spawnerPlacing.lua
+    │   │   ├── AIConfig.lua
+    │   │   ├── CreatureSpawning.lua
+    │   │   └── SpawnerPlacing.lua
     │   ├── ChunkConfig.lua
     │   ├── DragDropConfig.lua
+    │   ├── EconomyConfig.lua
     │   ├── ItemConfig.lua
     │   ├── ModelSpawnerConfig.lua
     │   ├── PlayerStatsConfig.lua
     │   ├── Time.lua
-    │   └── Village.lua
+    │   ├── Village.lua
+    │   └── WeaponConfig.lua
     ├── modules/             # Shared modules
     │   └── RagdollModule.lua
     └── utilities/           # Utility functions
@@ -137,24 +171,79 @@ src/
 ### Client UI
 - **`StatsDisplay.client.lua`** - Player hunger/thirst bars
 - **`CreatureHealthBars.client.lua`** - Health indicators above creatures
-- **`FoodConsumption.client.lua`** - Food interaction system
+- **`BackpackUI.client.lua`** - LIFO inventory counter and mobile controls
+- **`EconomyUI.client.lua`** - Money display with green background
+- **`ItemHoverHighlighting.client.lua`** - Visual affordability feedback for buyable items
+
+### Economy System
+- **`EconomyService.lua`** - Core money management and transaction handling
+- **`BuyZoneHandler.server.lua`** - Auto-spawns buyable items with proximity prompts
+- **`SellZoneHandler.server.lua`** - Processes item sales and spawns cash
+- **`CashPoolManager.lua`** - Object pooling for cash collection efficiency
+
+### Inventory System
+- **`BackpackService.lua`** - Server-side LIFO stack management with object pooling
+- **`BackpackController.client.lua`** - Client input handling (E/F keys, mobile buttons)
+- **`BackpackHandler.server.lua`** - RemoteEvent communication bridge
 
 ### Configuration
-- **`ai/ai.lua`** - Core AI system settings and performance tuning
+- **`AIConfig.lua`** - Core AI system settings and performance tuning
 - **`PlayerStatsConfig.lua`** - Hunger/thirst mechanics and UI settings
+- **`EconomyConfig.lua`** - Economy system settings, item values, and buy/sell configuration
 - **`ChunkConfig.lua`** - World generation parameters
+- **`CollectionServiceTags.lua`** - Centralized tag management for drag/drop and inventory systems
+
+## ⚙️ Setup Instructions
+
+### Setting Up Buy/Sell Zones
+
+1. **Create Buy Zones:**
+   - Place any Part or MeshPart in workspace
+   - Add `BUY_ZONE` tag using CollectionService
+   - Items will automatically spawn 1 stud above the part
+   - Multiple parts can use the same tag (each gets its own item)
+
+2. **Create Sell Zones:**
+   - Place any Part or MeshPart in workspace  
+   - Add `SELL_ZONE` tag using CollectionService
+   - Drag sellable items (tagged with `SELLABLE_LOW`, `SELLABLE_MID`, `SELLABLE_HIGH`) into the zone
+   - Cash will spawn where the item was sold
+
+3. **Tag Items for Trading:**
+   - `SELLABLE_LOW` - 15 coins (scrap, basic materials)
+   - `SELLABLE_MID` - 25 coins (refined materials, tools)
+   - `SELLABLE_HIGH` - 50 coins (rare materials, gems)
+   - Items in `ReplicatedStorage.Items` are automatically tagged when placed in buy zones
+
+### UI Setup
+
+The backpack system now uses manually created UI in Studio:
+- Create `StarterGui > BackpackGui` (ScreenGui)
+- Add `BackpackFrame > Counter` (TextLabel) for item count display
+- Mobile buttons (`MobileButtons > StoreButton/RetrieveButton`) auto-appear on touch devices
 
 ## 🚀 Recent Improvements
 
+### Economy & Trading System
+- **Complete Economy Implementation**: Buy/sell zones with proximity prompts and cash collection
+- **Session-Based Money**: Roguelike economy that resets each game join
+- **Smart Item Purchasing**: ProximityPrompts on items with affordability feedback
+- **Cash Collection System**: Physical cash spawning with object pooling for performance
+- **Visual Feedback**: Green/red highlighting shows item affordability before purchase
+
+### Inventory System Overhaul
+- **LIFO Sack System**: 10-slot Last-In-First-Out inventory with visual counter
+- **Object Pooling**: Items moved to ServerStorage instead of destroyed for performance
+- **Mobile Support**: Automatic touch controls for store/retrieve actions
+- **Manual UI Integration**: Moved from script-created to Studio-designed UI elements
+- **Cross-Platform**: Keyboard (E/F keys) and mobile (touch buttons) support
+
+### Performance & Architecture
 - **Creature Pooling System**: Eliminates frame drops by reusing creature models instead of destroying them
-- **Food & Cooking Mechanics**: Tag-based cooking system with raw/cooked meat states and hunger benefits
-- **Automatic Respawning**: Population-controlled respawning maintains world creature density
-- **Performance Optimization**: Frame drops eliminated through model pooling and optimized initialization
+- **Reduced Instance Creation**: Economy and backpack systems minimize `Instance.new()` usage
+- **Tag-Based Architecture**: Centralized CollectionService tag management
 - **AI Performance**: LOD system with fair budget allocation prevents creatures from getting stuck
-- **Timing Consistency**: Unified `os.clock()` timing throughout codebase  
-- **Modular Architecture**: Extracted LODPolicy, AICreatureRegistry, and AIDebugger modules
 - **Player Position Caching**: Eliminates expensive character lookups during distance calculations
-- **Batch Processing**: Efficient creature cleanup and registry management
 
 ---
 

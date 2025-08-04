@@ -12,13 +12,8 @@ local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags
 local BackpackService = {}
 local playerBackpacks = {}
 
-local ServerStorage = game:GetService("ServerStorage")
-local storageFolder = ServerStorage:FindFirstChild("BackpackStorage")
-if not storageFolder then
-    storageFolder = Instance.new("Folder")
-    storageFolder.Name = "BackpackStorage"
-    storageFolder.Parent = ServerStorage
-end
+-- Use hide-in-place approach instead of ServerStorage to avoid Parent property issues
+local BACKPACK_HIDING_POSITION = Vector3.new(10000, -5000, 10000) -- Far away from map
 
 local MAX_SLOTS = 10
 local COOLDOWN_TIME = 0.5 -- Prevent spam
@@ -36,21 +31,33 @@ end
 local function cleanupBackpack(player)
     local backpack = playerBackpacks[player.UserId]
     if backpack then
-        -- Return all stored objects to workspace before cleanup
+        -- Restore all stored objects to visible workspace before cleanup
         for i = 1, backpack.topIndex do
             local poolData = backpack.slots[i]
             if poolData and poolData.object and poolData.object.Parent then
-                poolData.object.Parent = workspace
                 -- Position randomly around spawn to avoid clustering
                 local randomOffset = Vector3.new(
                     math.random(-10, 10),
                     5,
                     math.random(-10, 10)
                 )
+                
+                -- Restore visibility and position (items already in workspace)
                 if poolData.object:IsA("BasePart") then
                     poolData.object.CFrame = CFrame.new(randomOffset)
+                    poolData.object.Transparency = poolData.originalTransparency or 0
+                    poolData.object.CanCollide = true
+                    poolData.object.CanTouch = true
                 elseif poolData.object:IsA("Model") and poolData.object.PrimaryPart then
                     poolData.object:SetPrimaryPartCFrame(CFrame.new(randomOffset))
+                    -- Restore transparency for all parts in model
+                    for _, part in pairs(poolData.object:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.Transparency = poolData.originalTransparencies and poolData.originalTransparencies[part] or 0
+                            part.CanCollide = true
+                            part.CanTouch = true
+                        end
+                    end
                 end
             end
         end
@@ -59,7 +66,7 @@ local function cleanupBackpack(player)
     playerBackpacks[player.UserId] = nil
 end
 
--- Store object reference and original position for pooling
+-- Store object reference and hide it in place (no Parent changes)
 local function storeObjectInPool(object)
     if not object or not object.Parent then
         return nil
@@ -67,27 +74,64 @@ local function storeObjectInPool(object)
     
     -- Store original position for restoration
     local originalPosition = nil
+    local originalTransparency = nil
+    local originalTransparencies = nil
+    
     if object:IsA("BasePart") then
         originalPosition = object.CFrame
+        originalTransparency = object.Transparency
+        
+        -- Hide the object in place
+        object.Position = BACKPACK_HIDING_POSITION
+        object.Transparency = 1
+        object.CanCollide = false
+        object.CanTouch = false
+        object.Anchored = true -- Keep it stable while hidden
+        
     elseif object:IsA("Model") and object.PrimaryPart then
         originalPosition = object.PrimaryPart.CFrame
+        originalTransparencies = {}
+        
+        -- Store original transparencies and hide all parts
+        for _, part in pairs(object:GetDescendants()) do
+            if part:IsA("BasePart") then
+                originalTransparencies[part] = part.Transparency
+                part.Transparency = 1
+                part.CanCollide = false
+                part.CanTouch = false
+                part.Anchored = true
+            end
+        end
+        
+        -- Move entire model to hiding position
+        object:SetPrimaryPartCFrame(CFrame.new(BACKPACK_HIDING_POSITION))
+        
     elseif object:IsA("Tool") then
         -- Tools don't need position storage, they get equipped
         originalPosition = CFrame.new(0, 0, 0)
+        -- Tools get hidden differently - they just become non-interactive
+        -- Move to hiding position
+        if object.Handle then
+            object.Handle.Position = BACKPACK_HIDING_POSITION
+            object.Handle.Transparency = 1
+            object.Handle.CanCollide = false
+            object.Handle.CanTouch = false
+        end
     end
     
-    -- Move object to storage folder (pooling)
-    object.Parent = storageFolder
+    -- Object stays in workspace, just hidden
     
     return {
         object = object,
         originalPosition = originalPosition,
+        originalTransparency = originalTransparency,
+        originalTransparencies = originalTransparencies,
         name = object.Name,
         className = object.ClassName
     }
 end
 
--- Restore object from pool to world
+-- Restore object from hidden state to world
 local function restoreObjectFromPool(poolData, position)
     if not poolData or not poolData.object or not poolData.object.Parent then
         return nil
@@ -95,17 +139,38 @@ local function restoreObjectFromPool(poolData, position)
     
     local object = poolData.object
     
-    -- Position the object at drop location
+    -- Restore object visibility and position (already in workspace)
     if object:IsA("BasePart") then
         object.CFrame = CFrame.new(position)
+        object.Transparency = poolData.originalTransparency or 0
+        object.CanCollide = true
+        object.CanTouch = true
+        object.Anchored = false -- Unanchor for normal physics
+        
     elseif object:IsA("Model") and object.PrimaryPart then
         object:SetPrimaryPartCFrame(CFrame.new(position))
+        
+        -- Restore transparency for all parts in model
+        for _, part in pairs(object:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = poolData.originalTransparencies and poolData.originalTransparencies[part] or 0
+                part.CanCollide = true
+                part.CanTouch = true
+                part.Anchored = false -- Unanchor for normal physics
+            end
+        end
+        
     elseif object:IsA("Tool") then
-        -- Tools will be handled by the tool system
+        -- Restore tool visibility
+        if object.Handle then
+            object.Handle.Position = position
+            object.Handle.Transparency = 0
+            object.Handle.CanCollide = true
+            object.Handle.CanTouch = true
+        end
     end
     
-    -- Restore to workspace
-    object.Parent = workspace
+    -- Object was never moved from workspace, just made visible again
     
     return object
 end

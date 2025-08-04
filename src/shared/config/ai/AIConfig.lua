@@ -48,6 +48,19 @@ local AIConfig = {
 
 	-- Creature type definitions
 	CreatureTypes = {
+		
+		Camel = {
+			Type = "Passive",
+			Health = 40,
+			MoveSpeed = 12,
+			DetectionRange = 20,
+			FleeSpeed = 13,
+			FleeDuration = 10,
+			RoamRadius = 15,
+			IdleTime = {5, 15},
+			ModelFolder = "PassiveCreatures",
+		},
+
 		Rabbit = {
 			Type = "Passive",
 			Health = 40,
@@ -86,8 +99,48 @@ local AIConfig = {
 			FleeOnProximity = false,
 		},
 
+		Villager3 = {
+			Type = "Passive",
+			Health = 100,
+			MoveSpeed = 12,
+			DetectionRange = 15,
+			FleeSpeed = 18,
+			FleeDuration = 8,
+			RoamRadius = 30,
+			IdleTime = {2, 3},
+			ModelFolder = "PassiveCreatures",
+			FleeOnProximity = false,
+		},
+
+		Villager4 = {
+			Type = "Passive",
+			Health = 100,
+			MoveSpeed = 12,
+			DetectionRange = 15,
+			FleeSpeed = 16,
+			FleeDuration = 5,
+			RoamRadius = 30,
+			IdleTime = {2, 3},
+			ModelFolder = "PassiveCreatures",
+			FleeOnProximity = false,
+		},
+
 		-- Hostile Creatures
-		Wolf = {
+		Coyote = {
+			Type = "Hostile",
+			Health = 100,
+			MoveSpeed = 16,
+			DetectionRange = 40,
+			TouchDamage = 0,
+			ChaseSpeed = 16,
+			RoamRadius = 25,
+			IdleTime = {5, 12},
+			ModelFolder = "HostileCreatures",
+			
+			DamageCooldown = 1.5, 
+		},
+
+		Scorpion = {
 			Type = "Hostile",
 			Health = 100,
 			MoveSpeed = 16,

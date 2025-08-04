@@ -9,11 +9,11 @@ local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local highlight = Instance.new("Highlight")
-	  highlight.Name = "DragDropHighlight"
-	  highlight.FillColor = Color3.fromRGB(0, 162, 255)
-	  highlight.OutlineColor = Color3.fromRGB(0, 162, 255)
-	  highlight.FillTransparency = 0.8
-	  highlight.OutlineTransparency = 0.2
+	highlight.Name = "DragDropHighlight"
+	highlight.FillColor = Color3.fromRGB(0, 162, 255)
+	highlight.OutlineColor = Color3.fromRGB(0, 162, 255)
+	highlight.FillTransparency = 0.8
+	highlight.OutlineTransparency = 0.2
 
 local isMobile = true
 
@@ -145,18 +145,19 @@ RS.RenderStepped:Connect(function(dT)
 		end
 	end
 
-	if targObj and not carrying and targObj ~= currTargs then
+if targObj and not carrying and targObj ~= currTargs then
 		currTargs = targObj
-		highlight.Parent = targObj
+highlight.Parent = targObj
 	elseif not targObj and currTargs ~= nil and not carrying then
 		currTargs = nil
-		highlight.Parent = nil
+highlight.Parent = nil
 	end
 	
 	if carrying and currTargs ~= nil then
 		if hasAnchoredParts(currTargs) then
 			showWeldFeedback("Can't move - attached to anchored object", 1)
-			DropItem(false)
+DropItem(false)
+			highlight.Parent = nil
 			return
 		end
 

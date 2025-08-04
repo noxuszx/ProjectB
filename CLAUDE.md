@@ -246,6 +246,41 @@ The creature will automatically be tracked by LODManager and respect performance
 
 The codebase follows a self-contained modular architecture where each creature manages its own behavior independently, while LODManager handles global performance optimization.
 
+## Performance & Instance Creation Optimization
+
+### UI System Improvements
+The project has moved away from script-created UI to manually designed UI elements:
+
+**Before (Heavy Instance.new() usage):**
+```lua
+local screenGui = Instance.new("ScreenGui")
+local frame = Instance.new("Frame") 
+local label = Instance.new("TextLabel")
+-- 10+ Instance.new() calls per UI system
+```
+
+**After (Reference existing elements):**
+```lua
+local screenGui = playerGui:WaitForChild("BackpackGui")
+local frame = screenGui:WaitForChild("BackpackFrame")
+local label = frame:WaitForChild("Counter")
+-- 0 Instance.new() calls - references Studio-created UI
+```
+
+### Benefits of Manual UI Creation
+- ✅ **Reduced runtime overhead** - No UI creation during gameplay
+- ✅ **Version-controlled UI** - UI elements saved in place files
+- ✅ **Easier maintenance** - Visual editing in Studio vs code
+- ✅ **Better performance** - Eliminates UI creation frame drops
+- ✅ **Consistent styling** - Manual positioning and styling in Studio
+
+### Implementation Pattern
+When creating new UI systems:
+1. **Design UI in Studio** - Create ScreenGui and elements manually
+2. **Reference in scripts** - Use WaitForChild() to get existing elements  
+3. **Conditional elements** - Use FindFirstChild() for optional elements (mobile buttons)
+4. **No Instance.new()** - Avoid runtime UI creation unless absolutely necessary
+
 ## Backpack/Inventory System
 
 The game features a LIFO (Last In, First Out) sack-based inventory system with object pooling:
@@ -261,12 +296,68 @@ The game features a LIFO (Last In, First Out) sack-based inventory system with o
 ### Architecture
 - `BackpackService.lua` - Server-side LIFO stack management and object pooling
 - `BackpackHandler.server.lua` - RemoteEvent handling for client-server communication
-- `BackpackUI.client.lua` - Minimalist UI showing item count
+- `BackpackController.client.lua` - Client input handling (E/F keys, mobile buttons)
+- `BackpackUI.client.lua` - References manually created UI elements (no more Instance.new())
 - Uses `CollectionService` tags (STORABLE, DRAGGABLE) for item validation
 
 ### Usage Pattern
-1. Equip sack tool to show UI
-2. Look at storable objects and press E to store
-3. Press R to retrieve (drops 5 studs in front, 0.5 studs up)
+1. Equip sack tool to show UI counter
+2. Look at storable objects and press E to store (F on mobile via touch buttons)
+3. Press F to retrieve (drops 5 studs in front, 0.5 studs up) 
 4. Dead humanoid creatures automatically get storable tags when ragdolled
 5. Pooled creatures (rabbit, scorpion, coyote) use separate food drop system
+
+### UI Implementation 
+- **Manual UI Creation** - Create `StarterGui > BackpackGui` (ScreenGui) in Studio
+- **Required Elements**: `BackpackFrame > Counter` (TextLabel for "0/10" display)
+- **Mobile Support**: `MobileButtons > StoreButton/RetrieveButton` (auto-hidden on desktop)
+- **No Instance.new()** - Script references existing UI elements instead of creating them
+
+## Economy System
+
+The game features a cash-based economy system with physical money and item trading:
+
+### Key Features
+- **Session-based economy** - Money resets each game join (roguelike style)
+- **Physical cash system** - Selling items spawns collectible cash meshparts
+- **Buy/sell zones** - Tagged parts for item commerce
+- **3-tier item values** - Items worth 15, 25, or 50 coins
+- **Visual affordability** - Item highlighting based on player money
+
+### Architecture
+- `EconomyService.lua` - Server-side money management and transaction handling
+- `SellZoneHandler.server.lua` - Processes item sales and spawns cash
+- `BuyZoneHandler.server.lua` - Auto-spawns buyable items at tagged zones
+- `EconomyUI.client.lua` - Green money display with gold dollar sign
+- `ItemHoverHighlighting.client.lua` - Green/red item highlighting on hover
+- Individual cash collection scripts in each cash meshpart
+
+### Selling System
+1. **Tag items** with `SELLABLE_LOW` (15 coins), `SELLABLE_MID` (25 coins), or `SELLABLE_HIGH` (50 coins)
+2. **Tag parts** with `SELL_ZONE` for selling areas
+3. **Drag tagged items** into sell zones → Item destroyed, cash spawns
+4. **Collect cash** via proximity prompts on spawned cash meshparts
+
+### Buying System  
+1. **Tag parts** with `BUY_ZONE` → Auto-spawns random buyable items with ProximityPrompts
+2. **Approach items** → ProximityPrompt appears showing "Buy [ItemName] - [Cost] coins"
+3. **Hold E** (0.5 seconds) → Purchase if affordable, ProximityPrompt destroyed, item becomes regular draggable
+4. **Visual feedback** → Green/red highlighting on hover shows affordability
+
+### Cash Collection
+- Cash meshparts (cash15, cash25, cash50) spawn where items are sold
+- Each contains ProximityPrompt and CashCollection.server.lua script
+- Players collect cash via proximity interaction
+- Cash value automatically determined from meshpart name
+
+### Configuration
+- `EconomyConfig.lua` - Defines sellable values, buyable items, UI settings
+- Integration with existing CollectionService tag system
+- Uses RemoteEvents: SellItem, BuyItem, UpdateMoney, CollectCash, RefreshBuyZones
+- ProximityPrompt-based purchasing system with 0.5 second hold duration
+
+### Key Implementation Details
+- **No instant respawning** - Buy zones become empty after purchase (items respawn during specific day/night times)
+- **Item preservation** - Purchased items remain in world as regular draggable objects
+- **Multiple zone support** - Each BUY_ZONE/SELL_ZONE tagged part operates independently
+- **Object pooling** - Cash collection uses pooled meshparts for performance

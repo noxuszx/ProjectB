@@ -67,7 +67,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [ ] Populate world with lootable ruins and debris
 - [x] Implement basic loot system (rarities, random tables)  
 - [x] Backpack and container upgrades
-- [ ] Add more weapons
+- [x] Add more weapons
 - [ ] Add Battle Towers
 - [x] Add Ending Structure
 - [ ] Add Store to villages

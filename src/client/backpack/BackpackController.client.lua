@@ -77,8 +77,12 @@ end
 -- Show UI hint message
 function showUIHint(message)
     lastUIHint = message
-    print("[Backpack]", message) -- Temporary console output
-    -- TODO: Show in actual UI when BackpackUI is created
+    print("[Backpack]", message) -- Console backup
+    
+    -- Show in actual UI if available
+    if _G.BackpackUI and _G.BackpackUI.showHint then
+        _G.BackpackUI.showHint(message)
+    end
 end
 
 -- Handle server responses

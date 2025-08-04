@@ -7,13 +7,14 @@ local PlayerStatsConfig = {
 	MAX_HEALTH = 100,
 	MAX_HUNGER = 100,
 	MAX_THIRST = 100,
+	STARTING_MONEY = 0, -- Economy system integration
 	
 	-- Stat decay system settings
 	TICK_INTERVAL = 1, -- Seconds between each decay tick (faster for testing)
 	
 	-- Decay rates per tick (how much stats decrease each interval)
 	HUNGER_DECAY_PER_TICK = 0.5, -- Hunger decreases by 0.5 every 1 second
-	THIRST_DECAY_PER_TICK = 5.0, -- Thirst decreases by 5.0 every 1 second (much faster for testing)
+	THIRST_DECAY_PER_TICK = 0.75, -- Thirst decreases by 0.75 every 1 second (slightly faster than hunger)
 	
 	-- Damage dealt when stats reach 0
 	STARVATION_DAMAGE_PER_TICK = 2, -- Health damage when Hunger = 0

@@ -23,6 +23,7 @@ local CreatureSpawnConfig = {
 			SpawnChance = 1, 	-- Reduced from 0.9
 			PossibleCreatures = {
 				Rabbit = 0.8,
+				Camel = 0.4
 			}
 		},
 
@@ -31,9 +32,9 @@ local CreatureSpawnConfig = {
 			MinSpawns = 1, 		-- Reduced from 3
 			SpawnChance = 0.9, 	-- Reduced from 0.95
 			PossibleCreatures = {
-				Wolf = 0.7,
+				Coyote = 0.7,
 				Mummy = 0.5,
-				Skeleton = 0.6,
+				Scorpion = 0.6,
 			}
 		},
 

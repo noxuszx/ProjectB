@@ -22,6 +22,14 @@ if not BackpackEvent then
     BackpackEvent.Parent = remotesFolder
 end
 
+-- Create BackpackChanged RemoteEvent for instant UI updates
+local BackpackChanged = remotesFolder:FindFirstChild("BackpackChanged")
+if not BackpackChanged then
+    BackpackChanged = Instance.new("RemoteEvent")
+    BackpackChanged.Name = "BackpackChanged"
+    BackpackChanged.Parent = remotesFolder
+end
+
 BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
     local args = {...}
     
@@ -32,6 +40,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
         if success then
             local contents = BackpackService.getBackpackContents(player)
             BackpackEvent:FireClient(player, "Sync", contents, message)
+            -- Fire instant update event
+            BackpackChanged:FireClient(player, contents)
         else
             BackpackEvent:FireClient(player, "Error", message)
         end
@@ -42,6 +52,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
         if success then
             local contents = BackpackService.getBackpackContents(player)
             BackpackEvent:FireClient(player, "Sync", contents, message)
+            -- Fire instant update event
+            BackpackChanged:FireClient(player, contents)
         else
             BackpackEvent:FireClient(player, "Error", message)
         end

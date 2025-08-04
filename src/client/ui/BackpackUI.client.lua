@@ -13,83 +13,22 @@ local playerGui = player:WaitForChild("PlayerGui")
 -- Mobile detection
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
--- Create main UI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "BackpackUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+-- Reference manually created UI elements
+local screenGui = playerGui:WaitForChild("BackpackGui")
+local mainFrame = screenGui:WaitForChild("BackpackFrame")
+local counterLabel = mainFrame:WaitForChild("Counter")
 
--- Main frame - responsive positioning
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "BackpackFrame"
-mainFrame.Size = UDim2.new(0, 120, 0, 60)  -- Smaller since only counter
-mainFrame.Position = UDim2.new(1, -140, 0.5, -30)  -- Middle-right with margin
-mainFrame.BackgroundTransparency = 1  -- Completely transparent (no background)
-mainFrame.BorderSizePixel = 0
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-
--- Counter label (centered, bigger, with black outline)
-local counterLabel = Instance.new("TextLabel")
-counterLabel.Name = "Counter"
-counterLabel.Size = UDim2.new(1, 0, 1, 0)  -- Take full frame size
-counterLabel.Position = UDim2.new(0, 0, 0, 0)  -- Centered in frame
-counterLabel.BackgroundTransparency = 1
-counterLabel.Text = "0/10"
-counterLabel.TextColor3 = Color3.new(1, 1, 1)  -- Pure white text
-counterLabel.TextSize = 36  -- Much bigger
-counterLabel.Font = Enum.Font.FredokaOne
-counterLabel.TextXAlignment = Enum.TextXAlignment.Center  -- Center aligned
-counterLabel.TextYAlignment = Enum.TextYAlignment.Center  -- Vertically centered
-counterLabel.TextStrokeTransparency = 0  -- Enable stroke/outline
-counterLabel.TextStrokeColor3 = Color3.new(0, 0, 0)  -- Black outline
-counterLabel.Parent = mainFrame
-
--- Mobile buttons (only show on mobile when Sack is equipped)
+-- Mobile buttons references
 local mobileFrame = nil
+local storeButton = nil
+local retrieveButton = nil
+
 if isMobile then
-    mobileFrame = Instance.new("Frame")
-    mobileFrame.Name = "MobileButtons"
-    mobileFrame.Size = UDim2.new(0, 130, 0, 40)
-    mobileFrame.Position = UDim2.new(1, -280, 0.5, 60)  -- Below the counter in middle-right
-    mobileFrame.BackgroundTransparency = 1
-    mobileFrame.Visible = false  -- Hidden by default
-    mobileFrame.Parent = screenGui
+    mobileFrame = screenGui:WaitForChild("MobileButtons")
+    storeButton = mobileFrame:WaitForChild("StoreButton")
+    retrieveButton = mobileFrame:WaitForChild("RetrieveButton")
     
-    -- Store button
-    local storeButton = Instance.new("TextButton")
-    storeButton.Name = "StoreButton"
-    storeButton.Size = UDim2.new(0, 60, 0, 35)
-    storeButton.Position = UDim2.new(0, 0, 0, 0)
-    storeButton.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-    storeButton.Text = "Store"
-    storeButton.TextColor3 = Color3.new(1, 1, 1)
-    storeButton.TextSize = 14
-    storeButton.Font = Enum.Font.FredokaOne
-    storeButton.Parent = mobileFrame
-    
-    local storeCorner = Instance.new("UICorner")
-    storeCorner.CornerRadius = UDim.new(0, 6)
-    storeCorner.Parent = storeButton
-    
-    -- Retrieve button
-    local retrieveButton = Instance.new("TextButton")
-    retrieveButton.Name = "RetrieveButton"
-    retrieveButton.Size = UDim2.new(0, 60, 0, 35)
-    retrieveButton.Position = UDim2.new(0, 70, 0, 0)
-    retrieveButton.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
-    retrieveButton.Text = "Take"
-    retrieveButton.TextColor3 = Color3.new(1, 1, 1)
-    retrieveButton.TextSize = 14
-    retrieveButton.Font = Enum.Font.FredokaOne
-    retrieveButton.Parent = mobileFrame
-    
-    local retrieveCorner = Instance.new("UICorner")
-    retrieveCorner.CornerRadius = UDim.new(0, 6)
-    retrieveCorner.Parent = retrieveButton
-    
-    -- Button connections (wait for BackpackController)
-    spawn(function()
+    task.spawn(function()
         repeat wait(0.1) until _G.BackpackController
         
         storeButton.MouseButton1Click:Connect(function()
@@ -102,50 +41,13 @@ if isMobile then
     end)
 end
 
--- Hint message display (positioned better for mobile)
-local hintLabel = Instance.new("TextLabel")
-hintLabel.Name = "HintLabel"
-hintLabel.Size = UDim2.new(0, 250, 0, 30)
-hintLabel.Position = UDim2.new(0.5, -125, 0, 50)
-hintLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-hintLabel.BackgroundTransparency = 0.3
-hintLabel.Text = ""
-hintLabel.TextColor3 = Color3.new(1, 1, 1)
-hintLabel.TextSize = 14
-hintLabel.Font = Enum.Font.SourceSans
-hintLabel.Visible = false
-hintLabel.Parent = screenGui
-
-local hintCorner = Instance.new("UICorner")
-hintCorner.CornerRadius = UDim.new(0, 6)
-hintCorner.Parent = hintLabel
-
 -- State tracking
 local currentItemCount = 0
 local sackEquipped = false
 
--- Show hint message with fade
+-- Show hint message (console only since no HintLabel)
 local function showHint(message)
-    hintLabel.Text = message
-    hintLabel.Visible = true
-    hintLabel.BackgroundTransparency = 0.3
-    hintLabel.TextTransparency = 0
-    
-    -- Fade out after 2 seconds
-    spawn(function()
-        wait(2)
-        
-        local fadeInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local fadeTween = TweenService:Create(hintLabel, fadeInfo, {
-            BackgroundTransparency = 1,
-            TextTransparency = 1
-        })
-        
-        fadeTween:Play()
-        fadeTween.Completed:Connect(function()
-            hintLabel.Visible = false
-        end)
-    end)
+    print("[BackpackUI Hint]", message)
 end
 
 -- Update UI visibility based on Sack equipped status
@@ -220,10 +122,7 @@ local function onBackpackAdded(child)
     end
 end
 
--- Monitor backpack for Sack tool
 player.Backpack.ChildAdded:Connect(onBackpackAdded)
-
--- Check existing tools in backpack
 for _, tool in pairs(player.Backpack:GetChildren()) do
     if tool.Name == "Sack" and tool:IsA("Tool") then
         onBackpackAdded(tool)
