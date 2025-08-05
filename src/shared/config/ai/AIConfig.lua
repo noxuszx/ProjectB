@@ -180,6 +180,31 @@ local AIConfig = {
 			ModelFolder = "HostileCreatures",
 			DamageCooldown = 1.8,
 		},
+		
+		SkeletonArcher = {
+			Type = "RangedHostile",
+			Health = 50,
+			MoveSpeed = 14,
+			DetectionRange = 70,
+			TouchDamage = 0, 			-- No touch damage for ranged enemies
+			ChaseSpeed = 14,
+			RoamRadius = 20,
+			IdleTime = {4, 10},
+			ModelFolder = "HostileCreatures",
+			
+			-- Ranged-specific configuration  
+			ProjectileSpeed = 50,		-- Speed of projectile travel (not used - WeaponConfig controls this)
+			OptimalRange = 30,			-- Preferred distance to maintain
+			MaxRange = 120,				-- Maximum shooting distance
+			WeaponName = "SkeletonArrow",	-- References WeaponConfig entry (damage controlled there)
+			AnimationId = "rbxassetid://123898471268427", -- Animation for arm raising
+			
+			-- Burst shooting configuration
+			ShotsPerBurst = 3,			-- Number of shots in each burst
+			ShotInterval = 1.0,			-- Time between shots within a burst (seconds)
+			BurstCooldown = 3.0,		-- Cooldown after completing a burst (seconds)
+			KitingDelay = 3.0,			-- Delay before creature starts kiting when player gets close
+		},
 	},
 
 	-- Spawning system settings
@@ -206,6 +231,7 @@ local AIConfig = {
 			Wolf = 8,
 			Skeleton = 6,
 			Mummy = 5,
+			SkeletonArcher = 6,
 		},
 		
 		BiomeSpawning = {

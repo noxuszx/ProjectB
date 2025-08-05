@@ -9,21 +9,23 @@ local AIBehavior = {}
 AIBehavior.__index = AIBehavior
 
 function AIBehavior.new(behaviorName)
-	local self = setmetatable({}, AIBehavior)
 	
+	local self = setmetatable({}, AIBehavior)
 	self.behaviorName = behaviorName or "Unknown"
 	self.isActive = false
 	self.enterTime = 0
 	self.lastTransitionTime = 0
-	
+
 	return self
 end
 
 function AIBehavior:enter(creature)
 	if AIConfig.Debug.LogBehaviorChanges then
-		print("[AIBehavior] " .. creature.creatureType .. " entering " .. self.behaviorName .. " behavior")
+		print(
+			"[AIBehavior] " .. creature.creatureType .. " entering " .. self.behaviorName .. " behavior"
+		)
 	end
-	
+
 	self.isActive = true
 	self.enterTime = os.clock()
 	self.lastTransitionTime = os.clock()
@@ -36,12 +38,13 @@ end
 
 function AIBehavior:exit(creature)
 	if AIConfig.Debug.LogBehaviorChanges then
-		print("[AIBehavior] " .. creature.creatureType .. " exiting " .. self.behaviorName .. " behavior")
+		print(
+			"[AIBehavior] " .. creature.creatureType .. " exiting " .. self.behaviorName .. " behavior"
+		)
 	end
-	
+
 	self.isActive = false
 end
-
 
 function AIBehavior:getActiveTime()
 	if not self.isActive then
@@ -61,11 +64,11 @@ function AIBehavior:getRandomTime(minMax)
 	return minMax or 0
 end
 
-
-
 function AIBehavior:findNearestPlayer(creature)
 	if not creature or not creature.model or not creature.model.PrimaryPart then
-		warn("[AIBehavior] Invalid creature or missing PrimaryPart in findNearestPlayer")
+		warn(
+			"[AIBehavior] Invalid creature or missing PrimaryPart in findNearestPlayer"
+		)
 		return nil, math.huge
 	end
 
@@ -75,7 +78,8 @@ function AIBehavior:findNearestPlayer(creature)
 
 	for _, player in pairs(game.Players:GetPlayers()) do
 		if player.Character and player.Character.PrimaryPart then
-			local distance = (player.Character.PrimaryPart.Position - creaturePosition).Magnitude
+			local distance =
+				(player.Character.PrimaryPart.Position - creaturePosition).Magnitude
 
 			if distance < nearestDistance and distance <= creature.detectionRange then
 				nearestPlayer = player
@@ -87,33 +91,30 @@ function AIBehavior:findNearestPlayer(creature)
 	return nearestPlayer, nearestDistance
 end
 
-
-
 function AIBehavior:moveTowards(creature, targetPosition, speed, deltaTime)
-	-- Safety checks to prevent nil errors
 	if not creature or not creature.model or not creature.model.PrimaryPart then
-		warn("[AIBehavior] Invalid creature or missing PrimaryPart in moveTowards")
+		warn(
+			"[AIBehavior] Invalid creature or missing PrimaryPart in moveTowards"
+		)
 		return
 	end
 
 	local humanoid = creature.model:FindFirstChild("Humanoid")
 	if humanoid then
-		humanoid:MoveTo(targetPosition)
+		-- Debounce MoveTo calls to prevent pathfinding thrashing
+		if not self.lastMoveGoal or (targetPosition - self.lastMoveGoal).Magnitude > 1 then
+			humanoid:MoveTo(targetPosition)
+			self.lastMoveGoal = targetPosition
+		end
 		humanoid.WalkSpeed = speed
-
-		-- Update position with safety check
 		if creature.model.PrimaryPart then
 			creature.position = creature.model.PrimaryPart.Position
 		end
 	else
-		warn("[AIBehavior] No Humanoid found in creature model: " .. creature.creatureType)
+		warn(
+			"[AIBehavior] No Humanoid found in creature model: " .. creature.creatureType
+		)
 	end
 end
-
-
-
--- REMOVED: snapToGround function - Humanoid:MoveTo handles ground positioning
-
--- REMOVED: Complex stuck detection - Humanoid:MoveTo has built-in timeout
 
 return AIBehavior

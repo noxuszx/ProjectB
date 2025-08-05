@@ -19,7 +19,6 @@ local touchDebounce = {}
 
 -- Handle when something touches a sell zone
 local function onSellZoneTouched(sellZone, hit)
-	print("[SellZoneHandler] SELL_ZONE", sellZone.Name, "was touched by", hit.Name)
 	
 	-- Find the item that touched the sell zone
 	local item = hit.Parent
@@ -32,7 +31,6 @@ local function onSellZoneTouched(sellZone, hit)
 		return -- Ignore lone parts / terrain hits
 	end
 	
-	print("[SellZoneHandler] Checking if", item.Name, "is sellable")
 	
 	-- Debounce check
 	local debounceKey = tostring(item) .. "_" .. tostring(sellZone)
@@ -69,19 +67,16 @@ local function onSellZoneTouched(sellZone, hit)
 			if child:IsA("MeshPart") then
 				isSellable, itemValue, cashType, tagName = checkSellableTags(child)
 				if isSellable then
-					print("[SellZoneHandler] Child", child.Name, "has tag", tagName, "worth", itemValue, "coins")
 					break
 				end
 			end
 		end
 	else
 		if isSellable then
-			print("[SellZoneHandler] Item", item.Name, "has tag", tagName, "worth", itemValue, "coins")
 		end
 	end
 	
 	if not isSellable then
-		print("[SellZoneHandler] Item", item.Name, "has no sellable tags")
 		return
 	end
 	
@@ -142,13 +137,11 @@ local function onSellZoneTouched(sellZone, hit)
 			cashClone.Parent = workspace
 			cashClone.Position = spawnPosition
 			
-			print("[SellZoneHandler] Created new stripped", cashType, "worth", itemValue, "coins at", itemPosition)
 		else
 			warn("[SellZoneHandler] Could not spawn cash - meshpart not found:", cashType)
 			return
 		end
 	else
-		print("[SellZoneHandler] Used pooled", cashType, "worth", itemValue, "coins at", itemPosition)
 	end
 	
 	-- Store the cash value as an attribute for collection
@@ -157,7 +150,6 @@ end
 
 -- Set up touch detection for sell zones
 local function setupSellZone(sellZone)
-	print("[SellZoneHandler] Setting up touch detection for sell zone:", sellZone.Name)
 	
 	if not sellZone:IsA("Part") and not sellZone:IsA("MeshPart") then
 		warn("[SellZoneHandler] Sell zone", sellZone.Name, "is not a Part or MeshPart")
@@ -182,17 +174,14 @@ local function setupSellZone(sellZone)
 		end
 	end)
 	
-	print("[SellZoneHandler] Connected touch events to sell zone:", sellZone.Name)
 end
 
 -- Monitor for new sell zones
 local function onSellZoneAdded(sellZone)
-	print("[SellZoneHandler] New sell zone detected:", sellZone.Name)
 	setupSellZone(sellZone)
 end
 
 local function onSellZoneRemoved(sellZone)
-	print("[SellZoneHandler] Sell zone removed:", sellZone.Name)
 	-- Clean up any debounce entries for this sell zone
 	for key, _ in pairs(touchDebounce) do
 		if string.find(key, tostring(sellZone)) then
@@ -205,10 +194,8 @@ end
 local function init()
 	-- Set up existing SELL_ZONE parts
 	local sellZones = CollectionService:GetTagged("SELL_ZONE")
-	print("[SellZoneHandler] Found", #sellZones, "SELL_ZONE tagged parts:")
 	
 	for _, zone in pairs(sellZones) do
-		print("  - SELL_ZONE:", zone.Name, "(" .. zone.ClassName .. ")")
 		setupSellZone(zone)
 	end
 	
@@ -229,7 +216,6 @@ local function init()
 		end
 	end)
 	
-	print("[SellZoneHandler] Initialized successfully - listening on", #sellZones, "sell zones")
 end
 
 -- Start the handler

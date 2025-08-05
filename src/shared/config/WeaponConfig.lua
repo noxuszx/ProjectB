@@ -24,7 +24,7 @@ WeaponConfig.RangedWeapons = {
             Flash = true,      -- Show muzzle flash
             FlashColor = Color3.new(1, 0.8, 0),
         },
-        DebugEnabled = true
+        DebugEnabled = false
     },
     
     Rifle = {
@@ -43,7 +43,26 @@ WeaponConfig.RangedWeapons = {
             Flash = true,
             FlashColor = Color3.new(1, 1, 0.8),
         },
-        DebugEnabled = true
+        DebugEnabled = false
+    },
+    
+    SkeletonArrow = {
+        Damage = 6,          -- Low damage for NPCs (matches AIConfig setting)
+        Range = 120,         -- Maximum shooting distance
+        Cooldown = 2.0,      -- Time between NPC shots (not used with burst system)
+        ProjectileSpeed = 80, -- Slower than player weapons
+        BulletConfig = {
+            Color = Color3.new(0.6, 0.4, 0.2),    -- Brown/wooden arrow color
+            Size = Vector3.new(0.1, 0.1, 1.2),     -- Long thin arrow
+            Lifetime = 3.0,    -- Longer lifetime for slower projectile
+            Material = Enum.Material.Wood,         -- Wooden material
+        },
+        MuzzleEffect = {
+            Sound = nil,       -- No muzzle flash for arrows
+            Flash = false,     
+            FlashColor = Color3.new(0, 0, 0),
+        },
+        DebugEnabled = false
     }
 }
 
@@ -59,7 +78,7 @@ WeaponConfig.MeleeWeapons = {
             Sound = nil,      -- Optional hit sound ID
             Particle = nil,   -- Optional particle effect
         },
-        DebugEnabled = true   -- Enable debug prints for this weapon
+        DebugEnabled = false   -- Enable debug prints for this weapon
     },
     
     Katana = {
@@ -72,7 +91,7 @@ WeaponConfig.MeleeWeapons = {
             Sound = nil,
             Particle = nil,
         },
-        DebugEnabled = true
+        DebugEnabled = false
     },
     
     Knife = {
@@ -85,7 +104,7 @@ WeaponConfig.MeleeWeapons = {
             Sound = nil,
             Particle = nil,
         },
-        DebugEnabled = true
+        DebugEnabled = false
     },
     
     Machete = {
@@ -98,13 +117,13 @@ WeaponConfig.MeleeWeapons = {
             Sound = nil,
             Particle = nil,
         },
-        DebugEnabled = true
+        DebugEnabled = false
     }
 }
 
 -- Global weapon settings
 WeaponConfig.GlobalSettings = {
-    MaxRange = 20,           -- Maximum possible weapon range
+    MaxRange = 300,          -- Maximum possible weapon range (increased for ranged NPC weapons)
     MinCooldown = 0.3,       -- Minimum cooldown to prevent spam
     DefaultDamage = 20,      -- Fallback damage if weapon not configured
     RaycastParams = {

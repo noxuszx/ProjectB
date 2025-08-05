@@ -90,8 +90,15 @@ UserInputService.InputEnded:Connect(function(inputObject, gameProcessed)
     updateMovementDirection()
 end)
 
--- Send input to server every frame
-RunService.RenderStepped:Connect(function()
-    updateMovementDirection()
-    remote:FireServer(input)
+-- Send input to server at 30 FPS to reduce load
+local lastUpdate = 0
+local UPDATE_RATE = 1/30 -- 30 FPS
+
+RunService.Heartbeat:Connect(function()
+    local now = tick()
+    if now - lastUpdate >= UPDATE_RATE then
+        updateMovementDirection()
+        remote:FireServer(input)
+        lastUpdate = now
+    end
 end)

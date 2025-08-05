@@ -2,7 +2,7 @@
     Crossbow.client.lua
     Ranged weapon system with hitscan mechanics and realistic bullet tracers
     Uses instant hit detection with visual tracer animation for best gameplay feel
-]]--
+]] --
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,7 +25,6 @@ local lastFireTime = 0
 local isEquipped = false
 local currentCharacter = nil
 local weaponRemote = nil
-
 
 local function initializeRemote()
 	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
@@ -50,13 +49,14 @@ local function getCooldownRemaining()
 end
 
 local function findMuzzlePoint()
-	local muzzlePart = tool:FindFirstChild("Muzzle") or tool:FindFirstChild("Barrel")
+	local muzzlePart =
+		tool:FindFirstChild("Muzzle") or tool:FindFirstChild("Barrel")
 	if muzzlePart then
 		return muzzlePart.CFrame
 	end
 	local handle = tool:FindFirstChild("Handle")
 	if handle then
-		return handle.CFrame * CFrame.new(0, 0, -handle.Size.Z/2 - 0.5)
+		return handle.CFrame * CFrame.new(0, 0, -handle.Size.Z / 2 - 0.5)
 	end
 
 	if currentCharacter and currentCharacter.PrimaryPart then
@@ -73,11 +73,12 @@ local function performHitscan(muzzlePos, mouseHitPos)
 
 	local rayDirection = (mouseHitPos - muzzlePos).Unit * config.Range
 	local raycastParams = RaycastParams.new()
-	
-	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.FilterDescendantsInstances = {currentCharacter, tool}
 
-	local raycastResult = workspace:Raycast(muzzlePos, rayDirection, raycastParams)
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.FilterDescendantsInstances = { currentCharacter, tool }
+
+	local raycastResult =
+		workspace:Raycast(muzzlePos, rayDirection, raycastParams)
 
 	if raycastResult then
 		return raycastResult.Instance, raycastResult.Position
@@ -88,7 +89,6 @@ end
 
 -- Create toolbox-style bullet tracer
 local function createTracer(startPos, hitPos)
-
 	local beam = Instance.new("Part", workspace)
 	beam.BrickColor = BrickColor.new("Ghost grey")
 	beam.FormFactor = "Custom"
@@ -118,20 +118,20 @@ local function playFireSound()
 	end
 end
 
-
 local function findTargetModel(hitPart)
-	if not hitPart then return nil end
+	if not hitPart then
+		return nil
+	end
 
 	local targetModel = hitPart:FindFirstAncestorOfClass("Model")
 	return targetModel
 end
 
-
 local function executeFire()
 	if isOnCooldown() then
 		return false
 	end
-	
+
 	lastFireTime = tick()
 
 	local mouse = player:GetMouse()
@@ -139,7 +139,6 @@ local function executeFire()
 	local muzzlePos = findMuzzlePoint()
 	local startPos = muzzlePos.Position
 	local hitPart, hitPos = performHitscan(startPos, mouseHitPos)
-
 
 	createTracer(startPos, hitPos)
 	playFireSound()

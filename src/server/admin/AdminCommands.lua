@@ -42,11 +42,21 @@ end
 --     Noclip         = bool,
 --     HeartbeatConn  = RBXScriptConnection?,
 --     Input          = {dir:Vector3, ascend:boolean, descend:boolean},
+--     God            = bool,
+--     GodConn        = RBXScriptConnection?,
 -- }
 local state = {}
 
+-- single listener for all player input
+remote.OnServerEvent:Connect(function(p, data)
+    local s = state[p]
+    if s and s.Flying then
+        s.Input = data
+    end
+end)
+
 local function ensureState(plr: Player)
-    state[plr] = state[plr] or {Flying = false, Noclip = false, Input = {dir = Vector3.zero}}
+state[plr] = state[plr] or {Flying=false, Noclip=false, Input={dir=Vector3.zero}, God=false}
     return state[plr]
 end
 
@@ -90,10 +100,6 @@ local function enableFly(plr: Player)
     s.Input = {dir = Vector3.zero, ascend = false, descend = false}
 
     -- listen for this player input packets
-    remote.OnServerEvent:Connect(function(sender: Player, data)
-        if sender ~= plr then return end
-        s.Input = data
-    end)
 
     -- heartbeat velocity/orientation update
     s.HeartbeatConn = RunService.Heartbeat:Connect(function()
@@ -129,9 +135,47 @@ local function disableFly(plr: Player)
     end
 
     local s = ensureState(plr)
-    if s.HeartbeatConn then s.HeartbeatConn:Disconnect() end
+    if s.HeartbeatConn then 
+        s.HeartbeatConn:Disconnect() 
+        s.HeartbeatConn = nil
+    end
     s.Flying = false
     print("[AdminCommands] fly OFF for", plr.Name)
+end
+
+---------------------------------------------------------------------
+-- GOD MODE ---------------------------------------------------------
+---------------------------------------------------------------------
+
+local function applyGodMode(plr: Player)
+    local char = plr.Character; if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local s = ensureState(plr)
+    if s.God then return end
+
+    hum.MaxHealth = math.huge
+    hum.Health = math.huge
+    s.GodConn = hum.HealthChanged:Connect(function()
+        if hum.Health < hum.MaxHealth * 0.99 then
+            hum.Health = hum.MaxHealth
+        end
+    end)
+    s.God = true
+    print("[AdminCommands] god ON for", plr.Name)
+end
+
+local function removeGodMode(plr: Player)
+    local char = plr.Character; if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local s = ensureState(plr)
+    if not s.God then return end
+
+    if s.GodConn then s.GodConn:Disconnect(); s.GodConn=nil end
+    s.God=false
+    -- reset health to default values (adjust if game uses different base)
+    hum.MaxHealth = 100
+    hum.Health = 100
+    print("[AdminCommands] god OFF for", plr.Name)
 end
 
 ---------------------------------------------------------------------
@@ -171,6 +215,8 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
     local cmd = string.lower( (string.split(msg:sub(#COMMAND_PREFIX+1), " ")[1] or "") )
     if cmd == "fly"      then enableFly(plr)
     elseif cmd == "unfly" or cmd == "walk" then disableFly(plr)
+elseif cmd == "god" then applyGodMode(plr)
+    elseif cmd == "ungod" then removeGodMode(plr)
     elseif cmd == "noclip" or cmd == "nc"   then enableNoclip(plr)
     elseif cmd == "clip"                       then disableNoclip(plr) end
 end
@@ -181,7 +227,8 @@ end
 
 Players.PlayerRemoving:Connect(function(plr)
     disableFly(plr)
-    disableNoclip(plr)
+disableNoclip(plr)
+    removeGodMode(plr)
     state[plr] = nil
 end)
 

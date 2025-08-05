@@ -4,8 +4,46 @@
 # Roblox Studio lock files
 /*.rbxlx.lock
 /*.rbxl.lock
-consolelog.txt
 
+# Console and log files
+consolelog.txt
+*.log
+*.txt
+
+# Node.js dependencies
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude AI settings (local only)
+.claude/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Documentation that might be personal/temporary
 DEVELOPER_ROADMAP.md
 IMPROVEMENTS_AND_SUGGESTIONS.md
-# PROMPT.md
+Bug.md
+#CLAUDE.md
+#RangedHostileImplementationPlan.md

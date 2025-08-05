@@ -11,6 +11,7 @@ local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureS
 local DayNightCycle = require(script.Parent.Parent.environment.DayNightCycle)
 local PassiveCreature = require(script.Parent.creatures.Passive)
 local HostileCreature = require(script.Parent.creatures.Hostile)
+local RangedHostile = require(script.Parent.creatures.RangedHostile)
 local AIManager = require(script.Parent.AIManager)
 local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
 
@@ -113,11 +114,18 @@ function CreatureSpawner.spawnCreature(creatureType, position)
 
 	if creatureModel.PrimaryPart then
 		creatureModel.PrimaryPart.CollisionGroup = "Creature"
+		creatureModel.PrimaryPart:SetNetworkOwner(nil)
 	end
 
-	local aiController = (config.Type == "Passive") and
-		PassiveCreature.new(creatureModel, creatureType, position) or
-		HostileCreature.new(creatureModel, creatureType, position)
+	-- Create appropriate AI controller based on creature type
+	local aiController
+	if config.Type == "Passive" then
+		aiController = PassiveCreature.new(creatureModel, creatureType, position)
+	elseif config.Type == "RangedHostile" then
+		aiController = RangedHostile.new(creatureModel, creatureType, position)
+	else -- Default to regular hostile
+		aiController = HostileCreature.new(creatureModel, creatureType, position)
+	end
 
 	spawnedCreaturesCount = spawnedCreaturesCount + 1
 	

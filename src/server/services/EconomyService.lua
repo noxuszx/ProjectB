@@ -183,18 +183,15 @@ local function onSellItem(player, item, sellZone)
 	end
 end
 
--- Handle buying items (direct item purchase)
 local function onBuyItem(player, item)
-	-- Validate player and item
 	if not player or not item or not item.Parent then
 		return
 	end
 	
-	-- Check buy cooldown
 	local currentTime = tick()
 	local lastBuy = buyCooldowns[player][item] or 0
 	if currentTime - lastBuy < EconomyConfig.Zones.BuyZone.InteractionCooldown then
-		return -- Still on cooldown
+		return
 	end
 	
 	-- Find the item data in config

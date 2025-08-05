@@ -69,6 +69,9 @@
         "WeaponDamage": {
           "$className": "RemoteEvent"
         },
+        "ProjectileVisual": {
+          "$className": "RemoteEvent"
+        },
         "Economy": {
           "$className": "Folder",
           "SellItem": {

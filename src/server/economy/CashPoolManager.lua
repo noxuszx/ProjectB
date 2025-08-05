@@ -134,7 +134,6 @@ function CashPoolManager.returnCashItem(cashItem)
 	
 	-- Check if pool has space
 	if #pool >= limit then
-		-- Pool is full, actually destroy the item
 		cashItem:Destroy()
 		
 		if EconomyConfig.Debug.Enabled then

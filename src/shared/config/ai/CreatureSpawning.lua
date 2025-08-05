@@ -35,6 +35,7 @@ local CreatureSpawnConfig = {
 				Coyote = 0.7,
 				Mummy = 0.5,
 				Scorpion = 0.6,
+				SkeletonArcher = 0.4, -- Lower chance for ranged enemies
 			}
 		},
 

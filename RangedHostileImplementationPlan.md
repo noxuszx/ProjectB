@@ -1,103 +1,135 @@
-# RangedHostile NPCs Implementation Plan
+# RangedHostile NPC Performance Optimization Guide
 
-Implementation plan for adding reliable, performant ranged enemies that fit the existing AI + weapon architecture.
+Optimization guide for fixing laggy movement, missing animations, and jerky rotation in RangedHostile NPCs.
 
-## Phase 1 – Design
+## Current Issues Identified
 
-### 1. Creature Archetype
-- **New class**: `RangedHostile.lua` extends `HostileCreature`
-- **New config entry** per enemy (e.g. SkeletonArcher) in `AIConfig.CreatureTypes` with fields:
-  - `Damage` - Projectile damage amount
-  - `ProjectileSpeed` - Speed of projectile travel
-  - `FireCooldown` - Time between shots
-  - `OptimalRange` - Preferred distance to maintain (e.g. 35 studs)
-  - `MaxRange` - Maximum shooting distance (e.g. 120 studs)
+1. **Laggy/stuttering movement** - NPCs move in a jerky, unsmooth fashion
+2. **No animations playing** - Walk cycles and other animations don't execute
+3. **Snap-turns/unsmooth rotation** - NPCs instantly teleport-rotate instead of smoothly turning
 
-### 2. Behaviors
-- **`RangedChasing`** – moves toward player until inside OptimalRange, keeps LOS, no touch damage
-- **`RangedAttack`** – fires projectile, waits FireCooldown
-- Both inherit from base `AIBehavior` so they plug into current behavior system
+## Problem Analysis & Solutions
 
-### 3. Projectile Implementation
-- Re-use hitscan raycast pattern already in `Crossbow` and `WeaponTest.server.lua`
-- Encapsulate in `ProjectileService` ModuleScript (server-side) for reuse by NPCs & players
+### 1. Laggy Movement Issues
 
-### 4. Networking / Security
-- Server-only projectile & damage; clients receive RemoteEvent for visuals (tracer, sound)
+#### Instant Turn and Flee
+- **Issue**: NPCs instantly turn away and flee when players get too close.
+- **Performance Concern**: This abrupt transition can be non-performant and lead to animation hitches.
+- **Solution**: Allow a short delay or smoother transition for fleeing behavior. find a way for this to be performant.
 
-### 5. Performance Safeguards
-- Respect AIManager's LOD: in Far LOD, skip aiming; Medium LOD: lower fire rate
-- Pool projectile parts; Debris after lifetime
+#### A. Network Ownership Problems
+- **Issue**: Client may own NPC physics simulation, causing server-client conflicts
+- **Solution**: Force server ownership in spawner
+```lua
+-- In CreatureSpawner.spawnCreature()
+creatureModel.PrimaryPart:SetNetworkOwner(nil)
+```
 
-## Phase 2 – Code Scaffolding
+#### B. MoveTo Thrashing
+- **Issue**: Calling `Humanoid:MoveTo` every frame overwhelms pathfinding
+- **Current**: `RangedChasing:update` calls `moveTowards` → `MoveTo` at 60 Hz
+- **Solution**: Debounce MoveTo calls - only when goal changes >1 stud or humanoid stuck
+```lua
+-- Cache last MoveTo goal on behavior object
+if not self.lastMoveGoal or (newGoal - self.lastMoveGoal).Magnitude > 1 then
+    humanoid:MoveTo(newGoal)
+    self.lastMoveGoal = newGoal
+end
+```
 
-### 1. Core Classes
-- `src/server/ai/creatures/RangedHostile.lua`
-  - Inherits `HostileCreature`, overrides `update()` to swap behaviors
+### 2. Snap-Turn Rotation Issues
 
-### 2. Behavior Classes
-- `src/server/ai/behaviors/RangedChasing.lua`
-  - Stops at OptimalRange, keeps facing
-- `src/server/ai/behaviors/RangedAttack.lua`
-  - On `enter`, start cooldown timer
-  - On `update`, if LOS and cooldown ≤0 then call `ProjectileService:fire(...)`
+#### Current Problem Code
+```lua
+-- This causes instant teleport-rotation at 60 Hz:
+creature.model:SetPrimaryPartCFrame(CFrame.lookAt(...))
+```
 
-### 3. Services
-- `src/server/services/ProjectileService.lua` (or under `shared/modules`)
-  - `fire(origin, targetPos, config)` returns projectile instance
-  - Does raycast, applies damage via `WeaponTest` remote
+#### Solution A: Use Humanoid AutoRotate (Recommended)
+```lua
+-- Let Roblox handle smooth turning during movement
+humanoid.AutoRotate = true
+-- Just call MoveTo - rotation happens automatically
+humanoid:MoveTo(goalPosition)
+```
 
-### 4. Configuration Updates
-- Append new creature configs (e.g. SkeletonArcher) and optionally generic defaults in `AIConfig.lua`
+#### Solution B: Gradual CFrame Interpolation (For Stationary)
+```lua
+local function smoothFace(model, targetPos, turnRate, deltaTime)
+    local root = model.PrimaryPart
+    local desired = (targetPos - root.Position).Unit
+    desired = Vector3.new(desired.X, 0, desired.Z) -- Y-axis only
+    local current = root.CFrame.LookVector
+    local alpha = math.clamp(turnRate * deltaTime, 0, 1)
+    local newDir = current:Lerp(desired, alpha).Unit
+    local newCf = CFrame.lookAt(root.Position, root.Position + newDir)
+    root.CFrame = newCf
+end
 
-### 5. Spawner Updates
-- Add new creature types to `CreatureSpawning.lua` weights
+-- Call at ~15 Hz when in RangedAttack behavior
+if self.lastTurnUpdate + 0.067 < currentTime then -- ~15 FPS
+    smoothFace(creature.model, targetPosition, 2.0, deltaTime)
+    self.lastTurnUpdate = currentTime
+end
+```
 
-## Phase 3 – Testing
+#### Solution C: LOD-Based Rotation Skipping
+```lua
+-- Skip rotation entirely when far from players
+if creature.lodLevel == "Far" then
+    return -- Don't waste CPU on distant NPCs
+end
+```
 
-### 1. Unit Testing
-- Unit-test ProjectileService separately with test NPC & dummy humanoid targets
+## Implementation Priority
 
-### 2. Performance Testing
-- Spawn 50+ ranged NPCs, watch AIManager stats; confirm <5 ms frame budget
-- Verify LOD throttling: Far → no shooting, Medium → half fire rate, Close → full fire rate
+### High Priority (Fix First)
+1. **Network Ownership**: Add `SetNetworkOwner(nil)` to spawner
+2. **MoveTo Debouncing**: Cache last MoveTo goal in behaviors
+3. **Use AutoRotate**: Enable `humanoid.AutoRotate = true`
 
-### 3. Stress Testing
-- Stress-test pooled projectiles (1000 shots/min) for memory leaks
+### Medium Priority
+4. **Weapon Part Optimization**: Set CanCollide=false, Massless=true
+5. **Animation Debug**: Add loading verification prints
+6. **Smooth Face Function**: For stationary aiming
 
-### 4. QA Checklist
-- LOS checks working correctly
-- No self-damage to NPCs
-- Cooldown respected between shots
-- Damage numbers match config values
+### Low Priority
+7. **LOD-Based Skipping**: Skip updates when far from players
+8. **Client-Side Animations**: Move animation system to LocalScript
 
-## Phase 4 – Polish
+## Code Changes Required
 
-### 1. Audio/Visual Effects
-- Add sound & particle RemoteEvents (client-side only)
+### Files to Modify:
+1. `src/server/ai/CreatureSpawner.lua` - Add network ownership
+2. `src/server/ai/behaviors/RangedChasing.lua` - Debounce MoveTo, enable AutoRotate
+3. `src/server/ai/behaviors/RangedAttack.lua` - Replace snap-turn with smooth face
+4. `src/server/ai/creatures/RangedHostile.lua` - Animation debug, weapon optimization
 
-### 2. Animations
-- Tweak animation sets for bow-draw / shoot
+### Testing Checklist After Implementation:
+- [ ] NPCs move smoothly without stuttering
+- [ ] NPCs turn smoothly toward targets
+- [ ] Performance remains acceptable with 10+ NPCs
+- [ ] Projectiles still fire from weapon muzzle correctly
+- [ ] No network ownership conflicts in multiplayer
 
-### 3. Balance
-- Balance numbers in `AIConfig` after live profiling
+## Performance Monitoring
 
-## Phase 5 – Documentation
+### Metrics to Watch:
+- Server FPS with multiple NPCs active
+- Network data usage (should be lower after fixes)
+- Animation track memory usage
+- Pathfinding service load
 
-### Updates Required
-- Update README with new ranged creature types
-- Update AI architecture docs to describe new behaviors and configs
+### Debug Commands:
+```lua
+-- Enable to monitor behavior changes:
+AIConfig.Debug.LogBehaviorChanges = true
 
-## Implementation Notes
+-- Check network ownership:
+print("Owner:", creature.model.PrimaryPart:GetNetworkOwner())
 
-This plan keeps code modular, config-driven, and aligned with existing:
-- LOD & behavior framework
-- Class-based inheritance system
-- Performance optimization patterns
-- Security model (server-authoritative)
+-- Monitor MoveTo frequency:
+print("MoveTo calls per second:", moveToCallCount / elapsed)
+```
 
-**Benefits:**
-- Simple, reliable, and industry-standard approach
-- Reuses existing weapon/projectile patterns
-- Integrates seamlessly with current AI architecture
-- Performance-conscious from the start
+This optimization approach addresses root causes rather than symptoms, ensuring smooth, performant ranged NPCs that integrate well with the existing AI architecture.

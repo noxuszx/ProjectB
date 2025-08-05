@@ -16,7 +16,6 @@ if not refillBindable then
 	refillBindable.Parent = ReplicatedStorage
 end
 
-print("[WaterRefillManager] Created/found refill bindable:", refillBindable.Name)
 
 local WaterRefillManager = {}
 local refillPrompts = {}
@@ -72,9 +71,7 @@ local function createProximityPrompt(part)
 	
 	local function onPromptTriggered(player)
 		-- Use BindableEvent to communicate with water bottle script
-		print("[WaterRefillManager] Firing refill bindable for", player.Name)
 		refillBindable:Fire(player)
-		print("[WaterRefillManager]", player.Name, "refilled water bottle at", part.Name)
 	end
 	
 	prompt.Triggered:Connect(onPromptTriggered)
@@ -82,7 +79,6 @@ local function createProximityPrompt(part)
 	-- Check initial state
 	checkAllPlayersForBottle(part)
 	
-	print("[WaterRefillManager] Created refill prompt on", part.Name)
 end
 
 local function removeProximityPrompt(part)
@@ -90,7 +86,6 @@ local function removeProximityPrompt(part)
 	if prompt then
 		prompt:Destroy()
 		refillPrompts[part] = nil
-		print("[WaterRefillManager] Removed refill prompt from", part.Name)
 	end
 end
 
@@ -147,7 +142,6 @@ local function cleanupPlayerTracking(player)
 end
 
 function WaterRefillManager.init()
-	print("[WaterRefillManager] Initializing water refill system...")
 	
 	-- Set up existing tagged parts
 	local taggedParts = CollectionService:GetTagged(CollectionServiceTags.WATER_REFILL_SOURCE)
@@ -170,7 +164,6 @@ function WaterRefillManager.init()
 	Players.PlayerAdded:Connect(setupPlayerTracking)
 	Players.PlayerRemoving:Connect(cleanupPlayerTracking)
 	
-	print("[WaterRefillManager] Water refill system initialized with", #taggedParts, "water sources")
 	return true
 end
 
@@ -189,7 +182,6 @@ function WaterRefillManager.shutdown()
 	end
 	playerConnections = {}
 	
-	print("[WaterRefillManager] Water refill system shutdown")
 end
 
 return WaterRefillManager
