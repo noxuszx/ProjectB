@@ -12,6 +12,7 @@ local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureS
 local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.SpawnerPlacing)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local CoreStructureSpawner = require(script.Parent.Parent.spawning.CoreStructureSpawner)
 
 local SpawnerPlacement = {}
 
@@ -134,6 +135,20 @@ local function isAwayFromVillages(position)
 	return true
 end
 
+local function isAwayFromCoreStructures(position)
+	local coreCircles = CoreStructureSpawner.getOccupiedCircles()
+	local minDistance = SpawnerPlacementConfig.AvoidanceRules.VillageDistance -- Use same distance as villages
+	
+	for _, circle in ipairs(coreCircles) do
+		local distance = (position - circle.centre).Magnitude
+		if distance < (circle.radius + minDistance) then
+			return false
+		end
+	end
+	
+	return true
+end
+
 local function findValidSpawnerPosition(chunkX, chunkZ)
 	local chunkSize = ChunkConfig.CHUNK_SIZE
 	local worldX = chunkX * chunkSize
@@ -165,8 +180,9 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 
 			local spacingValid = isGoodSpacing(groundPosition)
 			local villageValid = isAwayFromVillages(groundPosition)
+			local coreStructureValid = isAwayFromCoreStructures(groundPosition)
 
-			if spacingValid and villageValid then
+			if spacingValid and villageValid and coreStructureValid then
 				return groundPosition
 			end
 		end

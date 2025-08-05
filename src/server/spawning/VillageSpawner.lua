@@ -12,6 +12,7 @@ local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local CoreStructureSpawner = require(script.Parent.CoreStructureSpawner)
 
 local VillageSpawner = {}
 local random = Random.new()
@@ -118,9 +119,33 @@ local function applyRotation(baseCFrame, chunkPosition, modelName)
 	return cframe
 end
 
--- Helper: Check if position is valid (not in protected spawn zone)
+-- Helper: Check if position overlaps with core structure circles
+local function overlapsWithCoreStructures(position, radius)
+	local coreCircles = CoreStructureSpawner.getOccupiedCircles()
+	for _, circle in ipairs(coreCircles) do
+		local distance = (position - circle.centre).Magnitude
+		if distance < (radius + circle.radius) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Helper: Check if position is valid (not in protected spawn zone or core structures)
 local function isValidPosition(position, halfX, halfZ)
-	return position.Magnitude >= (PLAYER_SPAWN_PROTECT_RADIUS + math.max(halfX, halfZ))
+	local maxRadius = math.max(halfX, halfZ)
+	
+	-- Check player spawn protection
+	if position.Magnitude < (PLAYER_SPAWN_PROTECT_RADIUS + maxRadius) then
+		return false
+	end
+	
+	-- Check core structure overlap
+	if overlapsWithCoreStructures(position, maxRadius) then
+		return false
+	end
+	
+	return true
 end
 
 -- Helper: Place campfire at village center

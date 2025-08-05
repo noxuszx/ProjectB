@@ -7,10 +7,10 @@ local ChunkConfig = {}
 
 -- Chunk system parameters
 ChunkConfig.CHUNK_SIZE = 234 			-- Size of each chunk in studs (32x32)
-ChunkConfig.RENDER_DISTANCE = 5		-- How many chunks to render in each direction (3 = 7x7 grid)
+ChunkConfig.RENDER_DISTANCE = 4		-- How many chunks to render in each direction (3 = 7x7 grid)
 ChunkConfig.HEIGHT_RANGE = {
 	MIN = 0,
-	MAX = 5
+	MAX = 4
 }
 ChunkConfig.BASE_HEIGHT = 0
 

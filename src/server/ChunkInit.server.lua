@@ -9,6 +9,7 @@ local ChunkManager          = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner    = require(script.Parent.spawning.CustomModelSpawner) 
 local DayNightCycle         = require(script.Parent.environment.DayNightCycle)
 local VillageSpawner        = require(script.Parent.spawning.VillageSpawner)
+local CoreStructureSpawner  = require(script.Parent.spawning.CoreStructureSpawner)
 local ItemSpawner           = require(script.Parent.spawning.ItemSpawner)
 local LightingManager       = require(script.Parent.environment.Lighting)
 local ChunkConfig           = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
@@ -35,6 +36,7 @@ local function mobileOptimizedInit()
 	WaterRefillManager.init()
 	
 	print("Spawning world content (terrain-dependent)...")
+	CoreStructureSpawner.spawnLandmarks()
 	VillageSpawner.spawnVillages()
 	
 	local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
@@ -69,7 +71,9 @@ local function desktopOptimizedInit()
 	task.spawn(function()
 		print("Initializing terrain system...")
 		ChunkManager.init()
-		-- Place villages before any props to avoid overlaps
+		-- Place core structures first to establish landmarks
+		CoreStructureSpawner.spawnLandmarks()
+		-- Place villages after core structures to avoid overlaps
 		VillageSpawner.spawnVillages()
 		-- After villages, place creature spawners
 		local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
