@@ -35,7 +35,6 @@ end
 function RangedChasing:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
-	-- Cache current time once for this tick so all comparisons use the same value.
 	local currentTime = os.clock()
 
 	if os.clock() - self.chaseStartTime > self.maxChaseTime then

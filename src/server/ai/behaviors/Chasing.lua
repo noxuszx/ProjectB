@@ -53,15 +53,11 @@ function ChasingBehavior:update(creature, deltaTime)
 	local currentPosition = creature.model.PrimaryPart.Position
 	local distance = (targetPosition - currentPosition).Magnitude
 
-	-- Check if target is too far away
 	if distance > creature.detectionRange * 1.5 then
 		self:giveUpChase(creature, "Target out of range")
 		return
 	end
 
-	-- REMOVED: Line of sight check - simplified for reliability
-
-	-- Move towards the target using chase speed
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	local chaseSpeed = creatureConfig and creatureConfig.ChaseSpeed or creature.moveSpeed * 1.2
 

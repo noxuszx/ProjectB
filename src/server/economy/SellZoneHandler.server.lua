@@ -34,7 +34,7 @@ local function onSellZoneTouched(sellZone, hit)
 	
 	-- Debounce check
 	local debounceKey = tostring(item) .. "_" .. tostring(sellZone)
-	local currentTime = tick()
+	local currentTime = os.clock()
 	
 	if touchDebounce[debounceKey] and currentTime - touchDebounce[debounceKey] < EconomyConfig.Performance.TouchDebounceTime then
 		return -- Still on debounce
@@ -107,7 +107,6 @@ local function onSellZoneTouched(sellZone, hit)
 			end
 		end
 	elseif item:IsA("Part") or item:IsA("MeshPart") then
-		-- For Parts/MeshParts, use their position directly
 		itemPosition = item.Position
 	end
 	
@@ -116,20 +115,16 @@ local function onSellZoneTouched(sellZone, hit)
 		return
 	end
 	
-	-- Destroy the sellable item
 	item:Destroy()
 	
-	-- Try to get cash from pool first
 	local spawnPosition = itemPosition + Vector3.new(0, 1, 0)
 	local cashClone = CashPoolManager.getCashItem(cashType, spawnPosition)
 	
 	if not cashClone then
-		-- Pool is empty, create new cash item
 		local cashMeshpart = moneyFolder:FindFirstChild(cashType)
 		if cashMeshpart then
 			cashClone = cashMeshpart:Clone()
 			
-			-- STRIP ALL DESCENDANTS to prevent Write Marshalled (Scripts, ProximityPrompts, etc.)
 			for _, child in pairs(cashClone:GetChildren()) do
 				child:Destroy()
 			end
@@ -143,12 +138,9 @@ local function onSellZoneTouched(sellZone, hit)
 		end
 	else
 	end
-	
-	-- Store the cash value as an attribute for collection
 	cashClone:SetAttribute("CashValue", itemValue)
 end
 
--- Set up touch detection for sell zones
 local function setupSellZone(sellZone)
 	
 	if not sellZone:IsA("Part") and not sellZone:IsA("MeshPart") then
@@ -156,16 +148,13 @@ local function setupSellZone(sellZone)
 		return
 	end
 	
-	-- Connect touch event to the sell zone
 	local connection = sellZone.Touched:Connect(function(hit)
 		onSellZoneTouched(sellZone, hit)
 	end)
 	
-	-- Clean up connection when sell zone is removed
 	sellZone.AncestryChanged:Connect(function()
 		if not sellZone.Parent then
 			connection:Disconnect()
-			-- Clean up debounce entries for this sell zone
 			for key, _ in pairs(touchDebounce) do
 				if string.find(key, tostring(sellZone)) then
 					touchDebounce[key] = nil
@@ -176,13 +165,12 @@ local function setupSellZone(sellZone)
 	
 end
 
--- Monitor for new sell zones
+
 local function onSellZoneAdded(sellZone)
 	setupSellZone(sellZone)
 end
 
 local function onSellZoneRemoved(sellZone)
-	-- Clean up any debounce entries for this sell zone
 	for key, _ in pairs(touchDebounce) do
 		if string.find(key, tostring(sellZone)) then
 			touchDebounce[key] = nil
@@ -192,24 +180,21 @@ end
 
 -- Initialize the handler
 local function init()
-	-- Set up existing SELL_ZONE parts
 	local sellZones = CollectionService:GetTagged("SELL_ZONE")
 	
 	for _, zone in pairs(sellZones) do
 		setupSellZone(zone)
 	end
 	
-	-- Monitor for new/removed sell zones
 	CollectionService:GetInstanceAddedSignal("SELL_ZONE"):Connect(onSellZoneAdded)
 	CollectionService:GetInstanceRemovedSignal("SELL_ZONE"):Connect(onSellZoneRemoved)
 	
-	-- Periodic cleanup of old debounce entries
-	spawn(function()
+	task.spawn(function()
 		while true do
-			wait(30) -- Clean up every 30 seconds
-			local currentTime = tick()
+			task.wait(30)
+			local currentTime = os.clock()
 			for key, time in pairs(touchDebounce) do
-				if currentTime - time > 10 then -- Remove entries older than 10 seconds
+				if currentTime - time > 10 then
 					touchDebounce[key] = nil
 				end
 			end

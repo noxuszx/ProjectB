@@ -95,7 +95,7 @@ local lastUpdate = 0
 local UPDATE_RATE = 1/30 -- 30 FPS
 
 RunService.Heartbeat:Connect(function()
-    local now = tick()
+    local now = os.clock()
     if now - lastUpdate >= UPDATE_RATE then
         updateMovementDirection()
         remote:FireServer(input)

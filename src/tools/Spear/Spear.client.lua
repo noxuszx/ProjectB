@@ -129,14 +129,14 @@ end
 
 -- Check if weapon is on cooldown
 local function isOnCooldown()
-    local currentTime = tick()
+    local currentTime = os.clock()
     local timeSinceLastAttack = currentTime - lastAttackTime
     return timeSinceLastAttack < config.Cooldown
 end
 
 -- Get remaining cooldown time
 local function getCooldownRemaining()
-    local currentTime = tick()
+    local currentTime = os.clock()
     local timeSinceLastAttack = currentTime - lastAttackTime
     return math.max(0, config.Cooldown - timeSinceLastAttack)
 end
@@ -201,7 +201,7 @@ local function executeAttack()
     end
     
     -- Update last attack time
-    lastAttackTime = tick()
+    lastAttackTime = os.clock()
     
     -- Play attack animation
     playAttackAnimation()

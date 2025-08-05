@@ -37,13 +37,13 @@ local function initializeRemote()
 end
 
 local function isOnCooldown()
-	local currentTime = tick()
+	local currentTime = os.clock()
 	local timeSinceLastFire = currentTime - lastFireTime
 	return timeSinceLastFire < config.Cooldown
 end
 
 local function getCooldownRemaining()
-	local currentTime = tick()
+	local currentTime = os.clock()
 	local timeSinceLastFire = currentTime - lastFireTime
 	return math.max(0, config.Cooldown - timeSinceLastFire)
 end
@@ -132,7 +132,7 @@ local function executeFire()
 		return false
 	end
 
-	lastFireTime = tick()
+	lastFireTime = os.clock()
 
 	local mouse = player:GetMouse()
 	local mouseHitPos = mouse.Hit.Position

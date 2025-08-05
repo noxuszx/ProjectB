@@ -42,7 +42,7 @@ local isMobile = UserInputService.TouchEnabled and not UserInputService.Keyboard
 
 -- Store the currently highlighted object
 local function storeCurrentObject()
-    local currentTime = tick()
+    local currentTime = os.clock()
     if currentTime - lastStoreTime < STORE_COOLDOWN then
         return -- Cooldown active
     end
@@ -65,7 +65,7 @@ end
 
 -- Retrieve the top object from backpack
 local function retrieveTopObject()
-    local currentTime = tick()
+    local currentTime = os.clock()
     if currentTime - lastStoreTime < STORE_COOLDOWN then
         return -- Cooldown active
     end

@@ -10,60 +10,15 @@ local RunService = game:GetService("RunService")
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
 local PlayerStatsConfig = require(ReplicatedStorage.Shared.config.PlayerStatsConfig)
 
--- Create Remotes folder if it doesn't exist
-local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
-if not remotesFolder then
-	remotesFolder = Instance.new("Folder")
-	remotesFolder.Name = "Remotes"
-	remotesFolder.Parent = ReplicatedStorage
-end
+-- Get RemoteEvents (defined in default.project.json)
+local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
+local economyFolder = remotesFolder:WaitForChild("Economy")
+local updateMoneyRemote = economyFolder:WaitForChild("UpdateMoney")
+local sellItemRemote = economyFolder:WaitForChild("SellItem")
+local buyItemRemote = economyFolder:WaitForChild("BuyItem")
+local refreshBuyZonesRemote = economyFolder:WaitForChild("RefreshBuyZones")
 
--- Create Economy folder if it doesn't exist
-local economyFolder = remotesFolder:FindFirstChild("Economy")
-if not economyFolder then
-	economyFolder = Instance.new("Folder")
-	economyFolder.Name = "Economy"
-	economyFolder.Parent = remotesFolder
-end
 
--- Create RemoteEvents if they don't exist
-local updateMoneyRemote = economyFolder:FindFirstChild("UpdateMoney")
-if not updateMoneyRemote then
-	updateMoneyRemote = Instance.new("RemoteEvent")
-	updateMoneyRemote.Name = "UpdateMoney"
-	updateMoneyRemote.Parent = economyFolder
-end
-
-local sellItemRemote = economyFolder:FindFirstChild("SellItem")
-if not sellItemRemote then
-	sellItemRemote = Instance.new("RemoteEvent")
-	sellItemRemote.Name = "SellItem"
-	sellItemRemote.Parent = economyFolder
-end
-
-local buyItemRemote = economyFolder:FindFirstChild("BuyItem")
-if not buyItemRemote then
-	buyItemRemote = Instance.new("RemoteEvent")
-	buyItemRemote.Name = "BuyItem"
-	buyItemRemote.Parent = economyFolder
-end
-
-local refreshBuyZonesRemote = economyFolder:FindFirstChild("RefreshBuyZones")
-if not refreshBuyZonesRemote then
-	refreshBuyZonesRemote = Instance.new("RemoteEvent")
-	refreshBuyZonesRemote.Name = "RefreshBuyZones"
-	refreshBuyZonesRemote.Parent = economyFolder
-end
-
--- Remove CollectCash RemoteEvent - no longer needed since CashCollectionHandler handles everything
--- local collectCashRemote = economyFolder:FindFirstChild("CollectCash")
--- if not collectCashRemote then
--- 	collectCashRemote = Instance.new("RemoteEvent")
--- 	collectCashRemote.Name = "CollectCash"
--- 	collectCashRemote.Parent = economyFolder
--- end
-
--- Player data storage (session-based)
 local playerMoney = {}
 local sellCooldowns = {}
 local buyCooldowns = {}
@@ -153,13 +108,12 @@ local function onSellItem(player, item, sellZone)
 	end
 	
 	-- Check sell cooldown
-	local currentTime = tick()
+	local currentTime = os.clock()
 	local lastSell = sellCooldowns[player][sellZone] or 0
 	if currentTime - lastSell < EconomyConfig.Zones.SellZone.TouchCooldown then
-		return -- Still on cooldown
+		return
 	end
 	
-	-- Determine item value based on CollectionService tags
 	local itemValue = 0
 	for tagName, value in pairs(EconomyConfig.SellableItems) do
 		if CollectionService:HasTag(item, tagName) then
@@ -172,7 +126,6 @@ local function onSellItem(player, item, sellZone)
 		return -- Item is not sellable
 	end
 	
-	-- Award money and destroy item
 	if EconomyService.addMoney(player, itemValue) then
 		sellCooldowns[player][sellZone] = currentTime
 		item:Destroy()
@@ -188,14 +141,14 @@ local function onBuyItem(player, item)
 		return
 	end
 	
-	local currentTime = tick()
+	local currentTime = os.clock()
 	local lastBuy = buyCooldowns[player][item] or 0
 	if currentTime - lastBuy < EconomyConfig.Zones.BuyZone.InteractionCooldown then
 		return
 	end
 	
-	-- Find the item data in config
 	local selectedItem = nil
+	-- Find the item data in config
 	for _, itemData in pairs(EconomyConfig.BuyableItems) do
 		if itemData.ItemName == item.Name then
 			selectedItem = itemData
@@ -235,23 +188,13 @@ local function onBuyItem(player, item)
 	end
 end
 
--- Remove onCollectCash function - no longer needed since CashCollectionHandler handles everything
--- local function onCollectCash(player, cashValue, cashItem)
--- 	-- This function is now redundant - CashCollectionHandler does all the work
--- end
-
--- Initialize the service
 function EconomyService.init()
-	-- Connect player events
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	
-	-- Connect remote events
 	sellItemRemote.OnServerEvent:Connect(onSellItem)
 	buyItemRemote.OnServerEvent:Connect(onBuyItem)
-	-- collectCashRemote.OnServerEvent:Connect(onCollectCash) -- Removed - handled by CashCollectionHandler
 	
-	-- Initialize existing players (for hot reloading)
 	for _, player in pairs(Players:GetPlayers()) do
 		onPlayerAdded(player)
 	end

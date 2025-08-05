@@ -257,39 +257,31 @@ end
 
 -- Burst Shooting System
 function RangedHostile:updateConstantShooting()
-	-- Only shoot if we have a current target
 	if not self.currentTarget then
-		-- Reset burst when no target
 		self:resetBurst()
 		return
 	end
 	
 	local currentTime = os.clock()
 	
-	-- Check if we're in cooldown period
 	if self.isInCooldown then
 		if currentTime - self.lastBurstEndTime >= self.burstCooldown then
-            -- Cooldown finished, start new burst
             self:startNewBurst()
 		else
-			-- Still in cooldown, don't shoot
 			return
 		end
 	end
 	
-	-- Check if it's time for next shot in burst
 	if currentTime - self.lastShotTime < self.shotInterval then
 		return
 	end
 	
-	-- Validate target is still valid
 	if not (self.currentTarget.Character and self.currentTarget.Character.PrimaryPart) then
 		return
 	end
 	
 	local targetPosition = self.currentTarget.Character.PrimaryPart.Position
 	
-	-- Check line of sight
 	if not self:checkLineOfSight(targetPosition) then
 		return
 	end

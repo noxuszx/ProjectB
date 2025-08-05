@@ -216,7 +216,7 @@ function BackpackService.canStore(player, object)
         return false, "Cannot store living creatures"
     end
     
-    if tick() - backpack.lastAction < COOLDOWN_TIME then
+    if os.clock() - backpack.lastAction < COOLDOWN_TIME then
         return false, "Please wait before storing again"
     end
     
@@ -240,7 +240,7 @@ function BackpackService.storeObject(player, object)
     -- Push to stack
     backpack.topIndex = backpack.topIndex + 1
     backpack.slots[backpack.topIndex] = poolData
-    backpack.lastAction = tick()
+    backpack.lastAction = os.clock()
     
     return true, "Stored " .. poolData.name, backpack
 end
@@ -256,7 +256,7 @@ function BackpackService.retrieveObject(player)
         return false, "Backpack is empty"
     end
     
-    if tick() - backpack.lastAction < COOLDOWN_TIME then
+    if os.clock() - backpack.lastAction < COOLDOWN_TIME then
         return false, "Please wait before retrieving again"
     end
     
@@ -264,7 +264,7 @@ function BackpackService.retrieveObject(player)
     local poolData = backpack.slots[backpack.topIndex]
     backpack.slots[backpack.topIndex] = nil
     backpack.topIndex = backpack.topIndex - 1
-    backpack.lastAction = tick()
+    backpack.lastAction = os.clock()
     
     -- Restore object from pool to world
     local dropPosition = getDropPosition(player)

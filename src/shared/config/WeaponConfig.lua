@@ -30,12 +30,12 @@ WeaponConfig.RangedWeapons = {
     Rifle = {
         Damage = 35,
         Range = 250,
-        Cooldown = 1.2,      -- Faster than crossbow
-        ProjectileSpeed = 300, -- Much faster
+        Cooldown = 1.2,
+        ProjectileSpeed = 300,
         BulletConfig = {
-            Color = Color3.new(1, 0.9, 0.7),    -- Bright yellow-white bullet
-            Size = Vector3.new(0.15, 0.15, 0.8), -- Smaller, faster bullet
-            Lifetime = 1.5,    -- Shorter lifetime for faster bullet
+            Color = Color3.new(1, 0.9, 0.7),
+            Size = Vector3.new(0.15, 0.15, 0.8),
+            Lifetime = 1.5,
             Material = Enum.Material.Neon,       -- Glowing effect
         },
         MuzzleEffect = {
