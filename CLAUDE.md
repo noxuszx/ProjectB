@@ -55,21 +55,6 @@ ProjectB is a Roblox desert survival game featuring:
 - **Interactive building system** with drag/drop, welding, and rotation mechanics
 - **Combat and riding systems** with multiple creature types
 
-## Build and Development Commands
-
-This project uses Rojo for asset management:
-
-```bash
-# Build the project (requires Rojo installation via aftman)
-rojo build -o ProjectB.rbxlx
-
-# Serve for live development
-rojo serve
-
-# Install tools
-aftman install
-```
-
 The project file structure is defined in `default.project.json` and should be built using Rojo 7.5.1 or later.
 
 ## Architecture Overview
@@ -190,17 +175,6 @@ The drag/drop system uses:
 - LOD system is handled automatically by `LODPolicy` - creatures receive optimized update rates
 - Use cached player positions from `AIManager` instead of expensive character lookups
 - Leverage `CreaturePoolManager` for creature reuse instead of destruction/creation
-
-## Testing and Verification
-
-When making changes:
-1. Test with 100+ creatures spawned to verify performance
-2. Verify LOD system is working (`AIDebugger` for performance statistics)
-3. Ensure creature classes properly inherit from `BaseCreature`
-4. Verify day/night cycle affects creature spawning appropriately  
-5. Test building system interactions (drag, weld, rotate)
-6. Check player stats UI updates correctly
-7. Ensure creatures properly pool/reuse without memory leaks via `CreaturePoolManager`
 
 ## File Organization Conventions
 
@@ -333,6 +307,7 @@ The game features a cash-based economy system with physical money and item tradi
 - `EconomyUI.client.lua` - Green money display with gold dollar sign
 - `ItemHoverHighlighting.client.lua` - Green/red item highlighting on hover
 - Individual cash collection scripts in each cash meshpart
+- **Remote Event Management** - All RemoteEvents pre-defined in `default.project.json` (no runtime creation)
 
 ### Selling System
 1. **Tag items** with `SELLABLE_LOW` (15 coins), `SELLABLE_MID` (25 coins), or `SELLABLE_HIGH` (50 coins)
@@ -363,3 +338,5 @@ The game features a cash-based economy system with physical money and item tradi
 - **Item preservation** - Purchased items remain in world as regular draggable objects
 - **Multiple zone support** - Each BUY_ZONE/SELL_ZONE tagged part operates independently
 - **Object pooling** - Cash collection uses pooled meshparts for performance
+- **Pre-defined RemoteEvents** - Economy RemoteEvents defined in project structure, accessed via `WaitForChild()`
+- **No runtime creation** - Follows project pattern of avoiding `Instance.new()` for RemoteEvents

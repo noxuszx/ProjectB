@@ -73,7 +73,7 @@ Transform ProjectB into a fully-featured survival experience combining Minecraft
 - [x] Add Ending Structure
     - [ ] Add Ending Event
 - [x] Add Store to villages
-- [ ] Add Long Range Enemies
+- [x] Add Long Range Enemies
 - [x] Add Health Supply
 
 ---
