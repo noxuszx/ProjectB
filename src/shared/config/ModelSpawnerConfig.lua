@@ -43,4 +43,11 @@ ModelSpawnerConfig.MAX_OBJECTS_PER_CHUNK = {
 	Structures = 2
 }
 
+-- NEW: Frame budgeting - objects to spawn per frame by category
+ModelSpawnerConfig.PER_FRAME = {
+	Vegetation = 10,
+	Rocks = 5,
+	Structures = 1
+}
+
 return ModelSpawnerConfig

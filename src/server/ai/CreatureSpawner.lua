@@ -14,6 +14,8 @@ local HostileCreature = require(script.Parent.creatures.Hostile)
 local RangedHostile = require(script.Parent.creatures.RangedHostile)
 local AIManager = require(script.Parent.AIManager)
 local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
+local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 
 
 local CreatureSpawner = {}
@@ -238,7 +240,6 @@ local function processSpawner(spawnerPart)
 end
 
 function CreatureSpawner.populateWorld()
-
 	spawnedCreaturesCount = 0
 	processedSpawnersCount = 0
 	discoverAvailableCreatures()
@@ -250,9 +251,11 @@ function CreatureSpawner.populateWorld()
 		return
 	end
 
-	for _, spawnerPart in pairs(spawnerParts) do
+	-- Process spawners with frame batching
+	local batchSize = FrameBudgetConfig.getBatchSize("CREATURES")
+	FrameBatched.run(spawnerParts, batchSize, function(spawnerPart)
 		processSpawner(spawnerPart)
-	end
+	end)
 
 	print("[CreatureSpawner] World population complete!")
 	print("  - Processed spawners:", processedSpawnersCount)

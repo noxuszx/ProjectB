@@ -8,9 +8,16 @@ local Village = {}
 
 -- Essential Village spawning parameters
 Village.VILLAGES_TO_SPAWN = {1, 3}			-- Min and max villages to spawn
-Village.STRUCTURES_PER_VILLAGE = {3, 8}		-- Min and max structures per Village (reduced from {3,6})
+Village.STRUCTURES_PER_VILLAGE = {4, 8}		-- Min and max structures per Village (increased min to 4 for mandatory structures)
 Village.VILLAGE_RADIUS = 100					-- Maximum spread of structures in a Village (increased from 50)
-Village.STRUCTURE_SPACING = 50				-- Minimum distance between structures in Village
+Village.STRUCTURE_SPACING = 8				-- Minimum distance between structures in Village (corrected from 50 to match plan)
+
+-- NEW: Mandatory structure system
+Village.MANDATORY_STRUCTURES = {"Shop1", "Shop2", "Campfire", "Well"}	-- Must appear once per village
+Village.CAMPFIRE_BUFFER = 40				-- Minimum gap (studs) between campfire and other structures
+
+-- NEW: Frame budgeting
+Village.BATCH_SIZE = 1						-- Structures to spawn per frame (will be adjusted per device)
 
 -- NEW: Toggle-based rotation system
 Village.ROTATION_MODE = "CARDINAL"			-- "RANDOM", "CARDINAL", "CENTER_FACING", "CARDINAL_VARIED"
@@ -38,7 +45,11 @@ Village.VILLAGE_MODEL_FOLDER = "Models.Village"
 Village.AVAILABLE_STRUCTURES = {
 	"House1",
 	"House2",
-	"Shop",
+	"House3",
+	"House4",
+	"Campfire",
+	"Shop1",
+	"Shop2",
 	"Well"
 }
 Village.SPAWN_DELAY = 0.1					-- Delay between structure spawns (seconds)

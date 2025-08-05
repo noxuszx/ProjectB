@@ -20,39 +20,29 @@ local isMobile = game:GetService("UserInputService").TouchEnabled and not game:G
 local function mobileOptimizedInit()
 	print("Initializing terrain system...")
 	ChunkManager.init()
-	task.wait(0.1)
 	
 	print("Initializing environment...")
 	DayNightCycle.init()
 	LightingManager.init()
-	task.wait(0.1)
 	
-	print("Setting up model spawning...")
-	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
-	task.wait(0.1)
-	
-	print("Initializing tags...")
 	CollectionServiceTags.initializeDefaultTags()
 	CollectionServiceTags.tagItemsFolder()
-	task.wait(0.1)
 	
 	print("Setting up player systems...")
 	local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
 	PlayerStatsManager.init()
 	local WaterRefillManager = require(script.Parent.food.WaterRefillManager)
 	WaterRefillManager.init()
-	task.wait(0.2)
 	
 	print("Spawning world content (terrain-dependent)...")
 	VillageSpawner.spawnVillages()
-	task.wait(0.1)
 	
 	local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
 	SpawnerPlacement.run()
-	task.wait(0.1)
+	
+	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
 	
 	ItemSpawner.Initialize()
-	task.wait(0.2)
 	
 	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)
@@ -63,10 +53,12 @@ local function mobileOptimizedInit()
 	CreaturePoolManager.init()
 	AIManager.getInstance():init()
 	FoodDropSystem.init()
-	task.wait(0.1)
 	
 	CreatureSpawner.populateWorld()
 	CreaturePoolManager.startRespawnLoop()
+	
+	-- Brief pause before enabling AI to ensure all systems are ready
+	task.wait(0.1)
 end
 
 local function desktopOptimizedInit()
@@ -77,6 +69,12 @@ local function desktopOptimizedInit()
 	task.spawn(function()
 		print("Initializing terrain system...")
 		ChunkManager.init()
+		-- Place villages before any props to avoid overlaps
+		VillageSpawner.spawnVillages()
+		-- After villages, place creature spawners
+		local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
+		SpawnerPlacement.run()
+		-- Finally scatter environmental props
 		CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
 		terrainReady = true
 		print("Terrain system ready")
@@ -107,43 +105,26 @@ local function desktopOptimizedInit()
 		print("Player systems ready")
 	end)
 	
+	-- Wait for all parallel systems to complete
 	repeat
 		task.wait(0.1)
 	until terrainReady and environmentReady and tagsReady
 	
-	task.spawn(function()
-		print("Spawning villages...")
-		VillageSpawner.spawnVillages()
-	end)
+	print("Initializing items...")
+	ItemSpawner.Initialize()
 	
-	task.spawn(function()
-		print("Placing spawners...")
-		local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
-		SpawnerPlacement.run()
-	end)
-	
-	task.spawn(function()
-		print("Initializing items...")
-		ItemSpawner.Initialize()
-	end)
-	
-	task.wait(1)
-	
+	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)
 	local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
 	local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
 	local CreaturePoolManager = require(script.Parent.ai.CreaturePoolManager)
 	
-	task.spawn(function()
-		CreaturePoolManager.init()
-		AIManager.getInstance():init()
-		FoodDropSystem.init()
-	end)
+	CreaturePoolManager.init()
+	AIManager.getInstance():init()
+	FoodDropSystem.init()
 	
-	task.spawn(function()
-		CreatureSpawner.populateWorld()
-		CreaturePoolManager.startRespawnLoop()
-	end)
+	CreatureSpawner.populateWorld()
+	CreaturePoolManager.startRespawnLoop()
 end
 
 if isMobile then

@@ -8,6 +8,8 @@ local Workspace = game:GetService("Workspace")
 
 local ModelSpawnerConfig = require(ReplicatedStorage.Shared.config.ModelSpawnerConfig)
 local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
+local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 
 local CustomModelSpawner = {}
 local spawnedObjects = {}
@@ -247,6 +249,13 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 	local baseX, baseZ = cx * chunkSize, cz * chunkSize
 	local counters = {Vegetation = 0, Rocks = 0, Structures = 0}
 	
+	-- Accumulate spawn candidates by category
+	local toSpawn = {
+		Vegetation = {},
+		Rocks = {},
+		Structures = {}
+	}
+	
 	for x = 0, chunkSize - 1, chunkSize / subdivisions do
 		for z = 0, chunkSize - 1, chunkSize / subdivisions do
 			local worldX, worldZ = baseX + x, baseZ + z
@@ -278,7 +287,14 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 								
 								local modelToSpawn = selectRandom(category)
 								if modelToSpawn then
-									spawnModel(modelToSpawn, worldX + offsetX, worldZ + offsetZ, category, chunkSize)
+									-- Add to spawn candidates instead of spawning immediately
+									table.insert(toSpawn[category], {
+										model = modelToSpawn,
+										x = worldX + offsetX,
+										z = worldZ + offsetZ,
+										category = category,
+										chunkSize = chunkSize
+									})
 									counters[category] = counters[category] + 1
 								end
 							end
@@ -286,6 +302,17 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 					end
 				end
 			end
+		end
+	end
+	
+	-- Process spawn candidates with frame batching by category
+	local batchSizes = FrameBudgetConfig.getModelBatchSizes()
+	
+	for category, candidates in pairs(toSpawn) do
+		if #candidates > 0 then
+			FrameBatched.run(candidates, batchSizes[category], function(candidate)
+				spawnModel(candidate.model, candidate.x, candidate.z, candidate.category, candidate.chunkSize)
+			end)
 		end
 	end
 end
@@ -320,11 +347,19 @@ function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
 	
 	CustomModelSpawner.clearObjects()
 	
+	-- Build chunk job list
+	local chunkJobs = {}
 	for cx = -renderDistance, renderDistance do
 		for cz = -renderDistance, renderDistance do
-			CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
+			table.insert(chunkJobs, {cx = cx, cz = cz, chunkSize = chunkSize, subdivisions = subdivisions})
 		end
 	end
+	
+	-- Process chunks with frame batching
+	local batchSize = FrameBudgetConfig.getBatchSize("DEFAULT") -- Use default for chunk processing
+	FrameBatched.run(chunkJobs, batchSize, function(job)
+		CustomModelSpawner.spawnInChunk(job.cx, job.cz, job.chunkSize, job.subdivisions)
+	end)
 	
 	print("Custom model spawning complete!")
 end

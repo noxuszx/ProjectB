@@ -10,6 +10,8 @@ local NoiseGenerator = require(ReplicatedStorage.Shared.utilities.NoiseGenerator
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
 local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.SpawnerPlacing)
+local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 
 local SpawnerPlacement = {}
 
@@ -223,16 +225,20 @@ function SpawnerPlacement.run()
 	chunksProcessed = 0
 	
 	local renderDistance = ChunkConfig.RENDER_DISTANCE or 10
-	for chunkX = -renderDistance, renderDistance do
-		for chunkZ = -renderDistance, renderDistance do
-			SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
-		end
-	end
+	
+	-- Create chunk coordinate iterator
+	local chunkIterator = FrameBatched.chunkIterator(-renderDistance, renderDistance, -renderDistance, renderDistance)
+	
+	-- Process chunks with frame batching
+	local perFrame = SpawnerPlacementConfig.Performance.PerFrame
+	FrameBatched.wrap(chunkIterator, perFrame, function(coord)
+		SpawnerPlacement.placeSpawnersForChunk(coord.x, coord.z)
+	end)
 	
 	print("[SpawnerPlacement] Procedural spawner placement complete!")
 	print("  - Chunks processed:", chunksProcessed)
 	print("  - Spawners placed:", spawnersPlaced)
-	print("  - Placement rate:", string.format("%.1f%%", (spawnersPlaced / chunksProcessed) * 100))
+	print("  - Placement rate:", string.format("%.1f%%", (spawnersPlaced / math.max(chunksProcessed, 1)) * 100))
 end
 
 function SpawnerPlacement.getDebugInfo()

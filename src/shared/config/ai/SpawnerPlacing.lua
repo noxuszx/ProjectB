@@ -83,6 +83,9 @@ local SpawnerPlacementConfig = {
 		ProcessingDelay = 0.01,
 		MaxSpawnersPerChunk = 1,
 		EnableSpatialCaching = true,
+		
+		-- NEW: Frame budgeting - chunks to process per frame
+		PerFrame = 10,
 	},
 
 	Debug = {
