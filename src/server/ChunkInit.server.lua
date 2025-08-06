@@ -29,6 +29,7 @@ local function mobileOptimizedInit()
 	CollectionServiceTags.initializeDefaultTags()
 	CollectionServiceTags.tagItemsFolder()
 	
+
 	print("Setting up player systems...")
 	local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
 	PlayerStatsManager.init()
@@ -43,9 +44,9 @@ local function mobileOptimizedInit()
 	SpawnerPlacement.run()
 	
 	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
-	
+
 	ItemSpawner.Initialize()
-	
+
 	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)
 	local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)

@@ -124,7 +124,11 @@ local function tryPlaceStructure(structureName, structureProps, models)
 		local halfHeight = size.Y / 2
 		local embedDepth = halfHeight * structureProps.embedPercentage
 		local finalY = terrainHeight + embedDepth  -- Raise instead of lower
-		local finalCFrame = CFrame.new(worldPosition.X, finalY, worldPosition.Z)
+		
+		-- Make structure face towards world center using PrimaryPart's natural front
+		local pyramidPosition = Vector3.new(worldPosition.X, finalY, worldPosition.Z)
+		local targetPosition = Vector3.new(0, finalY, 0)  -- World center at same height
+		local finalCFrame = CFrame.lookAt(pyramidPosition, targetPosition)
 		
 		-- Clone and position the structure
 		local clone = template:Clone()

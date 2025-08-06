@@ -6,7 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
-local NoiseGenerator = require(ReplicatedStorage.Shared.utilities.NoiseGenerator)
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
 local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.SpawnerPlacing)
@@ -21,9 +20,6 @@ local proceduralSpawnersFolder = Instance.new("Folder")
 proceduralSpawnersFolder.Name = "ProceduralSpawners"
 proceduralSpawnersFolder.Parent = workspace
 
-local tempConfig = SpawnerPlacementConfig.NoiseSettings.Temperature
-local humidConfig = SpawnerPlacementConfig.NoiseSettings.Humidity
-local hostileConfig = SpawnerPlacementConfig.NoiseSettings.Hostility
 
 local spawnersPlaced = 0
 local chunksProcessed = 0
@@ -33,56 +29,17 @@ math.randomseed(SpawnerPlacementConfig.RandomSpawning.RandomSeed)
 
 
 local function getSpawnType(chunkX, chunkZ)
-	if SpawnerPlacementConfig.Settings.UseNoiseBasedSpawning then
-		
-		local worldX = chunkX * ChunkConfig.CHUNK_SIZE
-		local worldZ = chunkZ * ChunkConfig.CHUNK_SIZE
-		
-		local temperature = NoiseGenerator.fractalNoise(
-			worldX, worldZ,
-			tempConfig.Octaves,
-			0.5,
-			tempConfig.Scale
-		)
+	-- Simple random spawn type selection using designer-controlled probabilities
+	local randomValue = math.random()
+	local cumulativeProbability = 0
 
-		local humidity = NoiseGenerator.fractalNoise(
-			worldX + 1000, worldZ + 1000,
-			humidConfig.Octaves,
-			0.5,
-			humidConfig.Scale
-		)
-
-		local hostility = NoiseGenerator.fractalNoise(
-			worldX + 2000, worldZ + 2000,
-			hostileConfig.Octaves,
-			0.5,
-			hostileConfig.Scale
-		)
-
-		temperature = (temperature + 1) / 2
-		humidity = (humidity + 1) / 2
-		hostility = (hostility + 1) / 2
-
-		for _, rule in ipairs(SpawnerPlacementConfig.SpawnAreaRules) do
-			if rule.condition(temperature, humidity, hostility) then
-				return rule.spawnType
-			end
+	for spawnType, probability in pairs(SpawnerPlacementConfig.RandomSpawning.SpawnTypeProbabilities) do
+		cumulativeProbability = cumulativeProbability + probability
+		if randomValue <= cumulativeProbability then
+			return spawnType
 		end
-
-		return "Safe"
-	else
-		
-		local randomValue = math.random()
-		local cumulativeProbability = 0
-
-		for spawnType, probability in pairs(SpawnerPlacementConfig.RandomSpawning.SpawnTypeProbabilities) do
-			cumulativeProbability = cumulativeProbability + probability
-			if randomValue <= cumulativeProbability then
-				return spawnType
-			end
-		end
-		return "Safe"
 	end
+	return "Safe" -- Fallback to safe spawning
 end
 
 
@@ -99,7 +56,9 @@ end
 
 
 local function isGoodSpacing(position)
-	local minDistance = SpawnerPlacementConfig.TerrainValidation.ClearanceRadius
+	-- Variable clearance radius for organic clustering (0.7-1.3x base radius)
+	local baseRadius = SpawnerPlacementConfig.TerrainValidation.ClearanceRadius
+	local minDistance = baseRadius * math.random(70, 130) / 100
 
 	for _, part in pairs(proceduralSpawnersFolder:GetChildren()) do
 		if part:IsA("BasePart") then
@@ -158,8 +117,13 @@ local function findValidSpawnerPosition(chunkX, chunkZ)
 	local maxAttempts = SpawnerPlacementConfig.Settings.MaxPlacementAttempts
 
 	for attempt = 1, maxAttempts do
-		local offsetX = math.random(-chunkSize/2, chunkSize/2)
-		local offsetZ = math.random(-chunkSize/2, chunkSize/2)
+		-- Jittered placement with diagonal spread for organic distribution
+		local baseX = math.random(-chunkSize/2, chunkSize/2)
+		local baseZ = math.random(-chunkSize/2, chunkSize/2)
+		local jitter = (math.random() - 0.5) * chunkSize * 0.4  -- ±40% extra
+		-- Clamp offsets to keep spawners within chunk bounds
+		local offsetX = math.clamp(baseX + jitter, -chunkSize/2, chunkSize/2)
+		local offsetZ = math.clamp(baseZ - jitter, -chunkSize/2, chunkSize/2)  -- Different sign gives diagonal spread
 
 		local testX = worldX + offsetX
 		local testZ = worldZ + offsetZ
@@ -232,11 +196,20 @@ function SpawnerPlacement.placeSpawnersForChunk(chunkX, chunkZ)
 		return
 	end
 	
-	local spawnType = getSpawnType(chunkX, chunkZ)
-	local spawnerPosition = findValidSpawnerPosition(chunkX, chunkZ)
+	-- Place 1-3 spawners per selected chunk for clustering
+	local maxSpawners = SpawnerPlacementConfig.Performance.MaxSpawnersPerChunk
+	local numSpawners = math.random(1, maxSpawners)
+	
+	for i = 1, numSpawners do
+		local spawnType = getSpawnType(chunkX, chunkZ)
+		local spawnerPosition = findValidSpawnerPosition(chunkX, chunkZ)
 
-	if spawnerPosition then
-		createSpawnerPart(spawnerPosition, spawnType)
+		if spawnerPosition then
+			createSpawnerPart(spawnerPosition, spawnType)
+		else
+			-- Break early if we can't find valid positions (prevents infinite attempts)
+			break
+		end
 	end
 end
 

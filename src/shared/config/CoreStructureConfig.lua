@@ -8,10 +8,10 @@ local CoreStructureConfig = {}
 
 -- Structure definitions with collision radii and individual embed percentages
 CoreStructureConfig.STRUCTURES = {
-	Pyramid = { radius = 175, embedPercentage = 0.24 },  -- Largest structure, placed first
-	Tower1  = { radius = 30, embedPercentage = 0.036 },
-	Tower2  = { radius = 30, embedPercentage = 0.036 },
-	Tower3  = { radius = 30, embedPercentage = 0.036 },
+	Pyramid = { radius = 175, embedPercentage = 0.009 },  -- Largest structure, placed first
+	Tower1  = { radius = 30, embedPercentage = 0.02 },
+	Tower2  = { radius = 30, embedPercentage = 0.02 },
+	Tower3  = { radius = 30, embedPercentage = 0.02 },
 }
 
 -- Placement rules
@@ -22,7 +22,7 @@ CoreStructureConfig.MAX_PLACEMENT_ATTEMPTS = 40       -- Maximum attempts per st
 -- Performance settings
 CoreStructureConfig.BATCH_SIZE = 1                     -- One massive structure per frame
 
-CoreStructureConfig.CHUNK_MARGIN_FACTOR = 0.05
+CoreStructureConfig.CHUNK_MARGIN_FACTOR = 0.1
 
 -- Model location
 CoreStructureConfig.MODEL_FOLDER = "Models.Core"

@@ -16,6 +16,7 @@ local AIManager = require(script.Parent.AIManager)
 local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 
 local CreatureSpawner = {}
@@ -244,7 +245,7 @@ function CreatureSpawner.populateWorld()
 	processedSpawnersCount = 0
 	discoverAvailableCreatures()
 
-	local spawnerParts = CollectionService:GetTagged(CreatureSpawnConfig.Settings.SpawnTag)
+	local spawnerParts = CollectionServiceTags.getLiveTagged(CreatureSpawnConfig.Settings.SpawnTag)
 
 	if #spawnerParts == 0 then
 		warn("[CreatureSpawner] No creature spawner parts found. Make sure parts are tagged with: " .. CreatureSpawnConfig.Settings.SpawnTag)

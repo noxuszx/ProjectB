@@ -10,7 +10,7 @@ local SpawnerPlacementConfig = {
 		SpawnerHeight = 2,
 		DebugMode = false,
 
-		UseNoiseBasedSpawning = true, -- false for random
+		UseNoiseBasedSpawning = false, -- Simplified random spawning for better gameplay balance
 	},
 
 	TerrainValidation = {
@@ -18,61 +18,13 @@ local SpawnerPlacementConfig = {
 		RaycastDistance = 50,
 	},
 
-	NoiseSettings = {
-
-		Temperature = {
-			Seed = 1234,
-			Scale = 0.05,
-			Octaves = 3,
-		},
-		
-		Humidity = {
-			Seed = 5678,
-			Scale = 0.08,
-			Octaves = 4,
-		},
-		
-		Hostility = {
-			Seed = 9012,
-			Scale = 0.1,
-			Octaves = 2,
-		},
-	},
-
-	BiomeThresholds = {
-
-		HighTemperature = 0.6,
-		LowTemperature = 0.3,
-		HighHumidity = 0.6,
-		LowHumidity = 0.3,
-		HighHostility = 0.7,
-		
-		ModerateTemperature = 0.5,
-		ModerateHumidity = 0.4,
-	},
-
-	SpawnAreaRules = {
-		
-		{
-			condition = function(temp, humid, hostile)
-				return hostile > 0.75 -- Higher threshold for better Safe/Dangerous balance
-			end,
-			spawnType = "Dangerous",
-			description = "Dangerous desert areas - hostile creatures dominate"
-		},
-		{
-			condition = function(temp, humid, hostile)
-				return true
-			end,
-			spawnType = "Safe",
-			description = "Safe desert areas - mostly passive creatures"
-		},
-	},
+	-- Noise-based biome settings removed for simplified random spawning approach
 
 	RandomSpawning = {
+		-- Designer-controlled spawn type ratios for balanced gameplay
 		SpawnTypeProbabilities = {
-			Safe = 0.7,
-			Dangerous = 0.3,
+			Safe = 0.60,      -- 60% safe areas (passive creatures)
+			Dangerous = 0.40, -- 40% dangerous areas (hostile creatures)
 		},
 
 		RandomSeed = 12345,
@@ -81,7 +33,7 @@ local SpawnerPlacementConfig = {
 	Performance = {
 		BatchSize = 10,
 		ProcessingDelay = 0.01,
-		MaxSpawnersPerChunk = 1,
+		MaxSpawnersPerChunk = 3, -- Allow clustering for organic spawner distribution
 		EnableSpatialCaching = true,
 		
 		-- NEW: Frame budgeting - chunks to process per frame

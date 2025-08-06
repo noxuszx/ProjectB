@@ -5,8 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
-local CS_tags =
-	require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 
 
@@ -76,9 +75,9 @@ local function spawnItemAtBuyZone(buyZone)
 		end
 	end
 
-	CS_tags.addTag(clonedItem, CS_tags.DRAGGABLE)
-	CS_tags.addTag(clonedItem, CS_tags.WELDABLE)
-	CS_tags.addTag(clonedItem, CS_tags.STORABLE)
+	CollectionServiceTags.addTag(clonedItem, CollectionServiceTags.DRAGGABLE)
+	CollectionServiceTags.addTag(clonedItem, CollectionServiceTags.WELDABLE)
+	CollectionServiceTags.addTag(clonedItem, CollectionServiceTags.STORABLE)
 
 	local proximityPrompt = Instance.new("ProximityPrompt")
 	proximityPrompt.Name = "BuyPrompt"
@@ -149,7 +148,7 @@ local function onBuyZoneRemoved(buyZone)
 end
 
 local function getAllBuyZones()
-	return CollectionService:GetTagged("BUY_ZONE")
+	return CollectionServiceTags.getLiveTagged("BUY_ZONE")
 end
 
 local function getSpawnedItem(buyZone)
@@ -201,7 +200,7 @@ local function onProximityPromptTriggered(promptObject, player)
 end
 
 local function init()
-	local buyZones = CollectionService:GetTagged("BUY_ZONE")
+	local buyZones = CollectionServiceTags.getLiveTagged("BUY_ZONE")
 
 	for _, buyZone in pairs(buyZones) do
 		onBuyZoneAdded(buyZone)

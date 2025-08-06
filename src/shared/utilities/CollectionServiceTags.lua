@@ -204,6 +204,17 @@ function CollectionServiceTags.getAllProtectedObjects()
     return protected
 end
 
+-- Get tagged instances that are live in workspace (not templates)
+function CollectionServiceTags.getLiveTagged(tag)
+    local live = {}
+    for _, inst in ipairs(CollectionService:GetTagged(tag)) do
+        if inst:IsDescendantOf(workspace) then
+            table.insert(live, inst)
+        end
+    end
+    return live
+end
+
 -- Helper function to tag a root object and all its BasePart descendants
 function CollectionServiceTags.tagDescendants(root, tag)
     if not root or not tag then

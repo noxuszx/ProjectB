@@ -353,7 +353,7 @@ function ItemSpawner.PopulateWorld()
 	discoverAvailableItems()
 	validateLootTables()
 	
-	local spawnerParts = CollectionService:GetTagged(SPAWN_TAG)
+	local spawnerParts = CollectionServiceTags.getLiveTagged(SPAWN_TAG)
 	debugPrint("Found " .. #spawnerParts .. " spawner parts")
 	
 	if #spawnerParts == 0 then

@@ -105,7 +105,7 @@ end
 -- Check spawn protection zone
 local function isInSpawnProtection(x, z)
 	local distance = math.sqrt(x^2 + z^2)
-	return distance < ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS
+	return distance <= ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS
 end
 
 local function isPositionValid(x, z, category, minDistance, chunkSize)
