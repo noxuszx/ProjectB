@@ -18,12 +18,12 @@ local CreatureSpawnConfig = {
 
 	SpawnTypes = {
 		Safe = {
-			MaxSpawns = 4,		-- Reduced from 4
-			MinSpawns = 2, 		-- Reduced from 2
+			MaxSpawns = 3,		-- Reduced from 4
+			MinSpawns = 1, 		-- Reduced from 2
 			SpawnChance = 1, 	-- Reduced from 0.9
 			PossibleCreatures = {
-				Rabbit = 0.8,
-				Camel = 0.4
+				Rabbit = 0.7,
+				Camel = 0.2
 			}
 		},
 
@@ -32,10 +32,10 @@ local CreatureSpawnConfig = {
 			MinSpawns = 1, 		-- Reduced from 3
 			SpawnChance = 0.9, 	-- Reduced from 0.95
 			PossibleCreatures = {
-				Coyote = 0.7,
+				Coyote = 0.8,
 				Mummy = 0.5,
-				Scorpion = 0.6,
-				SkeletonArcher = 0.4, -- Lower chance for ranged enemies
+				Scorpion = 0.8,
+				SkeletonArcher = 0.3, -- Lower chance for ranged enemies
 			}
 		},
 
@@ -45,7 +45,9 @@ local CreatureSpawnConfig = {
 			SpawnChance = 0.8,	-- High chance for consistent village population
 			PossibleCreatures = {
 				Villager1 = 0.5,	-- 50% chance for first villager type
-				Villager2 = 0.5,	-- 50% chance for second villager type
+				Villager2 = 0.5,
+				Villager3 = 0.5,
+				Villager4 = 0.5,	-- 50% chance for second villager type
 			}
 		},
 	},

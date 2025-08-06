@@ -39,10 +39,83 @@ function RoamingBehavior:enter(creature)
 	end
 end
 
+-- Per-frame lightweight movement completion checks (runs regardless of LOD)
+function RoamingBehavior:followUp(creature, deltaTime)
+	-- Handle movement completion - cheap check that must run every frame
+	if self.state == RoamingState.MOVING then
+		if not self.targetPosition then
+			self.state = RoamingState.CHOOSING_DESTINATION
+			return
+		end
+
+		local humanoid = creature.model:FindFirstChild("Humanoid")
+		if not humanoid then
+			self:startIdling(creature)
+			return
+		end
+
+		-- Check if we just started moving (avoid immediate completion)
+		if not self.moveStartTime then
+			self.moveStartTime = os.clock()
+			self.lastStuckCheckPosition = creature.model.PrimaryPart.Position
+			self.stuckCheckTime = os.clock()
+		end
+		
+		local currentPosition = creature.model.PrimaryPart.Position
+		local timeSinceStart = os.clock() - self.moveStartTime
+		
+		-- Movement timeout - give up after 10 seconds
+		if timeSinceStart > 10 then
+			if AIConfig.Debug.LogBehaviorChanges then
+				print(string.format("[RoamingBehavior] %s movement timeout after %.1f seconds", 
+					creature.creatureType, timeSinceStart))
+			end
+			self:startIdling(creature)
+			return
+		end
+		
+		-- Stuck detection - check if we haven't moved much in 2 seconds
+		local timeSinceStuckCheck = os.clock() - self.stuckCheckTime
+		if timeSinceStuckCheck > 2 then
+			local distanceMoved = (currentPosition - self.lastStuckCheckPosition).Magnitude
+			if distanceMoved < 2 then -- Haven't moved more than 2 studs in 2 seconds
+				if AIConfig.Debug.LogBehaviorChanges then
+					print(string.format("[RoamingBehavior] %s stuck - only moved %.1f studs in 2 seconds", 
+						creature.creatureType, distanceMoved))
+				end
+				-- Choose a new destination instead of idling
+				self.state = RoamingState.CHOOSING_DESTINATION
+				return
+			end
+			self.lastStuckCheckPosition = currentPosition
+			self.stuckCheckTime = os.clock()
+		end
+
+		-- Distance check for arrival
+		local distanceToTarget = (self.targetPosition - currentPosition).Magnitude
+		if distanceToTarget < 7 then -- Increased from 3 to handle network throttling
+			if AIConfig.Debug.LogBehaviorChanges then
+				print(string.format("[RoamingBehavior] %s reached destination (distance: %.1f)", 
+					creature.creatureType, distanceToTarget))
+			end
+			self:startIdling(creature)
+			return
+		end
+
+		-- Continue moving towards target (this call is cheap)
+		if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.02 then -- Log 2% of the time to avoid spam
+			print(string.format("[RoamingBehavior] %s followUp - still moving, distance: %.1f, time: %.1f", 
+				creature.creatureType, distanceToTarget, timeSinceStart))
+		end
+		self:moveTowards(creature, self.targetPosition, creature.moveSpeed, deltaTime)
+	end
+end
+
+-- LOD-gated expensive thinking (pathfinding, decision-making)
 function RoamingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
 
-	-- Check for threats/players first
+	-- Check for threats/players first (expensive player detection)
 	local nearestPlayer, distance = self:findNearestPlayer(creature)
 	if nearestPlayer then
 		local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
@@ -72,23 +145,26 @@ function RoamingBehavior:update(creature, deltaTime)
 		end
 	end
 
+	-- Handle expensive state logic (idle timing, destination selection)
 	if self.state == RoamingState.IDLE then
 		self:updateIdling()
 	elseif self.state == RoamingState.CHOOSING_DESTINATION then
 		self:updateChoosingDestination(creature)
-	elseif self.state == RoamingState.MOVING then
-		self:updateMoving(creature, deltaTime)
 	end
+	-- Note: MOVING state handling moved to followUp() for per-frame execution
 end
 
 function RoamingBehavior:startIdling(creature)
 	self.state = RoamingState.IDLE
 	self.idleStartTime = os.clock()
+	self.moveStartTime = nil -- Clear move start time
+	self.targetPosition = nil -- Clear target position
+	self.lastStuckCheckPosition = nil -- Clear stuck check position
+	self.stuckCheckTime = nil -- Clear stuck check time
 
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	local idleTimeRange = creatureConfig and creatureConfig.IdleTime or {5, 15}
 	self.idleDuration = self:getRandomTime(idleTimeRange)
-
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		print("[RoamingBehavior] " .. creature.creatureType .. " idling for " .. string.format("%.1f", self.idleDuration) .. " seconds")
@@ -107,44 +183,75 @@ function RoamingBehavior:updateChoosingDestination(creature)
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 	local roamRadius = creatureConfig and creatureConfig.RoamRadius or 20
 
-	-- Use spawn position as center for roaming area
-	local centerPosition = creature.spawnPosition
+	-- Use current position as center for roaming area (not spawn position)
+	local currentPosition = creature.model.PrimaryPart.Position
+	local centerPosition = currentPosition -- Use current position instead of spawn
 
-	-- Simple random target selection (no multiple attempts)
-	local randomAngle = math.random() * math.pi * 2
-	local randomDistance = math.random() * roamRadius
-	local targetX = centerPosition.X + math.cos(randomAngle) * randomDistance
-	local targetZ = centerPosition.Z + math.sin(randomAngle) * randomDistance
-	self.targetPosition = Vector3.new(targetX, centerPosition.Y, targetZ)
+	-- Try to find a valid destination (up to 5 attempts)
+	local validDestinationFound = false
+	local attempts = 0
+	local targetPosition
+	
+	while not validDestinationFound and attempts < 5 do
+		attempts = attempts + 1
+		
+		-- Random target selection with minimum distance
+		local randomAngle = math.random() * math.pi * 2
+		-- Ensure minimum distance of 10 studs to avoid immediate completion
+		local minDistance = math.max(10, roamRadius * 0.3)
+		local randomDistance = minDistance + math.random() * (roamRadius - minDistance)
+		local targetX = centerPosition.X + math.cos(randomAngle) * randomDistance
+		local targetZ = centerPosition.Z + math.sin(randomAngle) * randomDistance
+		
+		-- Use current Y position to ensure target is at same height level
+		targetPosition = Vector3.new(targetX, currentPosition.Y, targetZ)
+		
+		-- Check if path is clear (simple raycast check)
+		local rayDirection = (targetPosition - currentPosition).Unit * (targetPosition - currentPosition).Magnitude
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+		local filterList = {creature.model}
+		if workspace:FindFirstChild("NPCs") then
+			table.insert(filterList, workspace.NPCs)
+		end
+		raycastParams.FilterDescendantsInstances = filterList
+		
+		local raycastResult = workspace:Raycast(currentPosition, rayDirection, raycastParams)
+		
+		-- If no obstruction or obstruction is very close to target, accept it
+		if not raycastResult or (targetPosition - raycastResult.Position).Magnitude < 3 then
+			validDestinationFound = true
+		else
+			if AIConfig.Debug.LogBehaviorChanges and attempts == 1 then
+				print(string.format("[RoamingBehavior] %s destination blocked, trying another angle", creature.creatureType))
+			end
+		end
+	end
+	
+	-- Use the best target we found (or last attempt if none were perfect)
+	self.targetPosition = targetPosition
 
 	self.state = RoamingState.MOVING
-
+	self.moveStartTime = nil -- Reset move start time for new movement
+	
+	-- Immediately issue the first MoveTo command
+	local humanoid = creature.model:FindFirstChild("Humanoid")
+	if humanoid then
+		humanoid:MoveTo(self.targetPosition)
+		self.lastMoveGoal = self.targetPosition
+		humanoid.WalkSpeed = creature.moveSpeed
+	end
 
 	if AIConfig.Debug.LogBehaviorChanges then
-		local distance = (self.targetPosition - creature.model.PrimaryPart.Position).Magnitude
-		print("[RoamingBehavior] " .. creature.creatureType .. " moving to new destination " .. string.format("%.1f", distance) .. " studs away")
+		local distance = (self.targetPosition - currentPosition).Magnitude
+		print(string.format("[RoamingBehavior] %s choosing destination:", creature.creatureType))
+		print(string.format("  Current pos: (%.1f, %.1f, %.1f)", currentPosition.X, currentPosition.Y, currentPosition.Z))
+		print(string.format("  Target pos: (%.1f, %.1f, %.1f)", self.targetPosition.X, self.targetPosition.Y, self.targetPosition.Z))
+		print(string.format("  Distance: %.1f studs", distance))
+		print("  MoveTo command issued immediately")
 	end
 end
 
-function RoamingBehavior:updateMoving(creature, deltaTime)
-	if not self.targetPosition then
-		self.state = RoamingState.CHOOSING_DESTINATION
-		return
-	end
-
-	local currentPosition = creature.model.PrimaryPart.Position
-	local distanceToTarget = (self.targetPosition - currentPosition).Magnitude
-
-	-- Check if we've reached the destination
-	if distanceToTarget < 3 then
-		self:startIdling(creature)
-		return
-	end
-
-	-- REMOVED: Complex stuck detection - Humanoid:MoveTo handles this automatically
-
-	-- Move towards target
-	self:moveTowards(creature, self.targetPosition, creature.moveSpeed, deltaTime)
-end
+-- updateMoving() logic moved to followUp() for per-frame execution
 
 return RoamingBehavior

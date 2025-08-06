@@ -223,22 +223,29 @@ function AIManager:updateAllCreatures()
 		end
 	end
 	
-	-- Update the selected creatures
-	for _, creature in ipairs(toUpdateThisFrame) do
-		elapsedTime = os.clock() - frameStartTime
-		if elapsedTime >= self.updateBudget then
-			AIDebugger.logPerformanceWarning(elapsedTime, self.updateBudget, "creature updates", updatedCreatures, #activeCreatures)
-			break
-		end
-		
-		creature:update(deltaTime)
-		updatedCreatures = updatedCreatures + 1
-		
-		-- Update next update time for timed creatures
-		if creature.lodUpdateRate < 30 then
-			creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
-		end
-	end
+    -- Update the selected creatures (full behaviour think + animation)
+    for _, creature in ipairs(toUpdateThisFrame) do
+        elapsedTime = os.clock() - frameStartTime
+        if elapsedTime >= self.updateBudget then
+            AIDebugger.logPerformanceWarning(elapsedTime, self.updateBudget, "creature updates", updatedCreatures, #activeCreatures)
+            break
+        end
+        
+        creature:update(deltaTime)
+        updatedCreatures = updatedCreatures + 1
+        
+        -- Update next update time for timed creatures
+        if creature.lodUpdateRate < 30 then
+            creature.lodNextUpdate = currentTime + (1 / creature.lodUpdateRate)
+        end
+    end
+
+    -- Lightweight per-frame movement follow-up for **all** active creatures (runs regardless of LOD)
+    for _, creature in ipairs(activeCreatures) do
+        if creature.isActive and creature.currentBehavior and creature.currentBehavior.followUp then
+            creature.currentBehavior:followUp(creature, deltaTime)
+        end
+    end
 	
 	-- Batch cleanup using the new registry system
 	AICreatureRegistry.collectInactiveCreatures(activeCreatures, toRemoveIndices)

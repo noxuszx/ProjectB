@@ -103,6 +103,13 @@ function AIBehavior:moveTowards(creature, targetPosition, speed, deltaTime)
 	if humanoid then
 		-- Debounce MoveTo calls to prevent pathfinding thrashing
 		if not self.lastMoveGoal or (targetPosition - self.lastMoveGoal).Magnitude > 1 then
+			if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.1 then -- Log 10% of MoveTo calls
+				local currentPos = creature.model.PrimaryPart.Position
+				print(string.format("[AIBehavior] %s MoveTo called:", creature.creatureType))
+				print(string.format("  From: (%.1f, %.1f, %.1f)", currentPos.X, currentPos.Y, currentPos.Z))
+				print(string.format("  To: (%.1f, %.1f, %.1f)", targetPosition.X, targetPosition.Y, targetPosition.Z))
+				print(string.format("  Speed: %.1f", speed))
+			end
 			humanoid:MoveTo(targetPosition)
 			self.lastMoveGoal = targetPosition
 		end

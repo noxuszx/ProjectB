@@ -5,7 +5,7 @@
 local SpawnerPlacementConfig = {
 
 	Settings = {
-		SpawnerChunkChance = 0.6,
+		SpawnerChunkChance = 0.8, -- Increased from 0.6 for more spawners
 		MaxPlacementAttempts = 10,
 		SpawnerHeight = 2,
 		DebugMode = false,
@@ -14,7 +14,7 @@ local SpawnerPlacementConfig = {
 	},
 
 	TerrainValidation = {
-		ClearanceRadius = 10,
+		ClearanceRadius = 7, -- Reduced from 10 for denser spawner placement
 		RaycastDistance = 50,
 	},
 
@@ -33,7 +33,7 @@ local SpawnerPlacementConfig = {
 	Performance = {
 		BatchSize = 10,
 		ProcessingDelay = 0.01,
-		MaxSpawnersPerChunk = 3, -- Allow clustering for organic spawner distribution
+		MaxSpawnersPerChunk = 5, -- Increased from 3 for denser spawning
 		EnableSpatialCaching = true,
 		
 		-- NEW: Frame budgeting - chunks to process per frame

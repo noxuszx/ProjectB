@@ -144,6 +144,12 @@ function BaseCreature:update(deltaTime)
 		return
 	end
 
+	-- Per-frame movement completion checks (runs regardless of LOD)
+	if self.currentBehavior and self.currentBehavior.followUp then
+		self.currentBehavior:followUp(self, deltaTime)
+	end
+
+	-- LOD-gated expensive thinking (pathfinding, decisions)
 	if self.currentBehavior then
 		self.currentBehavior:update(self, deltaTime)
 	end
@@ -446,8 +452,8 @@ function BaseCreature:updateDebugGUI()
 	if stateLabel then
 		local stateName = "Idle"
 		if self.currentBehavior then
-			if self.currentBehavior.name then
-				stateName = self.currentBehavior.name
+			if self.currentBehavior.behaviorName then
+				stateName = self.currentBehavior.behaviorName
 
 				if self.currentBehavior.state then
 					stateName = stateName .. ":" .. self.currentBehavior.state
