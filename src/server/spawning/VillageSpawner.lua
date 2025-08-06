@@ -13,6 +13,7 @@ local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 local CoreStructureSpawner = require(script.Parent.CoreStructureSpawner)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local VillageSpawner = {}
 local random = Random.new()
@@ -314,6 +315,9 @@ end
 		
 		clonedModel:SetPrimaryPartCFrame(info.cframe)
 		clonedModel.Parent = villageFolder
+		
+		-- Tag village structure as protected geometry
+		CollectionServiceTags.tagDescendants(clonedModel, CollectionServiceTags.PROTECTED_VILLAGE)
 	end)
 	
 	return true

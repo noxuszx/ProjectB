@@ -16,10 +16,6 @@ local mouse = player:GetMouse()
 
 -- Weld state
 local hoveredObject = nil
-local hoverHighlight = nil
-local lastTarget = nil
-local lastUpdateTime = 0
-local UPDATE_THROTTLE = 0.1
 
 local function isPlayerCharacterPart(part)
     local model = part:FindFirstAncestorOfClass("Model")
@@ -62,43 +58,16 @@ local function isWeldableTarget(part)
         and CollectionServiceTags.isWeldable(part)
 end
 
-local function createHoverHighlight(object)
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.fromRGB(255, 255, 0)
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0.15
-    highlight.Parent = object
-    return highlight
-end
-
-local function removeHoverHighlight()
-    if hoverHighlight then
-        hoverHighlight:Destroy()
-        hoverHighlight = nil
-    end
-end
 
 function WeldSystem.updateHoveredObject(isDragging, isDraggableObjectFunc)
-    local currentTime = os.clock()
     local target = mouse.Target
-    
-    if target == lastTarget and (currentTime - lastUpdateTime) < UPDATE_THROTTLE then
-        return
-    end
-    
-    lastTarget = target
-    lastUpdateTime = currentTime
     
     if not isDragging and target and target ~= hoveredObject then
         if isDraggableObjectFunc(target) then
-            removeHoverHighlight()
             hoveredObject = target
-            hoverHighlight = createHoverHighlight(target)
         end
     elseif not target or isDragging or (target and not isDraggableObjectFunc(target)) then
         if hoveredObject then
-            removeHoverHighlight()
             hoveredObject = nil
         end
     end
@@ -256,7 +225,6 @@ function WeldSystem.getAssemblyWeldCount(assembly)
 end
 
 function WeldSystem.cleanup()
-    removeHoverHighlight()
     hoveredObject = nil
 end
 

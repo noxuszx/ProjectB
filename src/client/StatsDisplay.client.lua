@@ -1,6 +1,6 @@
 -- src/client/StatsDisplay.client.lua
 -- Client-side UI display for player stats (Hunger and Thirst bars)
--- Receives updates from server and displays small horizontal bars on left side
+-- References manually created UI elements (no Instance.new() for performance)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -13,7 +13,8 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local StatsDisplay = {}
 
--- UI elements
+-- UI elements (references to manually created elements)
+local playerStatsGui = nil
 local statsFrame = nil
 local hungerBar = nil
 local thirstBar = nil
@@ -34,70 +35,53 @@ function StatsDisplay.init()
 		return false
 	end
 	
-	StatsDisplay.createUI()
+	if not StatsDisplay.getUIReferences() then
+		warn("[StatsDisplay] Failed to get UI references!")
+		return false
+	end
+	
 	updatePlayerStatsRemote.OnClientEvent:Connect(StatsDisplay.onStatsUpdate)
 	
 	print("[StatsDisplay] Stats display initialized!")
 	return true
 end
 
--- Create the UI elements
-function StatsDisplay.createUI()
-	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "StatsDisplayGui"
-	screenGui.ResetOnSpawn = false
-	screenGui.Parent = playerGui
-
-	statsFrame = Instance.new("Frame")
-	statsFrame.Name = "StatsDisplay"
-	statsFrame.Size = UDim2.new(0, PlayerStatsConfig.UI.BAR_WIDTH + 20, 0, 80)
-	statsFrame.Position = UDim2.new(0, PlayerStatsConfig.UI.BAR_POSITION_LEFT_OFFSET, 0, 50)
-	statsFrame.BackgroundTransparency = 1
-	statsFrame.Parent = screenGui
-	
-	StatsDisplay.createStatBar("Hunger", PlayerStatsConfig.UI.HUNGER_COLOR, 0)
-	StatsDisplay.createStatBar("Thirst", PlayerStatsConfig.UI.THIRST_COLOR, 1)
-	
-	print("[StatsDisplay] UI elements created")
-end
-
--- Create a stat bar (hunger or thirst)
-function StatsDisplay.createStatBar(statName, color, index)
-	local yOffset = index * (PlayerStatsConfig.UI.BAR_HEIGHT + PlayerStatsConfig.UI.BAR_SPACING)
-	
-	-- Background bar (dark)
-	local background = Instance.new("Frame")
-	background.Name = statName .. "Background"
-	background.Size = UDim2.new(0, PlayerStatsConfig.UI.BAR_WIDTH, 0, PlayerStatsConfig.UI.BAR_HEIGHT)
-	background.Position = UDim2.new(0, 10, 0, yOffset + 10)
-	background.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	background.BorderSizePixel = 1
-	background.BorderColor3 = Color3.fromRGB(200, 200, 200)
-	background.Parent = statsFrame
-	
-	local foreground = Instance.new("Frame")
-	foreground.Name = statName .. "Bar"
-	foreground.Size = UDim2.new(1, 0, 1, 0)
-	foreground.Position = UDim2.new(0, 0, 0, 0)
-	foreground.BackgroundColor3 = color
-	foreground.BorderSizePixel = 0
-	foreground.Parent = background
-	
-	local gradient = Instance.new("UIGradient")
-	gradient.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1, color)
-	}
-	gradient.Rotation = 90
-	gradient.Parent = foreground
-	
-	if statName == "Hunger" then
-		hungerBackground = background
-		hungerBar = foreground
-	elseif statName == "Thirst" then
-		thirstBackground = background
-		thirstBar = foreground
+-- Get references to manually created UI elements
+function StatsDisplay.getUIReferences()
+	-- Wait for PlayerStatsGui (manually created in StarterGui)
+	playerStatsGui = playerGui:WaitForChild("PlayerStatsGui", 10)
+	if not playerStatsGui then
+		warn("[StatsDisplay] PlayerStatsGui not found! Create it manually in StarterGui.")
+		return false
 	end
+	
+	-- Get main stats frame
+	statsFrame = playerStatsGui:WaitForChild("StatsFrame", 5)
+	if not statsFrame then
+		warn("[StatsDisplay] StatsFrame not found in PlayerStatsGui!")
+		return false
+	end
+	
+	-- Get hunger UI elements
+	hungerBackground = statsFrame:WaitForChild("HungerBackground", 5)
+	if hungerBackground then
+		hungerBar = hungerBackground:WaitForChild("HungerBar", 5)
+	end
+	
+	-- Get thirst UI elements  
+	thirstBackground = statsFrame:WaitForChild("ThirstBackground", 5)
+	if thirstBackground then
+		thirstBar = thirstBackground:WaitForChild("ThirstBar", 5)
+	end
+	
+	-- Verify all elements were found
+	if not hungerBar or not thirstBar then
+		warn("[StatsDisplay] Missing hunger or thirst bar elements!")
+		return false
+	end
+	
+	print("[StatsDisplay] Successfully referenced manual UI elements")
+	return true
 end
 
 function StatsDisplay.onStatsUpdate(newStats)
@@ -164,21 +148,20 @@ function StatsDisplay.setVisible(visible)
 end
 
 function StatsDisplay.cleanup()
-	if statsFrame then
-		statsFrame:Destroy()
-		statsFrame = nil
-		hungerBar = nil
-		thirstBar = nil
-		hungerBackground = nil
-		thirstBackground = nil
-	end
+	-- Clear references to manually created UI elements
+	playerStatsGui = nil
+	statsFrame = nil
+	hungerBar = nil
+	thirstBar = nil
+	hungerBackground = nil
+	thirstBackground = nil
 	
 	currentStats = {
 		Hunger = PlayerStatsConfig.MAX_HUNGER,
 		Thirst = PlayerStatsConfig.MAX_THIRST
 	}
 	
-	print("[StatsDisplay] UI cleaned up")
+	print("[StatsDisplay] UI references cleared")
 end
 
 StatsDisplay.init()

@@ -11,6 +11,7 @@ local CoreStructureConfig = require(ReplicatedStorage.Shared.config.CoreStructur
 local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
 local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local CoreStructureSpawner = {}
 local random = Random.new()
@@ -148,10 +149,13 @@ local function tryPlaceStructure(structureName, structureProps, models)
 		clone:SetPrimaryPartCFrame(finalCFrame)
 		clone.Parent = coreStructureFolder
 		
+		-- Tag structure as protected core geometry
+		CollectionServiceTags.tagDescendants(clone, CollectionServiceTags.PROTECTED_CORE)
+		
 		-- Store the occupied circle
 		table.insert(occupiedCircles, proposedCircle)
 		
-		print("[CoreStructureSpawner]", structureName, "placed after", attempt, "attempts at", worldPosition)
+		print("[CoreStructureSpawner]", structureName, "placed after", attempt, "attempts at", worldPosition, "- Tagged as protected")
 		return true
 	end
 	

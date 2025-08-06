@@ -1,49 +1,30 @@
-The pyramid is sinking because the current embed code assumes the model’s *pivot* sits exactly on the ground.  
-For most Studio-built meshes the pivot is in the model’s **centre**, so:
+Your plan covers all the missing pieces and lines up with best-practice patterns. I’d give it a green light with just a few minor tweaks:
 
-local cf, size = template:GetBoundingBox()
--- cf.Position.Y  == centre-height
--- size.Y         == full height
-You then do
+1. Tagging helper  
+   • Instead of the nested `tagStructureParts` / `tagVillageParts` functions everywhere, add one generic utility in `CollectionServiceTags`:
 
-embedDepth = size.Y * 0.10          --> 28 studs for the pyramid
-finalY    = terrainHeight - embedDepth
-Result: you push the model 28 studs **below** the terrain, so roughly the lower
-half of the pyramid disappears.
+function CollectionServiceTags.tagDescendants(root, tag)
+    for _, inst in ipairs(root:GetDescendants()) do
+        if inst:IsA("BasePart") then
+            CollectionServiceTags.addTag(inst, tag)
+        end
+    end
+    CollectionServiceTags.addTag(root, tag) -- tag the root model too
+end
+Then each spawner only needs a one-liner:
+CollectionServiceTags.tagDescendants(clone, CollectionServiceTags.PROTECTED_CORE)
+2. Protection zones  
+   • Invisible “protection zone” Parts are fine, but lets skip them if the building’s own BaseParts already cover its footprint—only keep them where a single small spawner part needs extra padding.
 
-Fix
-----
+3. Refresh cadence  
+   • Refreshing every 5 s is safe.  
+   • During the world-generation phase you could also call `initializeOverlapParams()` once *after* VillageSpawner and CoreStructureSpawner finish; that avoids unnecessary polling.
 
-Compute how far the model’s *bottom* already lies below its centre and embed
-relative to that.
+4. Execution order  
+   • CoreStructureSpawner → VillageSpawner → SpawnerPlacement already happens before CustomModelSpawner.init() is invoked, so one refresh at the start of CustomModelSpawner is enough. The periodic refresh is a fallback in case something spawns later (e.g. dynamic spawners).
 
--- bounding-box data
-local cf, size = template:GetBoundingBox()
-local halfHeight = size.Y / 2
+5. Debug helpers  
+   • Good idea—wrap them with `if ModelSpawnerConfig.DEBUG then … end`.
 
--- bottom of the un-embedded model would be:
--- (centreY - halfHeight)
-local bottomOffset = halfHeight      -- distance from centre down to ground
-
--- embed only EMBED_PERCENTAGE of that offset
-local embedDepth  = bottomOffset * CoreStructureConfig.EMBED_PERCENTAGE
-
--- final Y so that only embedDepth clips below ground
-local finalY = terrainHeight + embedDepth   -- raise instead of lower
-Full replacement block
-
-local cf, size = template:GetBoundingBox()
-local halfHeight  = size.Y / 2
-local embedDepth  = halfHeight * CoreStructureConfig.EMBED_PERCENTAGE
-local finalY      = terrainHeight + embedDepth   -- note the +
-
-local finalCFrame = CFrame.new(worldPosition.X, finalY, worldPosition.Z)
-• With `EMBED_PERCENTAGE = 0.10`, only the bottom 10 % of the pyramid sinks
-  (≈14 studs), giving a natural look instead of burying it.
-
-• If a model’s pivot really is on the base you can set its individual
-  `radius` table to `{radius = 175, pivotAtBase = true}` and skip the embed
-  correction in `tryPlaceStructure`.
-
-Apply that change and the pyramid (and towers) should sit correctly on the
-sand.
+With those small refinements, the plan is solid.  
+Ready for implementation whenever you are.

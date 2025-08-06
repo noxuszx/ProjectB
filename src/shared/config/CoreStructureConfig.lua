@@ -22,10 +22,9 @@ CoreStructureConfig.MAX_PLACEMENT_ATTEMPTS = 40       -- Maximum attempts per st
 -- Performance settings
 CoreStructureConfig.BATCH_SIZE = 1                     -- One massive structure per frame
 
--- Stay away from chunk edges by this fraction of chunk size (0 = allow edge)
 CoreStructureConfig.CHUNK_MARGIN_FACTOR = 0.05
 
 -- Model location
-CoreStructureConfig.MODEL_FOLDER = "Models.Core"       -- Path in ReplicatedStorage
+CoreStructureConfig.MODEL_FOLDER = "Models.Core"
 
 return CoreStructureConfig

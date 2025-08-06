@@ -14,6 +14,11 @@ CollectionServiceTags.NON_WELDABLE = "NonWeldable"
 CollectionServiceTags.WATER_REFILL_SOURCE = "WaterRefillSource"
 CollectionServiceTags.STORABLE = "Storable"
 
+-- Protected geometry tags for CustomModelSpawner optimization
+CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
+CollectionServiceTags.PROTECTED_CORE = "CMS:ProtectedCore"
+CollectionServiceTags.PROTECTED_SPAWNER = "CMS:ProtectedSpawner"
+
 
 function CollectionServiceTags.addTag(object, tag)
     if not object or not tag then
@@ -172,6 +177,50 @@ function CollectionServiceTags.isWeldable(object)
         return true
     end
     return object:IsA("BasePart") and object.CanCollide
+end
+
+-- Protected geometry detection for CustomModelSpawner
+function CollectionServiceTags.isProtectedGeometry(object)
+    if not object or not object.Parent then
+        return false
+    end
+    
+    return CollectionServiceTags.hasTag(object, CollectionServiceTags.PROTECTED_VILLAGE) or
+           CollectionServiceTags.hasTag(object, CollectionServiceTags.PROTECTED_CORE) or
+           CollectionServiceTags.hasTag(object, CollectionServiceTags.PROTECTED_SPAWNER)
+end
+
+function CollectionServiceTags.getAllProtectedObjects()
+    local protected = {}
+    
+    local villages = CollectionService:GetTagged(CollectionServiceTags.PROTECTED_VILLAGE)
+    local cores = CollectionService:GetTagged(CollectionServiceTags.PROTECTED_CORE)
+    local spawners = CollectionService:GetTagged(CollectionServiceTags.PROTECTED_SPAWNER)
+    
+    for _, obj in ipairs(villages) do table.insert(protected, obj) end
+    for _, obj in ipairs(cores) do table.insert(protected, obj) end
+    for _, obj in ipairs(spawners) do table.insert(protected, obj) end
+    
+    return protected
+end
+
+-- Helper function to tag a root object and all its BasePart descendants
+function CollectionServiceTags.tagDescendants(root, tag)
+    if not root or not tag then
+        return false
+    end
+    
+    -- Tag the root object first
+    CollectionServiceTags.addTag(root, tag)
+    
+    -- Tag all BasePart descendants
+    for _, inst in ipairs(root:GetDescendants()) do
+        if inst:IsA("BasePart") then
+            CollectionServiceTags.addTag(inst, tag)
+        end
+    end
+    
+    return true
 end
 
 return CollectionServiceTags

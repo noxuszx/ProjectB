@@ -13,6 +13,7 @@ local SpawnerPlacementConfig = require(ReplicatedStorage.Shared.config.ai.Spawne
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 local CoreStructureSpawner = require(script.Parent.Parent.spawning.CoreStructureSpawner)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local SpawnerPlacement = {}
 
@@ -215,6 +216,9 @@ local function createSpawnerPart(position, spawnType)
 
 	CollectionService:AddTag(spawnerPart, CreatureSpawnConfig.Settings.SpawnTag)
 	spawnerPart:SetAttribute(CreatureSpawnConfig.Settings.SpawnTypeAttribute, spawnType)
+	
+	-- Tag spawner as protected geometry to prevent model spawning overlaps
+	CollectionServiceTags.addTag(spawnerPart, CollectionServiceTags.PROTECTED_SPAWNER)
 
 	spawnersPlaced = spawnersPlaced + 1
 	return spawnerPart

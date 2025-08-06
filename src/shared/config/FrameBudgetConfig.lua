@@ -11,7 +11,7 @@ FrameBudgetConfig.DEFAULT_BATCH_SIZES = {
 	-- Village spawning - structures per frame
 	VILLAGES = 2,
 	
-	-- Model spawning - objects per frame by category
+	-- Model spawning - objects per frame by category (consolidated from ModelSpawnerConfig)
 	VEGETATION = 10,
 	ROCKS = 5,
 	STRUCTURES = 1,
@@ -21,6 +21,9 @@ FrameBudgetConfig.DEFAULT_BATCH_SIZES = {
 	
 	-- Creature spawning - creatures per frame
 	CREATURES = 3,
+	
+	-- Chunk processing - chunks per frame for model spawner
+	CHUNK_PROCESSING = 5,
 	
 	-- General fallback
 	DEFAULT = 5
@@ -34,6 +37,7 @@ FrameBudgetConfig.MOBILE_MULTIPLIERS = {
 	STRUCTURES = 1.0,    -- Keep 1 structure per frame (already minimal)
 	SPAWNER_CHUNKS = 0.5, -- 5 chunks per frame on mobile
 	CREATURES = 0.7,     -- 2 creatures per frame on mobile
+	CHUNK_PROCESSING = 0.6, -- 3 chunks per frame on mobile for model spawning
 	DEFAULT = 0.6
 }
 

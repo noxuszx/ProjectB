@@ -48,7 +48,7 @@ humanoid:Move(inputVector.Unit, true)
 ## Project Overview
 
 ProjectB is a Roblox desert survival game featuring:
-- **Procedural terrain generation** with chunk-based infinite worlds
+- **Procedural terrain generation** with chunk-based world (infinite possible but not used.)
 - **Advanced AI creature system** with 200+ creatures, pooling, and LOD optimization
 - **Survival mechanics** including hunger/thirst, hunting, cooking, and building
 - **Dynamic day/night cycles** affecting spawning and gameplay

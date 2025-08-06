@@ -10,6 +10,8 @@ local ModelSpawnerConfig = require(ReplicatedStorage.Shared.config.ModelSpawnerC
 local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local TemplateCache = require(ReplicatedStorage.Shared.utilities.TemplateCache)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local CustomModelSpawner = {}
 local spawnedObjects = {}
@@ -18,6 +20,11 @@ local availableModels = {
 	Rocks = {},
 	Structures = {}
 }
+
+-- Template cache and weighted selection
+local templateCache = nil
+local weightedSelection = {}
+local protectedOverlapParams = nil
 
 local objectFolders = {}
 for category in pairs(availableModels) do
@@ -29,35 +36,84 @@ end
 
 local random = Random.new()
 
+-- Build cumulative weight distribution for weighted random selection
+local function buildWeightedSelection(category, models)
+	local weights = ModelSpawnerConfig.MODEL_WEIGHTS[category] or {}
+	local cumulative = {}
+	local total = 0
+	
+	for i, model in ipairs(models) do
+		local weight = weights[model.Name] or 1.0  -- Default weight of 1.0
+		total = total + weight
+		cumulative[i] = {model = model, threshold = total}
+	end
+	
+	weightedSelection[category] = {
+		cumulative = cumulative,
+		total = total
+	}
+	
+	local weightedCount = 0
+	for modelName, _ in pairs(weights) do
+		weightedCount = weightedCount + 1
+	end
+	
+	print("[CustomModelSpawner]", category, "weighted selection built - Total weight:", total, "Weighted models:", weightedCount)
+end
+
+-- Scan ReplicatedStorage folders and build weighted selection + template cache
 local function scanAvailableModels()
-	print("Scanning for available models...")
+	print("[CustomModelSpawner] Scanning for available models...")
+	
+	-- Initialize template cache
+	templateCache = TemplateCache.new()
+	
 	for category, folderPath in pairs(ModelSpawnerConfig.MODEL_FOLDERS) do
 		local folder = ReplicatedStorage
 		for part in folderPath:gmatch("[^%.]+") do
 			folder = folder:FindFirstChild(part)
 			if not folder then
-				warn("Model folder not found:", folderPath)
+				warn("[CustomModelSpawner] Model folder not found:", folderPath)
 				break
 			end
 		end
+		
 		if folder then
+			local categoryModels = {}
 			for _, model in ipairs(folder:GetChildren()) do
 				if model:IsA("Model") or model:IsA("MeshPart") then
+					-- Cache bounding box for model or meshpart
+					templateCache:addTemplate(model)
 					table.insert(availableModels[category], model)
-					print("Found", category, model:IsA("Model") and "model:" or "meshpart:", model.Name)
+					table.insert(categoryModels, model)
+					print("[CustomModelSpawner] Found", category, model:IsA("Model") and "model:" or "meshpart:", model.Name)
 				end
 			end
+			
+			-- Build weighted selection for this category
+			buildWeightedSelection(category, categoryModels)
 		end
 	end
 
 	for category, models in pairs(availableModels) do
-		print(category .. " models found:", #models)
+		print("[CustomModelSpawner]", category .. " models found:", #models)
 	end
 end
 
 
 
+-- Check spawn protection zone
+local function isInSpawnProtection(x, z)
+	local distance = math.sqrt(x^2 + z^2)
+	return distance < ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS
+end
+
 local function isPositionValid(x, z, category, minDistance, chunkSize)
+	-- Check spawn protection zone first
+	if isInSpawnProtection(x, z) then
+		return false
+	end
+	
 	chunkSize = chunkSize or 32
 	local chunkKey = math.floor(x/chunkSize) .. "," .. math.floor(z/chunkSize)
 	if not spawnedObjects[chunkKey] then
@@ -77,61 +133,88 @@ local function isPositionValid(x, z, category, minDistance, chunkSize)
 	return true
 end
 
-
-local function selectRandom(category)
-	local models = availableModels[category]
-	if #models == 0 then
+-- Weighted random selection using cumulative distribution
+local function selectWeighted(category)
+	local selection = weightedSelection[category]
+	if not selection or #selection.cumulative == 0 then
 		return nil
 	end
 	
-	return models[random:NextInteger(1, #models)]
+	local randomValue = random:NextNumber() * selection.total
+	
+	for i, entry in ipairs(selection.cumulative) do
+		if randomValue <= entry.threshold then
+			return entry.model
+		end
+	end
+	
+	-- Fallback to last model (should rarely happen)
+	return selection.cumulative[#selection.cumulative].model
 end
 
--- Check if an area is clear of existing objects using bounding box detection
-local function isAreaClear(position, templateModel, excludeModel)
-	-- Get the bounding box of the template model
-	local success, cframe, size = pcall(function()
-		if templateModel:IsA("Model") then
-			return templateModel:GetBoundingBox()
-		elseif templateModel:IsA("MeshPart") then
-			return templateModel.CFrame, templateModel.Size
-		end
-	end)
+-- Initialize cached OverlapParams for protected geometry detection
+local function initializeOverlapParams()
+	-- Get fresh protected objects list (called once during init, after all spawners have run)
+	local protectedObjects = CollectionServiceTags.getAllProtectedObjects()
 	
-	if not success or not size then
-		return true
+	if not protectedOverlapParams then
+		protectedOverlapParams = OverlapParams.new()
+		protectedOverlapParams.FilterType = Enum.RaycastFilterType.Include
+		protectedOverlapParams.MaxParts = 1  -- Early exit on first hit
 	end
+	
+	-- Update the filter with current protected objects
+	protectedOverlapParams.FilterDescendantsInstances = protectedObjects
+	
+	if ModelSpawnerConfig.DEBUG then
+		print("[CustomModelSpawner] Initialized overlap params with", #protectedObjects, "protected objects")
+	end
+end
 
-	local checkSize = size * 1.2
+-- Check if an area is clear using optimized tag-based collision detection
+local function isAreaClear(position, modelName, category)
+	-- Use cached bounding box if available
+	local boundingBox = templateCache and templateCache:getBoundingBox(modelName)
+	if not boundingBox then
+		-- Fallback to small default size
+		boundingBox = {size = Vector3.new(2, 2, 2)}
+		warn("[CustomModelSpawner] No cached bounding box for", modelName, "using default")
+	end
+	
+	local checkSize = boundingBox.size * 1.2  -- 20% padding for safety
 	local checkCFrame = CFrame.new(position)
-
-	local overlapParams = OverlapParams.new()
-	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
-	local excludeList = {
+	
+	-- Use pre-initialized overlap params (no refresh needed during spawning)
+	
+	-- Check for protected geometry overlap using tags
+	local overlappingParts = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, protectedOverlapParams)
+	
+	if #overlappingParts > 0 then
+		-- Found protected geometry in the area
+		return false
+	end
+	
+	-- Additional checks for creature folders (not protected but should be avoided)
+	local excludeParams = OverlapParams.new()
+	excludeParams.FilterType = Enum.RaycastFilterType.Exclude
+	excludeParams.FilterDescendantsInstances = {
 		Workspace.Terrain,
 		objectFolders.Vegetation,
-		objectFolders.Rocks,
+		objectFolders.Rocks,  
 		objectFolders.Structures
 	}
-
-	if excludeModel then
-		table.insert(excludeList, excludeModel)
-	end
-
-	overlapParams.FilterDescendantsInstances = excludeList
-
-	local overlappingParts = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, overlapParams)
-	if #overlappingParts > 0 then
-		for _, part in pairs(overlappingParts) do
-			local parent = part.Parent
-			if parent and (
-				string.find(parent.Name or "", "Village") or
-				string.find(parent.Name or "", "Spawner") or
-				parent.Name == "SpawnedCreatures" or
-				parent.Name == "DroppedFood"
-			) then
-				return false
-			end
+	
+	local generalOverlap = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, excludeParams)
+	
+	for _, part in pairs(generalOverlap) do
+		local parent = part.Parent
+		if parent and (
+			parent.Name == "SpawnedCreatures" or
+			parent.Name == "DroppedFood" or
+			parent.Name == "PassiveCreatures" or
+			parent.Name == "HostileCreatures"
+		) then
+			return false
 		end
 	end
 	
@@ -144,7 +227,7 @@ local function spawnModel(originalModel, x, z, category, chunkSize)
 	local terrainHeight = terrain.getTerrainHeight(x, z)
 	
 	local testPosition = Vector3.new(x, terrainHeight, z)
-	if not isAreaClear(testPosition, originalModel, originalModel) then
+	if not isAreaClear(testPosition, originalModel.Name, category) then
 		return nil
 	end
 	
@@ -285,7 +368,7 @@ function CustomModelSpawner.spawnInChunk(cx, cz, chunkSize, subdivisions)
 								local offsetX = random:NextNumber(-subSize/3, subSize/3)
 								local offsetZ = random:NextNumber(-subSize/3, subSize/3)
 								
-								local modelToSpawn = selectRandom(category)
+								local modelToSpawn = selectWeighted(category)
 								if modelToSpawn then
 									-- Add to spawn candidates instead of spawning immediately
 									table.insert(toSpawn[category], {
@@ -332,17 +415,27 @@ function CustomModelSpawner.clearObjects()
 end
 
 function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
-	print("Initializing custom model spawner...")
+	print("[CustomModelSpawner] Initializing custom model spawner...")
 	
 	scanAvailableModels()
+	
+	-- Initialize overlap parameters ONCE after all other spawners have run
+	initializeOverlapParams()
+	
 	local totalModels = 0
 	for category, models in pairs(availableModels) do
 		totalModels = totalModels + #models
 	end
 	
 	if totalModels == 0 then
-		print("No models found in ReplicatedStorage.Models folders. Skipping object spawning.")
+		print("[CustomModelSpawner] No models found in ReplicatedStorage.Models folders. Skipping object spawning.")
 		return
+	end
+	
+	-- Report template cache statistics
+	if templateCache and ModelSpawnerConfig.DEBUG then
+		local stats = templateCache:getStats()
+		print("[CustomModelSpawner] Template cache stats:", stats.templateCount, "templates,", stats.memoryEstimateKB, "KB estimated")
 	end
 	
 	CustomModelSpawner.clearObjects()
@@ -356,12 +449,109 @@ function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
 	end
 	
 	-- Process chunks with frame batching
-	local batchSize = FrameBudgetConfig.getBatchSize("DEFAULT") -- Use default for chunk processing
+	local batchSize = FrameBudgetConfig.getBatchSize("CHUNK_PROCESSING")
 	FrameBatched.run(chunkJobs, batchSize, function(job)
 		CustomModelSpawner.spawnInChunk(job.cx, job.cz, job.chunkSize, job.subdivisions)
 	end)
 	
-	print("Custom model spawning complete!")
+	print("[CustomModelSpawner] Custom model spawning complete!")
+end
+
+-- Debug functions for testing and monitoring
+function CustomModelSpawner.getStats()
+	local stats = {
+		spawnedObjectCount = 0,
+		protectedObjectCount = #(CollectionServiceTags.getAllProtectedObjects()),
+		templateCacheStats = templateCache and templateCache:getStats() or nil,
+		weightedCategoryCount = 0
+	}
+	
+	-- Count spawned objects
+	for chunkKey, chunkData in pairs(spawnedObjects) do
+		for category, objects in pairs(chunkData) do
+			stats.spawnedObjectCount = stats.spawnedObjectCount + #objects
+		end
+	end
+	
+	-- Count weighted categories
+	for category, selection in pairs(weightedSelection) do
+		if selection.total > 0 then
+			stats.weightedCategoryCount = stats.weightedCategoryCount + 1
+		end
+	end
+	
+	return stats
+end
+
+function CustomModelSpawner.testSpawnProtection(testPositions)
+	testPositions = testPositions or {
+		{x = 0, z = 0},      -- Dead center (should fail)
+		{x = 25, z = 25},    -- Close to spawn (should fail)
+		{x = 60, z = 60},    -- Outside protection (should pass)
+	}
+	
+	print("[CustomModelSpawner] Testing spawn protection...")
+	for i, pos in ipairs(testPositions) do
+		local inProtection = isInSpawnProtection(pos.x, pos.z)
+		print(string.format("Position (%d,%d): %s", pos.x, pos.z, 
+			inProtection and "PROTECTED ❌" or "ALLOWED ✅"))
+	end
+end
+
+function CustomModelSpawner.testWeightedSelection(category, samples)
+	if not ModelSpawnerConfig.DEBUG then
+		return
+	end
+	
+	category = category or "Vegetation"
+	samples = samples or 100
+	
+	local selection = weightedSelection[category]
+	if not selection then
+		print("[CustomModelSpawner] No weighted selection found for category:", category)
+		return
+	end
+	
+	print("[CustomModelSpawner] Testing weighted selection for", category, "with", samples, "samples...")
+	
+	local counts = {}
+	for i = 1, samples do
+		local model = selectWeighted(category)
+		if model then
+			counts[model.Name] = (counts[model.Name] or 0) + 1
+		end
+	end
+	
+	print("Results:")
+	for modelName, count in pairs(counts) do
+		local percentage = math.floor(count / samples * 100 + 0.5)
+		print(string.format("  %s: %d/%d (%d%%)", modelName, count, samples, percentage))
+	end
+end
+
+function CustomModelSpawner.debugProtectedObjects()
+	if not ModelSpawnerConfig.DEBUG then
+		return {}
+	end
+	
+	local protected = CollectionServiceTags.getAllProtectedObjects()
+	print("[CustomModelSpawner] Protected objects found:", #protected)
+	
+	local counts = {village = 0, core = 0, spawner = 0}
+	for _, obj in pairs(protected) do
+		if CollectionServiceTags.hasTag(obj, CollectionServiceTags.PROTECTED_VILLAGE) then
+			counts.village = counts.village + 1
+		end
+		if CollectionServiceTags.hasTag(obj, CollectionServiceTags.PROTECTED_CORE) then
+			counts.core = counts.core + 1
+		end
+		if CollectionServiceTags.hasTag(obj, CollectionServiceTags.PROTECTED_SPAWNER) then
+			counts.spawner = counts.spawner + 1
+		end
+	end
+	
+	print("  Villages:", counts.village, "Core:", counts.core, "Spawners:", counts.spawner)
+	return counts
 end
 
 return CustomModelSpawner
