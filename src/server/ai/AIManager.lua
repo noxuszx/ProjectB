@@ -23,6 +23,11 @@ local activeCreatures = {}
 local lastUpdateTime = 0
 local updateConnection = nil
 
+-- ============================================
+-- SPAWN SOURCE REGISTRATION
+-- ============================================
+local registeredSpawnSources = {} -- sourceId -> callback function
+
 -- ============================================  
 -- PLAYER POSITION CACHING SYSTEM
 -- ============================================
@@ -285,6 +290,53 @@ end
 
 function AIManager:getCreatureCount()
 	return self.totalCreatures
+end
+
+-- ============================================
+-- SPAWN SOURCE REGISTRATION FUNCTIONS  
+-- ============================================
+
+function AIManager:RegisterSpawnSource(sourceId, callback)
+	if not sourceId or not callback then
+		warn("[AIManager] RegisterSpawnSource requires sourceId and callback")
+		return false
+	end
+	
+	if registeredSpawnSources[sourceId] then
+		warn("[AIManager] Spawn source already registered:", sourceId)
+		return false
+	end
+	
+	registeredSpawnSources[sourceId] = callback
+	print("[AIManager] Registered spawn source:", sourceId)
+	return true
+end
+
+function AIManager:UnregisterSpawnSource(sourceId)
+	if registeredSpawnSources[sourceId] then
+		registeredSpawnSources[sourceId] = nil
+		print("[AIManager] Unregistered spawn source:", sourceId)
+		return true
+	end
+	return false
+end
+
+function AIManager:TriggerSpawnSource(sourceId, ...)
+	local callback = registeredSpawnSources[sourceId]
+	if callback then
+		return callback(...)
+	else
+		warn("[AIManager] Spawn source not found:", sourceId)
+		return nil
+	end
+end
+
+function AIManager:GetRegisteredSpawnSources()
+	local sources = {}
+	for sourceId in pairs(registeredSpawnSources) do
+		table.insert(sources, sourceId)
+	end
+	return sources
 end
 
 function AIManager:getDebugInfo()

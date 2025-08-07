@@ -31,8 +31,9 @@ end
 -- Calculate LOD level based on creature position and cached player positions
 -- @param creaturePosition Vector3 - The creature's current position
 -- @param cachedPlayerPositions table - Array of cached player position vectors
+-- @param isIndoorCreature boolean - Whether this is an indoor/tower creature (optional)
 -- @return string, number - LOD level name and update rate
-function LODPolicy.calculateLODLevel(creaturePosition, cachedPlayerPositions)
+function LODPolicy.calculateLODLevel(creaturePosition, cachedPlayerPositions, isIndoorCreature)
 	local nearestPlayerDistance = math.huge
 	
 	-- Find nearest player using cached positions (major performance improvement)
@@ -49,12 +50,29 @@ function LODPolicy.calculateLODLevel(creaturePosition, cachedPlayerPositions)
 	
 	-- Determine LOD level based on distance
 	local lodConfig = AIConfig.Performance.LOD
+	local updateRate
+	
 	if nearestPlayerDistance <= lodConfig.Close.Distance then
-		return "Close", lodConfig.Close.UpdateRate
+		updateRate = lodConfig.Close.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Close", updateRate
 	elseif nearestPlayerDistance <= lodConfig.Medium.Distance then
-		return "Medium", lodConfig.Medium.UpdateRate
+		updateRate = lodConfig.Medium.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Medium", updateRate
 	elseif nearestPlayerDistance <= lodConfig.Far.Distance then
-		return "Far", lodConfig.Far.UpdateRate
+		updateRate = lodConfig.Far.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Far", updateRate
 	else
 		return "Culled", 0 -- Beyond max distance, don't update
 	end
@@ -87,7 +105,8 @@ function LODPolicy.calculateLODBatch(creatures, cachedPlayerPositions, batchSize
 			if creature and creature.isActive and creature.position then
 				table.insert(batch, {
 					id = tostring(creature.model), -- Use model as unique ID
-					position = creature.position
+					position = creature.position,
+					isIndoorCreature = creature.isIndoorCreature or false
 				})
 			end
 		end
@@ -126,7 +145,7 @@ function LODPolicy.calculateLODSequential(creatures, cachedPlayerPositions)
 	
 	for _, creature in ipairs(creatures) do
 		if creature and creature.isActive and creature.position then
-			local lodLevel, updateRate = LODPolicy.calculateLODLevel(creature.position, cachedPlayerPositions)
+			local lodLevel, updateRate = LODPolicy.calculateLODLevel(creature.position, cachedPlayerPositions, creature.isIndoorCreature)
 			results[tostring(creature.model)] = {
 				lodLevel = lodLevel,
 				updateRate = updateRate

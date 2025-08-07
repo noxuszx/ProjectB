@@ -19,6 +19,10 @@ CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
 CollectionServiceTags.PROTECTED_CORE = "CMS:ProtectedCore"
 CollectionServiceTags.PROTECTED_SPAWNER = "CMS:ProtectedSpawner"
 
+-- Tower spawning system tags
+CollectionServiceTags.TOWER = "Tower"
+CollectionServiceTags.MOB_SPAWNER = "MobSpawner"
+
 
 function CollectionServiceTags.addTag(object, tag)
     if not object or not tag then

@@ -100,19 +100,41 @@ function CreatureSpawner.getCreatureTemplate(creatureType)
 end
 
 
-function CreatureSpawner.spawnCreature(creatureType, position)
+function CreatureSpawner.spawnCreature(creatureType, position, options)
+	options = options or {}
+	local activationMode = options.activationMode or "Procedural"
+	
+	-- Get creature config directly (no inheritance needed)
+	local config = AIConfig.CreatureTypes[creatureType]
+	if not config then
+		warn("[CreatureSpawner] Unknown creature type:", creatureType)
+		return nil
+	end
+	
 	local template = CreatureSpawner.getCreatureTemplate(creatureType)
 	if not template then return nil end
 
 	local creatureModel = template:Clone()
 	creatureModel.Name = creatureType .. "_" .. os.clock()
 	
-	-- Debug: Model destruction tracking (removed spam)
-	
 	creatureModel:SetPrimaryPartCFrame(CFrame.new(position))
 
-	local config = AIConfig.CreatureTypes[creatureType]
-	local targetFolder = (config.Type == "Passive") and passiveCreatureFolder or hostileCreatureFolder
+	-- Choose target folder based on activation mode and creature type
+	local targetFolder
+	if activationMode == "Zone" then
+		-- Tower creatures go in a special folder for organization
+		local towerCreatureFolder = creatureFolder:FindFirstChild("TowerCreatures")
+		if not towerCreatureFolder then
+			towerCreatureFolder = Instance.new("Folder")
+			towerCreatureFolder.Name = "TowerCreatures"
+			towerCreatureFolder.Parent = creatureFolder
+		end
+		targetFolder = towerCreatureFolder
+	else
+		-- Procedural spawning uses existing folders
+		targetFolder = (config.Type == "Passive") and passiveCreatureFolder or hostileCreatureFolder
+	end
+	
 	creatureModel.Parent = targetFolder
 
 	if creatureModel.PrimaryPart then
@@ -128,6 +150,11 @@ function CreatureSpawner.spawnCreature(creatureType, position)
 		aiController = RangedHostile.new(creatureModel, creatureType, position)
 	else -- Default to regular hostile
 		aiController = HostileCreature.new(creatureModel, creatureType, position)
+	end
+	
+	-- Mark as indoor creature for LOD bias if from tower spawning
+	if activationMode == "Zone" then
+		aiController.isIndoorCreature = true
 	end
 
 	spawnedCreaturesCount = spawnedCreaturesCount + 1
@@ -228,12 +255,19 @@ local function processSpawner(spawnerPart)
 	local usedPositions = {}
 
 	for _, creatureType in pairs(creaturesToSpawn) do
+		-- Check procedural spawning limit (reserves slots for towers/events)
+		local aiManager = AIManager.getInstance()
+		if aiManager:getCreatureCount() >= AIConfig.Settings.MaxProceduralCreatures then
+			print("[CreatureSpawner] Reached MaxProceduralCreatures limit:", AIConfig.Settings.MaxProceduralCreatures, "- reserving slots for towers/events")
+			break -- Stop spawning more creatures
+		end
+		
 		local template = CreatureSpawner.getCreatureTemplate(creatureType)
 		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions, template)
 		local aiController = CreatureSpawner.spawnCreature(creatureType, spawnPosition)
 
 		if aiController then
-			AIManager.getInstance():registerCreature(aiController)
+			aiManager:registerCreature(aiController)
 		end
 	end
 

@@ -12,8 +12,6 @@ function RangedChasing.new(targetPlayer)
 	self.chaseStartTime = 0
 	self.maxChaseTime = 60
 	self.lastPositionUpdate = 0
-	-- How often (seconds) we will issue a new MoveTo when adjusting range.
-	-- Was 0.1 (10× a second) which looked too jittery; bumped to 3 for calmer repositioning.
 	self.positionUpdateRate = 3
 
 	return self
@@ -24,17 +22,14 @@ function RangedChasing:enter(creature)
 	self.chaseStartTime = os.clock()
 
 	if AIConfig.Debug.LogBehaviorChanges then
-		local targetName =
-			self.targetPlayer and self.targetPlayer.Name or "Unknown"
-		print(
-			"[RangedChasing] " .. creature.creatureType .. " moving to optimal range of " .. targetName
-		)
+		local targetName = self.targetPlayer and self.targetPlayer.Name or "Unknown"
+		print("[RangedChasing] " .. creature.creatureType .. " moving to optimal range of " .. targetName)
 	end
 end
 
 function RangedChasing:update(creature, deltaTime)
-	AIBehavior.update(self, creature, deltaTime)
 
+	AIBehavior.update(self, creature, deltaTime)
 	local currentTime = os.clock()
 
 	if os.clock() - self.chaseStartTime > self.maxChaseTime then
@@ -61,8 +56,7 @@ function RangedChasing:update(creature, deltaTime)
 		return
 	end
 
-	local optimalRange =
-		creature.getOptimalRange and creature:getOptimalRange() or 50
+	local optimalRange = creature.getOptimalRange and creature:getOptimalRange() or 50
 
 	-- Only re-evaluate range and potentially move/attack on the same cadence
 	-- as position updates to avoid jitter (positionUpdateRate seconds).
@@ -85,8 +79,7 @@ function RangedChasing:update(creature, deltaTime)
 	end
 
 	local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
-	local chaseSpeed =
-		creatureConfig and creatureConfig.ChaseSpeed or creature.moveSpeed * 1.2
+	local chaseSpeed = creatureConfig and creatureConfig.ChaseSpeed or creature.moveSpeed * 1.2
 
 	-- currentTime already captured near top of function
 	if currentTime - self.lastPositionUpdate >= self.positionUpdateRate then
@@ -95,18 +88,18 @@ function RangedChasing:update(creature, deltaTime)
 	end
 end
 
-
 function RangedChasing:isTargetValid()
-	return self.targetPlayer and self.targetPlayer.Parent and self.targetPlayer.Character and self.targetPlayer.Character.PrimaryPart and self.targetPlayer.Character:FindFirstChild(
-		"Humanoid"
-	) and self.targetPlayer.Character.Humanoid.Health > 0
+	return self.targetPlayer
+		and self.targetPlayer.Parent
+		and self.targetPlayer.Character
+		and self.targetPlayer.Character.PrimaryPart
+		and self.targetPlayer.Character:FindFirstChild("Humanoid")
+		and self.targetPlayer.Character.Humanoid.Health > 0
 end
 
 function RangedChasing:giveUpChase(creature, reason)
 	if AIConfig.Debug.LogBehaviorChanges then
-		print(
-			"[RangedChasing] " .. creature.creatureType .. " giving up chase: " .. reason
-		)
+		print("[RangedChasing] " .. creature.creatureType .. " giving up chase: " .. reason)
 	end
 
 	local RoamingBehavior = require(script.Parent.Roaming)

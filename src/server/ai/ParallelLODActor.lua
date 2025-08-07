@@ -40,7 +40,7 @@ function ParallelLODActor.calculateLODBatch(creatureData, playerPositions)
 		end
 		
 		-- Determine LOD level based on distance
-		local lodLevel, updateRate = ParallelLODActor.getLODFromDistance(nearestPlayerDistance)
+		local lodLevel, updateRate = ParallelLODActor.getLODFromDistance(nearestPlayerDistance, creature.isIndoorCreature)
 		
 		table.insert(results, {
 			id = creature.id,
@@ -54,19 +54,37 @@ end
 
 -- Helper function to determine LOD level from distance
 -- @param distance number - Distance to nearest player
+-- @param isIndoorCreature boolean - Whether this is an indoor/tower creature
 -- @return string, number - LOD level and update rate
-function ParallelLODActor.getLODFromDistance(distance)
+function ParallelLODActor.getLODFromDistance(distance, isIndoorCreature)
 	if distance == math.huge then
 		return "Culled", 0
 	end
 	
 	local lodConfig = AIConfig.Performance.LOD
+	local updateRate
+	
 	if distance <= lodConfig.Close.Distance then
-		return "Close", lodConfig.Close.UpdateRate
+		updateRate = lodConfig.Close.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Close", updateRate
 	elseif distance <= lodConfig.Medium.Distance then
-		return "Medium", lodConfig.Medium.UpdateRate
+		updateRate = lodConfig.Medium.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Medium", updateRate
 	elseif distance <= lodConfig.Far.Distance then
-		return "Far", lodConfig.Far.UpdateRate
+		updateRate = lodConfig.Far.UpdateRate
+		-- Apply indoor bias for tower creatures
+		if isIndoorCreature and AIConfig.TowerSpawning then
+			updateRate = updateRate * (AIConfig.TowerSpawning.Settings.IndoorLODBias or 1.0)
+		end
+		return "Far", updateRate
 	else
 		return "Culled", 0
 	end

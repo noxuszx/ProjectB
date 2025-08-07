@@ -6,7 +6,8 @@
 local AIConfig = {
 	-- Global AI system settings
 	Settings = {
-		MaxCreatures = 200, 		-- Maximum number of creatures in the world
+		MaxCreatures = 200, 		-- Total maximum creatures in the world (hard limit)
+		MaxProceduralCreatures = 130, -- Limit for natural world spawners (reserves 70 slots for events)
 		UpdateBudgetMs = 5, 		-- Maximum milliseconds per frame for AI updates
 		DebugMode = false, 			-- Enable debug prints and visualizations
 		SpatialGridSize = 50, 		-- Size of spatial grid cells for optimization (studs)
@@ -15,6 +16,7 @@ local AIConfig = {
 
 	-- Performance optimization settings
 	Performance = {
+		
 		-- Distance-based Level of Detail (LOD) system
 		-- Optimized rates after performance improvements (July 2025)
 		LOD = {
@@ -34,16 +36,16 @@ local AIConfig = {
 		
 		-- Parallel processing settings
 		Parallel = {
-			EnableParallelLOD = true,		-- Enable parallel LOD calculations
-			LODBatchSize = 25,				-- Creatures per parallel batch
-			MinCreaturesForParallel = 10,	-- Minimum creatures before using parallel processing
-		},
+			EnableParallelLOD = true,
+			LODBatchSize = 25,
+			MinCreaturesForParallel = 10,
 		
 		MaxCreaturesPerFrame = 25, 			-- Maximum creatures to update per frame (increased from 10)
 		CreaturePoolSize = 50,		 		-- Number of creature instances to keep in memory pool
 		
 		EnableSpatialPartitioning = true,
 		SpatialUpdateFrequency = 5,
+		}
 	},
 
 	-- Creature type definitions
@@ -186,24 +188,51 @@ local AIConfig = {
 			Health = 50,
 			MoveSpeed = 14,
 			DetectionRange = 70,
-			TouchDamage = 0, 			-- No touch damage for ranged enemies
+			TouchDamage = 0,
 			ChaseSpeed = 14,
 			RoamRadius = 20,
 			IdleTime = {4, 10},
 			ModelFolder = "HostileCreatures",
 			
-			-- Ranged-specific configuration  
-			ProjectileSpeed = 50,		-- Speed of projectile travel (not used - WeaponConfig controls this)
-			OptimalRange = 30,			-- Preferred distance to maintain
-			MaxRange = 120,				-- Maximum shooting distance
-			WeaponName = "SkeletonArrow",	-- References WeaponConfig entry (damage controlled there)
-			AnimationId = "rbxassetid://123898471268427", -- Animation for arm raising
+			-- Ranged config
+			ProjectileSpeed = 50,
+			OptimalRange = 30,
+			MaxRange = 120,
+			WeaponName = "SkeletonArrow",
+			AnimationId = "rbxassetid://123898471268427",
 			
-			-- Burst shooting configuration
+			-- Burst shooting config
 			ShotsPerBurst = 3,			-- Number of shots in each burst
 			ShotInterval = 1.0,			-- Time between shots within a burst (seconds)
 			BurstCooldown = 3.0,		-- Cooldown after completing a burst (seconds)
 			KitingDelay = 3.0,			-- Delay before creature starts kiting when player gets close
+		},
+
+		-- Tower-specific creatures (separate models)
+		TowerSkeleton = {
+			Type = "Hostile",
+			Health = 80,
+			MoveSpeed = 22,
+			DetectionRange = 45,
+			TouchDamage = 15,
+			ChaseSpeed = 28,
+			RoamRadius = 20,
+			IdleTime = {3, 8},
+			ModelFolder = "HostileCreatures",
+			DamageCooldown = 1.0,
+		},
+
+		TowerMummy = {
+			Type = "Hostile",
+			Health = 200,
+			MoveSpeed = 18,
+			DetectionRange = 30,
+			TouchDamage = 25,
+			ChaseSpeed = 22,
+			RoamRadius = 18,
+			IdleTime = {6, 15},
+			ModelFolder = "HostileCreatures",
+			DamageCooldown = 1.5,
 		},
 	},
 
@@ -220,46 +249,62 @@ local AIConfig = {
 		SpawnHeight = 1,
 		MaxSpawnAttempts = 10,
 		
-		-- Creature distribution weights (higher = more common)
 		CreatureWeights = {
 
 			-- Passive creatures (more common)
 			Rabbit = 2,
 			Villager1 = 3,
 			Villager2 = 3,
+
 			-- Hostile creatures (less common)
 			Wolf = 8,
 			Skeleton = 6,
 			Mummy = 5,
 			SkeletonArcher = 6,
 		},
-		
-		BiomeSpawning = {
-			-- Example: Different creatures spawn in different areas
-			-- Forest = {"Rabbit", "Deer", "Wolf"},
-			-- Plains = {"Sheep", "Rabbit"},
-			-- Mountains = {"Bear", "Goblin"}
-		},
 	},
 
 	-- Behavior system settings (simplified)
 	BehaviorSettings = {
+
 		-- Most complex settings removed for simplicity and performance
 		-- Humanoid:MoveTo handles pathfinding, obstacle avoidance, and stuck detection
 
-		ReturnToSpawnThreshold = 50, 	-- Distance from spawn before returning (studs)
-		ReturnSpeed = 1.2, 				-- Speed multiplier when returning to spawn
+
+		ReturnToSpawnThreshold = 50,
+		ReturnSpeed = 1.2,
+	},
+
+	TowerSpawning = {
+		Settings = {
+			DeactivationDelay = 30, 		-- Seconds before deactivating empty floors
+			MaxTowerCreatures = 50, 		-- Per-tower creature limit
+			ForceDeactivationTime = 120, 	-- Force deactivation if zone empty this long (safety)
+			IndoorLODBias = 1.5,    		-- Multiplier for indoor LOD rates (less aggressive throttling)
+			ZoneDebounceTime = 0.2, 		-- Debounce zone callbacks to avoid rapid re-entries
+		},
+		
+		Towers = {
+			Tower_A = {
+				MaxCreatures = 25,
+				CreatureTypes = {"TowerSkeleton", "TowerMummy"}
+			},
+			Tower_B = {
+				MaxCreatures = 30,
+				CreatureTypes = {"TowerMummy", "TowerSkeleton"}
+			}
+		}
 	},
 
 	-- Debugging and visualization settings
 	Debug = {
-		ShowDetectionRanges = false, -- Visualize detection ranges
-		ShowWaypoints = false, 		 -- Show creature waypoints
-		ShowStateLabels = true, 	 -- Show current behavior state above creatures
-		ShowPerformanceStats = false,-- Display performance statistics
-		LogBehaviorChanges = false,	 -- Print behavior state changes (DISABLED to reduce spam)
-		LogSpawning = false, 		 -- Print creature spawning events
-		LogStuckDetection = false,   -- Print stuck detection events (separate from behavior changes)
+		ShowDetectionRanges = false, 		-- Visualize detection ranges
+		ShowWaypoints = false, 		 		-- Show creature waypoints
+		ShowStateLabels = true, 	 		-- Show current behavior state above creatures
+		ShowPerformanceStats = false,		-- Display performance statistics
+		LogBehaviorChanges = false,	 		-- Print behavior state changes (DISABLED to reduce spam)
+		LogSpawning = false, 		 		-- Print creature spawning events
+		LogStuckDetection = false,   		-- Print stuck detection events (separate from behavior changes)
 	},
 }
 

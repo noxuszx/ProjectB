@@ -5,35 +5,36 @@
 ]]--
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
+local Workspace 		= game:GetService("Workspace")
 
-local villageConfig = require(ReplicatedStorage.Shared.config.Village)
-local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
-local ChunkConfig = require(ReplicatedStorage.Shared.config.ChunkConfig)
-local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
-local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
-local CoreStructureSpawner = require(script.Parent.CoreStructureSpawner)
+local villageConfig 		= require(ReplicatedStorage.Shared.config.Village)
+local terrain 				= require(ReplicatedStorage.Shared.utilities.Terrain)
+local ChunkConfig 			= require(ReplicatedStorage.Shared.config.ChunkConfig)
+local FrameBatched 			= require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig 	= require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local CoreStructureSpawner  = require(script.Parent.CoreStructureSpawner)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
-local VillageSpawner = {}
 local random = Random.new()
 
--- Prepare lookup of mandatory structures
-local mandatorySet = {}
-for _, name in ipairs(villageConfig.MANDATORY_STRUCTURES) do
-    mandatorySet[name] = true
-end
+local VillageSpawner = {}
+local mandatorySet 	 = {}
 
--- Configuration constants
-local PLAYER_SPAWN_PROTECT_RADIUS = 50 -- studs to keep clear around world origin
-local MAX_ATTEMPTS = 10 -- Maximum attempts to place a structure
+local PLAYER_SPAWN_PROTECT_RADIUS = 50
+local MAX_ATTEMPTS = 10
 
--- Create organized folder for spawned villages
 local villageFolder = Instance.new("Folder")
 villageFolder.Name = "SpawnedVillages"
 villageFolder.Parent = Workspace
 
--- Load village models from ReplicatedStorage
+for _, name in ipairs(villageConfig.MANDATORY_STRUCTURES) do
+    mandatorySet[name] = true
+end
+
+-----------------------------------------------------------------------------------------------------
+---------------------- LOAD MODELS ------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+
 local function loadVillageModels()
 	local models = {}
 	local villageFolder = ReplicatedStorage
@@ -57,14 +58,11 @@ local function loadVillageModels()
 	return models
 end
 
--- Utility: 2-D AABB overlap check on X-Z plane
 local function rectsOverlap(a, b)
 	return (a.xMin < b.xMax) and (a.xMax > b.xMin) and (a.zMin < b.zMax) and (a.zMax > b.zMin)
 end
 
--- Helper: Calculate AABB rect for a model at given position with buffer
 local function calculateRect(modelTemplate, cframe, buffer)
-	-- Clone without parenting to measure footprint
 	local tempClone = modelTemplate:Clone()
 	if not tempClone.PrimaryPart then
 		local firstPart = tempClone:FindFirstChildOfClass("BasePart")
@@ -76,7 +74,6 @@ local function calculateRect(modelTemplate, cframe, buffer)
 	local cf, size = tempClone:GetBoundingBox()
 	tempClone:Destroy()
 
-	-- Build expanded rect in X-Z with buffer
 	local halfX = size.X / 2 + buffer
 	local halfZ = size.Z / 2 + buffer
 	local rect = {
@@ -89,29 +86,35 @@ local function calculateRect(modelTemplate, cframe, buffer)
 	return rect, cf, size
 end
 
--- Helper: Apply rotation based on village rotation mode
+
 local function applyRotation(baseCFrame, chunkPosition, modelName)
 	local rotationSettings = villageConfig.ROTATION_SETTINGS[villageConfig.ROTATION_MODE]
 	local cframe = baseCFrame
 	
-	-- Campfire gets no rotation (identity)
 	if modelName == "Campfire" then
 		return cframe
 	end
 	
-	-- Apply rotation for other structures
-	if villageConfig.ROTATION_MODE == "CARDINAL" then
+	if villageConfig.ROTATION_MODE 	   == "CARDINAL" then
+
 		local angle = rotationSettings.angles[random:NextInteger(1, #rotationSettings.angles)]
 		cframe = cframe * CFrame.Angles(0, math.rad(angle), 0)
+
 	elseif villageConfig.ROTATION_MODE == "CENTER_FACING" then
+
 		local directionToCenter = (chunkPosition - baseCFrame.Position).Unit
 		local angle = math.atan2(directionToCenter.X, directionToCenter.Z) + math.rad(rotationSettings.angle_offset)
+
 		cframe = cframe * CFrame.Angles(0, angle, 0)
+
 	elseif villageConfig.ROTATION_MODE == "CARDINAL_VARIED" then
+
 		local baseAngle = rotationSettings.base_angles[random:NextInteger(1, #rotationSettings.base_angles)]
 		local variance = random:NextNumber(-rotationSettings.variance, rotationSettings.variance)
+
 		local finalAngle = baseAngle + variance
 		cframe = cframe * CFrame.Angles(0, math.rad(finalAngle), 0)
+
 	elseif villageConfig.ROTATION_MODE == "RANDOM" then
 		local randomYRotation = random:NextNumber(0, 2 * math.pi)
 		cframe = cframe * CFrame.Angles(0, randomYRotation, 0)
@@ -119,6 +122,7 @@ local function applyRotation(baseCFrame, chunkPosition, modelName)
 	
 	return cframe
 end
+
 
 -- Helper: Check if position overlaps with core structure circles
 local function overlapsWithCoreStructures(position, radius)

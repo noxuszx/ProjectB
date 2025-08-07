@@ -25,8 +25,6 @@ ChunkConfig.TERRAIN_COLOR = Color3.fromRGB(235, 225, 169)
 
 -- Performance parameters
 ChunkConfig.GENERATION_DELAY = 0
-
--- Chunk subdivision
 ChunkConfig.SUBDIVISIONS = 4 			-- How many parts per chunk axis (4x4 = 16 parts per chunk)
 
 -- Spawn area parameters

@@ -38,11 +38,7 @@ function AIDebugger.getDebugInfo(activeCreatures, cachedPlayerPositions, totalCr
 		lodUpdateIndex = lodUpdateIndex,
 		lodBatchSize = lodBatchSize,
 		cachedPlayerCount = #cachedPlayerPositions,
-		
-		-- Performance metrics
 		performanceMetrics = AIDebugger.getPerformanceMetrics(activeCreatures),
-		
-		-- LOD statistics using current cached positions
 		lodStats = LODPolicy.calculateLODStats(activeCreatures, cachedPlayerPositions)
 	}
 end

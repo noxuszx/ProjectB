@@ -3,71 +3,73 @@
 	Spawns custom models from ReplicatedStorage folders
 ]]--
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
+local ReplicatedStorage 	= game:GetService("ReplicatedStorage")
+local Workspace 			= game:GetService("Workspace")
 
-local ModelSpawnerConfig = require(ReplicatedStorage.Shared.config.ModelSpawnerConfig)
-local terrain = require(ReplicatedStorage.Shared.utilities.Terrain)
-local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
-local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
-local TemplateCache = require(ReplicatedStorage.Shared.utilities.TemplateCache)
+local ModelSpawnerConfig 	= require(ReplicatedStorage.Shared.config.ModelSpawnerConfig)
+local terrain 				= require(ReplicatedStorage.Shared.utilities.Terrain)
+local FrameBatched 			= require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig 	= require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local TemplateCache 		= require(ReplicatedStorage.Shared.utilities.TemplateCache)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local CustomModelSpawner = {}
-local spawnedObjects = {}
-local availableModels = {
-	Vegetation = {},
-	Rocks = {},
-	Structures = {}
-}
-
--- Template cache and weighted selection
-local templateCache = nil
-local weightedSelection = {}
-local protectedOverlapParams = nil
-
-local objectFolders = {}
-for category in pairs(availableModels) do
-	local folder = Instance.new("Folder")
-	folder.Name = "Spawned" .. category
-	folder.Parent = Workspace
-	objectFolders[category] = folder
-end
+local spawnedObjects 	 = {}
+local weightedSelection  = {}
+local objectFolders 	 = {}
 
 local random = Random.new()
 
--- Build cumulative weight distribution for weighted random selection
+local availableModels = {
+	Vegetation = {},
+	Rocks 	   = {},
+	Structures = {}
+}
+
+local templateCache 		 = nil
+local protectedOverlapParams = nil
+
+for category in pairs(availableModels) do
+	local folder = Instance.new("Folder")
+
+	folder.Name 			= "Spawned" .. category
+	folder.Parent 			= Workspace
+	objectFolders[category] = folder
+end
+
+
+-----------------------------------------------------------------------
+---------- WEIGHT SELECTION -------------------------------------------
+-----------------------------------------------------------------------
+
 local function buildWeightedSelection(category, models)
 	local weights = ModelSpawnerConfig.MODEL_WEIGHTS[category] or {}
 	local cumulative = {}
 	local total = 0
-	
+
 	for i, model in ipairs(models) do
-		local weight = weights[model.Name] or 1.0  -- Default weight of 1.0
+		local weight = weights[model.Name] or 1.0
 		total = total + weight
 		cumulative[i] = {model = model, threshold = total}
 	end
-	
+
 	weightedSelection[category] = {
 		cumulative = cumulative,
 		total = total
 	}
-	
+
 	local weightedCount = 0
 	for modelName, _ in pairs(weights) do
 		weightedCount = weightedCount + 1
 	end
-	
-	print("[CustomModelSpawner]", category, "weighted selection built - Total weight:", total, "Weighted models:", weightedCount)
 end
 
--- Scan ReplicatedStorage folders and build weighted selection + template cache
+-----------------------------------------------------------------------
+
 local function scanAvailableModels()
 	print("[CustomModelSpawner] Scanning for available models...")
-	
-	-- Initialize template cache
 	templateCache = TemplateCache.new()
-	
+
 	for category, folderPath in pairs(ModelSpawnerConfig.MODEL_FOLDERS) do
 		local folder = ReplicatedStorage
 		for part in folderPath:gmatch("[^%.]+") do
@@ -77,12 +79,12 @@ local function scanAvailableModels()
 				break
 			end
 		end
-		
+
+
 		if folder then
 			local categoryModels = {}
 			for _, model in ipairs(folder:GetChildren()) do
 				if model:IsA("Model") or model:IsA("MeshPart") then
-					-- Cache bounding box for model or meshpart
 					templateCache:addTemplate(model)
 					table.insert(availableModels[category], model)
 					table.insert(categoryModels, model)
@@ -90,7 +92,6 @@ local function scanAvailableModels()
 				end
 			end
 			
-			-- Build weighted selection for this category
 			buildWeightedSelection(category, categoryModels)
 		end
 	end
@@ -102,14 +103,12 @@ end
 
 
 
--- Check spawn protection zone
 local function isInSpawnProtection(x, z)
 	local distance = math.sqrt(x^2 + z^2)
 	return distance <= ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS
 end
 
 local function isPositionValid(x, z, category, minDistance, chunkSize)
-	-- Check spawn protection zone first
 	if isInSpawnProtection(x, z) then
 		return false
 	end
@@ -133,7 +132,6 @@ local function isPositionValid(x, z, category, minDistance, chunkSize)
 	return true
 end
 
--- Weighted random selection using cumulative distribution
 local function selectWeighted(category)
 	local selection = weightedSelection[category]
 	if not selection or #selection.cumulative == 0 then
@@ -147,23 +145,20 @@ local function selectWeighted(category)
 			return entry.model
 		end
 	end
-	
-	-- Fallback to last model (should rarely happen)
 	return selection.cumulative[#selection.cumulative].model
 end
 
--- Initialize cached OverlapParams for protected geometry detection
+
+
 local function initializeOverlapParams()
-	-- Get fresh protected objects list (called once during init, after all spawners have run)
 	local protectedObjects = CollectionServiceTags.getAllProtectedObjects()
 	
 	if not protectedOverlapParams then
 		protectedOverlapParams = OverlapParams.new()
 		protectedOverlapParams.FilterType = Enum.RaycastFilterType.Include
-		protectedOverlapParams.MaxParts = 1  -- Early exit on first hit
+		protectedOverlapParams.MaxParts = 1
 	end
 	
-	-- Update the filter with current protected objects
 	protectedOverlapParams.FilterDescendantsInstances = protectedObjects
 	
 	if ModelSpawnerConfig.DEBUG then
@@ -171,36 +166,28 @@ local function initializeOverlapParams()
 	end
 end
 
--- Check if an area is clear using optimized tag-based collision detection
 local function isAreaClear(position, modelName, category)
-	-- Use cached bounding box if available
 	local boundingBox = templateCache and templateCache:getBoundingBox(modelName)
 	if not boundingBox then
-		-- Fallback to small default size
 		boundingBox = {size = Vector3.new(2, 2, 2)}
 		warn("[CustomModelSpawner] No cached bounding box for", modelName, "using default")
 	end
 	
-	local checkSize = boundingBox.size * 1.2  -- 20% padding for safety
+	local checkSize = boundingBox.size * 1.2
 	local checkCFrame = CFrame.new(position)
-	
-	-- Use pre-initialized overlap params (no refresh needed during spawning)
-	
-	-- Check for protected geometry overlap using tags
 	local overlappingParts = Workspace:GetPartBoundsInBox(checkCFrame, checkSize, protectedOverlapParams)
 	
 	if #overlappingParts > 0 then
-		-- Found protected geometry in the area
 		return false
 	end
 	
-	-- Additional checks for creature folders (not protected but should be avoided)
 	local excludeParams = OverlapParams.new()
 	excludeParams.FilterType = Enum.RaycastFilterType.Exclude
 	excludeParams.FilterDescendantsInstances = {
 		Workspace.Terrain,
+
 		objectFolders.Vegetation,
-		objectFolders.Rocks,  
+		objectFolders.Rocks,
 		objectFolders.Structures
 	}
 	

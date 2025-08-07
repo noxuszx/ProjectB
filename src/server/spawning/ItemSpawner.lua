@@ -6,26 +6,28 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
-local ItemConfig = require(ReplicatedStorage.Shared.config.ItemConfig)
+local ItemConfig 			= require(ReplicatedStorage.Shared.config.ItemConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 
-local ItemSpawner = {}
+local ItemSpawner 	 = {}
 local availableItems = {}
-local spawnedItemsCount = 0
+
+local spawnedItemsCount 	 = 0
 local processedSpawnersCount = 0
+
 local SPAWN_TAG = "ItemSpawnPoint"
 local SPAWN_TYPE_ATTRIBUTE = "SpawnType"
 
 local itemFolder = Instance.new("Folder")
 itemFolder.Name = "SpawnedItems"
 itemFolder.Parent = workspace
+
 local function debugPrint() end
 
-
+------------------------------------------------------------------------------------------------
 
 local function discoverAvailableItems()
-
 
 	local itemsFolder = ReplicatedStorage:FindFirstChild(ItemConfig.Settings.ItemsFolder)
 	if not itemsFolder then
@@ -246,24 +248,20 @@ local function spawnItem(itemName, position)
 	end
 	
 	local newItem = itemTemplate:Clone()
-	
-	-- Position the item based on its type
 	if newItem:IsA("MeshPart") then
-		-- MeshParts are positioned directly
 		newItem.CFrame = CFrame.new(position)
+
 	elseif newItem:IsA("Tool") then
-		-- Tools are positioned via their Handle
+
 		local handle = newItem:FindFirstChild("Handle")
 		if handle and handle:IsA("BasePart") then
 			handle.CFrame = CFrame.new(position)
 		else
-			warn("[ItemSpawner] Tool spawned without Handle:", itemName)
+			warn("[ItemSpawner] Tool no Handle:", itemName)
 		end
 	elseif newItem.PrimaryPart then
-		-- Fallback for Models (if any still exist)
 		newItem:SetPrimaryPartCFrame(CFrame.new(position))
 	else
-		-- Final fallback
 		newItem:MoveTo(position)
 	end
 	
