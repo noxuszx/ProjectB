@@ -6,7 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local ZonePlus = require(ReplicatedStorage.Shared.modules.Zone)
+local ZonePlus = require(ReplicatedStorage.Shared.modules.zoneplus)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local AIManager = require(script.Parent.AIManager)
@@ -14,16 +14,14 @@ local AIManager = require(script.Parent.AIManager)
 local ZoneSpawnerController = {}
 
 -- Tower state tracking
-local towers = {}
+local towers 		 = {}
 local activeSpawners = {}
 local debounceTimers = {}
 
 -- Performance tracking
 local updateConnection = nil
-local lastCleanupTime  = 0
-local cleanupInterval  = 30
-
-
+local lastCleanupTime = 0
+local cleanupInterval = 30
 
 function ZoneSpawnerController.init()
 	print("[ZoneSpawnerController] Initializing tower spawning system...")
@@ -99,7 +97,6 @@ function ZoneSpawnerController.setupTower(towerModel)
 end
 
 function ZoneSpawnerController.setupFloor(towerId, floorIndex, floorModel)
-	print("[ZoneSpawnerController] Setting up floor", floorIndex, "in tower", towers[towerId].model.Name)
 
 	local triggerPart = floorModel:FindFirstChild("Trigger")
 	if not triggerPart or not triggerPart:IsA("BasePart") then
@@ -161,7 +158,6 @@ function ZoneSpawnerController.createZone(towerId, floorData)
 			ZoneSpawnerController.handlePlayerExitedZone(towerId, floorData.floorIndex, player)
 		end)
 
-		print("[ZoneSpawnerController] Created zone for floor", floorData.floorIndex)
 	end
 
 	recreateZone()
@@ -183,7 +179,6 @@ function ZoneSpawnerController.handlePlayerEnteredZone(towerId, floorIndex, play
 	task.wait(AIConfig.TowerSpawning.Settings.ZoneDebounceTime)
 	debounceTimers[debounceKey] = nil
 
-	print("[ZoneSpawnerController] Player", player.Name, "entered floor", floorIndex, "zone")
 
 	local nextFloor = floorIndex + 1
 	if towers[towerId].floors[nextFloor] then
@@ -209,7 +204,6 @@ function ZoneSpawnerController.activateFloor(towerId, floorIndex)
 		return
 	end
 
-	print("[ZoneSpawnerController] Activating floor", floorIndex, "in tower", tower.model.Name)
 	floorData.active = true
 	floorData.lastSpawnTime = os.clock()
 
@@ -278,8 +272,6 @@ function ZoneSpawnerController.handleSpawnRequest(creatureType, position, contex
 	-- This is called by AIManager when we're registered as a spawn source
 	-- Or we call it directly for tower spawning
 
-	print("[ZoneSpawnerController] Spawn request:", creatureType, "at", position)
-
 	-- For now, integrate directly with CreatureSpawner
 	local CreatureSpawner = require(script.Parent.CreatureSpawner)
 	local aiController = CreatureSpawner.spawnCreature(creatureType, position, {
@@ -328,7 +320,6 @@ function ZoneSpawnerController.checkForceDeactivation()
 				if not floorData.emptyStartTime then
 					floorData.emptyStartTime = currentTime
 				elseif currentTime - floorData.emptyStartTime >= forceDeactivationTime then
-					print("[ZoneSpawnerController] Force deactivating floor", floorIndex, "- empty too long")
 					floorData.active = false
 					floorData.emptyStartTime = nil
 				end
@@ -340,9 +331,7 @@ function ZoneSpawnerController.checkForceDeactivation()
 	end
 end
 
-
 function ZoneSpawnerController.cleanupTower(towerId)
-	
 	local tower = towers[towerId]
 	if not tower then
 		return

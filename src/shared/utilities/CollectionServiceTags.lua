@@ -11,8 +11,11 @@ CollectionServiceTags.DRAGGABLE     = "DRAGGABLE"
 CollectionServiceTags.NON_DRAGGABLE = "NON_DRAGGABLE"
 CollectionServiceTags.WELDABLE      = "WELDABLE"
 CollectionServiceTags.NON_WELDABLE  = "NON_WELDABLE"
-CollectionServiceTags.WATER_REFILL_SOURCE = "WATER_SOURCE"
 CollectionServiceTags.STORABLE      = "STORABLE"
+
+CollectionServiceTags.WATER_REFILL_SOURCE = "WATER_SOURCE"
+CollectionServiceTags.COOKING_SURFACE     = "COOKING_SURFACE"
+CollectionServiceTags.CONSUMABLE          = "CONSUMABLE"
 
 -- Economy system tags
 CollectionServiceTags.SELL_ZONE      = "SELL_ZONE"

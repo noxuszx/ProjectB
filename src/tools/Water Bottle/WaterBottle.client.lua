@@ -49,7 +49,6 @@ end
 
 local function onBottleStateUpdate(usesLeft)
 	updateWaterLevel(usesLeft)
-	print("[WaterBottle Client] Bottle state updated:", usesLeft .. "/5 uses left")
 end
 
 local function onActivated()

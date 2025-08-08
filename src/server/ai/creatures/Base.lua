@@ -351,8 +351,15 @@ function BaseCreature:shouldRagdoll()
 	local ragdollCreatures = {
 		Villager1 = true,
 		Villager2 = true,
+		Villager3 = true,
+		Villager4 = true,
+		TowerMummy = true,
+		TowerSkeleton = true,
+		EgyptianSkeleton = true,
+		EgyptianSkeleton2 = true,
 		Mummy = true,
-		Skeleton = true,
+		SkeletonArcher = true,
+
 	}
 
 	return ragdollCreatures[self.creatureType] == true

@@ -16,7 +16,7 @@ local playerBackpacks = {}
 local BACKPACK_HIDING_POSITION = Vector3.new(10000, -5000, 10000) -- Far away from map
 
 local MAX_SLOTS = 10
-local COOLDOWN_TIME = 0.5 -- Prevent spam
+local COOLDOWN_TIME = 0.1 -- Prevent spam
 
 -- Initialize player backpack
 local function initializeBackpack(player)

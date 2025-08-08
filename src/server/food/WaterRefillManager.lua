@@ -16,7 +16,6 @@ if not refillBindable then
 	refillBindable.Parent = ReplicatedStorage
 end
 
-
 local WaterRefillManager = {}
 local refillPrompts = {}
 local playerConnections = {} -- Track player equipment connections
@@ -26,7 +25,7 @@ local function updatePromptVisibility(part, player, hasWaterBottle)
 	if not prompt then
 		return
 	end
-	
+
 	-- Show prompt only to players who have water bottle equipped
 	if hasWaterBottle then
 		prompt.Enabled = true
@@ -38,14 +37,14 @@ end
 local function checkAllPlayersForBottle(part)
 	-- Check all players and update prompt visibility accordingly
 	local anyPlayerHasBottle = false
-	
+
 	for _, player in pairs(Players:GetPlayers()) do
 		if player.Character and player.Character:FindFirstChild("Water Bottle") then
 			anyPlayerHasBottle = true
 			break
 		end
 	end
-	
+
 	local prompt = refillPrompts[part]
 	if prompt then
 		prompt.Enabled = anyPlayerHasBottle
@@ -56,7 +55,7 @@ local function createProximityPrompt(part)
 	if refillPrompts[part] then
 		return
 	end
-	
+
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Refill"
 	prompt.ObjectText = "Water Bottle"
@@ -65,20 +64,19 @@ local function createProximityPrompt(part)
 	prompt.RequiresLineOfSight = false
 	prompt.Enabled = false
 	prompt.Parent = part
-	
+
 	-- Store reference
 	refillPrompts[part] = prompt
-	
+
 	local function onPromptTriggered(player)
 		-- Use BindableEvent to communicate with water bottle script
 		refillBindable:Fire(player)
 	end
-	
+
 	prompt.Triggered:Connect(onPromptTriggered)
-	
+
 	-- Check initial state
 	checkAllPlayersForBottle(part)
-	
 end
 
 local function removeProximityPrompt(part)
@@ -108,24 +106,24 @@ local function setupPlayerTracking(player)
 				updateAllPrompts()
 			end
 		end
-		
+
 		local function onChildRemoved(child)
 			if child.Name == "Water Bottle" then
 				updateAllPrompts()
 			end
 		end
-		
+
 		playerConnections[player][#playerConnections[player] + 1] = character.ChildAdded:Connect(onChildAdded)
 		playerConnections[player][#playerConnections[player] + 1] = character.ChildRemoved:Connect(onChildRemoved)
-		
+
 		-- Initial update
 		updateAllPrompts()
 	end
-	
+
 	if player.Character then
 		onCharacterAdded(player.Character)
 	end
-	
+
 	player.CharacterAdded:Connect(onCharacterAdded)
 end
 
@@ -136,52 +134,42 @@ local function cleanupPlayerTracking(player)
 		end
 		playerConnections[player] = nil
 	end
-	
+
 	-- Update prompts since player left
 	updateAllPrompts()
 end
 
 function WaterRefillManager.init()
-	
-	-- Set up existing tagged parts
 	local taggedParts = CollectionService:GetTagged(CollectionServiceTags.WATER_REFILL_SOURCE)
 	for _, part in pairs(taggedParts) do
 		createProximityPrompt(part)
 	end
-	
-	-- Listen for new tagged parts
+
 	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(createProximityPrompt)
-	
-	-- Listen for removed tagged parts
 	CollectionService:GetInstanceRemovedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(removeProximityPrompt)
-	
-	-- Set up player tracking for existing players
+
 	for _, player in pairs(Players:GetPlayers()) do
 		setupPlayerTracking(player)
 	end
-	
-	-- Set up player tracking for new players
+
 	Players.PlayerAdded:Connect(setupPlayerTracking)
 	Players.PlayerRemoving:Connect(cleanupPlayerTracking)
-	
+
 	return true
 end
 
 function WaterRefillManager.shutdown()
-	-- Clean up all prompts
 	for part, prompt in pairs(refillPrompts) do
 		prompt:Destroy()
 	end
 	refillPrompts = {}
-	
-	-- Clean up all player connections
+
 	for player, connections in pairs(playerConnections) do
 		for _, connection in pairs(connections) do
 			connection:Disconnect()
 		end
 	end
 	playerConnections = {}
-	
 end
 
 return WaterRefillManager

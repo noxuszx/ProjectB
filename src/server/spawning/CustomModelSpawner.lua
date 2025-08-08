@@ -67,7 +67,6 @@ end
 -----------------------------------------------------------------------
 
 local function scanAvailableModels()
-	print("[CustomModelSpawner] Scanning for available models...")
 	templateCache = TemplateCache.new()
 
 	for category, folderPath in pairs(ModelSpawnerConfig.MODEL_FOLDERS) do
@@ -88,7 +87,6 @@ local function scanAvailableModels()
 					templateCache:addTemplate(model)
 					table.insert(availableModels[category], model)
 					table.insert(categoryModels, model)
-					print("[CustomModelSpawner] Found", category, model:IsA("Model") and "model:" or "meshpart:", model.Name)
 				end
 			end
 			
@@ -97,7 +95,7 @@ local function scanAvailableModels()
 	end
 
 	for category, models in pairs(availableModels) do
-		print("[CustomModelSpawner]", category .. " models found:", #models)
+		-- Removed debug print for model scanning
 	end
 end
 

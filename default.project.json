@@ -92,7 +92,13 @@
           "CollectCash": {
             "$className": "RemoteEvent"
           }
+        },
+        "ConsumeFood": {
+          "$className": "RemoteEvent"
         }
+      },
+      "Tools": {
+        "$className": "Folder"
       },
       "Packages": {
         "$path": "Packages"

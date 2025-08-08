@@ -7,13 +7,13 @@ local ItemConfig = {
 		ItemsFolder = "Items",
 		ScatterRadius = 5,
 		MaxScatterAttempts = 10,
-		SpawnHeight = 1,
+		SpawnHeight = 0,
 		DebugMode = false,
 	},
 
 	SpawnTypes = {
 		["build"] = {
-			MaxRolls = 3,
+			MaxRolls = 1,
 			MinRolls = 0,
 			PossibleLoot = {
 				["MetalRoof"] = 0.4,
@@ -33,7 +33,7 @@ local ItemConfig = {
 			}
 		},
 		["low"] = {
-			MaxRolls = 2,
+			MaxRolls = 3,
 			MinRolls = 0,
 			PossibleLoot = {
 				["Silver Bar"] = 0.3,

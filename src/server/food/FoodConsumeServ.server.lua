@@ -7,13 +7,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
 local PlayerStatsManager = require(script.Parent.Parent.player.PlayerStatsManager)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
 
-local consumeFoodRemote = ReplicatedStorage:FindFirstChild("ConsumeFood")
-if not consumeFoodRemote then
-	consumeFoodRemote = Instance.new("RemoteEvent")
-	consumeFoodRemote.Name = "ConsumeFood"
-	consumeFoodRemote.Parent = ReplicatedStorage
-end
+-- Get ConsumeFood RemoteEvent (defined in default.project.json)
+local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
+local consumeFoodRemote = remotesFolder:WaitForChild("ConsumeFood")
 
 local FoodConsumptionServer = {}
 
@@ -22,42 +21,55 @@ local Config = {
 }
 
 function FoodConsumptionServer.init()
-	print("[FoodConsumptionServer] Initializing server-side food consumption...")
+	if EconomyConfig.Debug.Enabled then print("[FoodConsumptionServer] Initializing server-side food consumption...") end
 	consumeFoodRemote.OnServerEvent:Connect(FoodConsumptionServer.onConsumeFoodRequest)
-	print("[FoodConsumptionServer] Server-side food consumption ready!")
+	if EconomyConfig.Debug.Enabled then print("[FoodConsumptionServer] Server-side food consumption ready!") end
 end
 
-function FoodConsumptionServer.onConsumeFoodRequest(player, foodModel)
-	if not FoodConsumptionServer.validateConsumptionRequest(player, foodModel) then
+function FoodConsumptionServer.onConsumeFoodRequest(player, foodInstance)
+	if EconomyConfig.Debug.Enabled then
+		print("[FoodConsumptionServer] Request from", player.Name, "for", foodInstance and foodInstance.Name or "nil")
+	end
+	if not FoodConsumptionServer.validateConsumptionRequest(player, foodInstance) then
 		return
 	end
 	
-	local foodType = foodModel:GetAttribute("FoodType")
-	local hungerValue = foodModel:GetAttribute("HungerValue") or 0
-	local isCooked = foodModel:GetAttribute("IsCooked") or false
-	FoodConsumptionServer.consumeFood(player, foodModel, hungerValue, isCooked)
+	local foodType = foodInstance:GetAttribute("FoodType")
+	local hungerValue = foodInstance:GetAttribute("HungerValue") or 0
+	local isCooked = foodInstance:GetAttribute("IsCooked") or false
+	FoodConsumptionServer.consumeFood(player, foodInstance, hungerValue, isCooked)
 	
-	print("[FoodConsumptionServer]", player.Name, "consumed", foodType, "(+" .. hungerValue, "hunger)")
+	if EconomyConfig.Debug.Enabled then
+		print("[FoodConsumptionServer]", player.Name, "consumed", foodType, "(+" .. hungerValue, "hunger)")
+	end
 end
 
-function FoodConsumptionServer.validateConsumptionRequest(player, foodModel)
+function FoodConsumptionServer.validateConsumptionRequest(player, foodInstance)
 	if not player or not player.Character or not player.Character.PrimaryPart then
 		warn("[FoodConsumptionServer] Invalid player or character for", player and player.Name or "unknown")
 		return false
 	end
 	
-	if not foodModel or not foodModel.Parent or not foodModel.PrimaryPart then
-		warn("[FoodConsumptionServer] Invalid food model for", player.Name)
+	if not foodInstance or not foodInstance.Parent then
+		warn("[FoodConsumptionServer] Invalid food instance for", player.Name)
 		return false
 	end
 	
-	if not CollectionService:HasTag(foodModel, "Consumable") then
-		warn("[FoodConsumptionServer] Food model not tagged as consumable for", player.Name)
+	if not CollectionService:HasTag(foodInstance, CollectionServiceTags.CONSUMABLE) then
+		warn("[FoodConsumptionServer] Food instance not tagged as consumable for", player.Name)
 		return false
 	end
 	
 	local playerPosition = player.Character.PrimaryPart.Position
-	local foodPosition = foodModel.PrimaryPart.Position
+	local foodPosition
+	if foodInstance:IsA("Model") and foodInstance.PrimaryPart then
+		foodPosition = foodInstance.PrimaryPart.Position
+	elseif foodInstance:IsA("BasePart") then
+		foodPosition = foodInstance.Position
+	else
+		warn("[FoodConsumptionServer] Unsupported food instance type for", player.Name, foodInstance.ClassName)
+		return false
+	end
 	local distance = (playerPosition - foodPosition).Magnitude
 	
 	if distance > Config.MaxInteractionDistance then
@@ -68,17 +80,19 @@ function FoodConsumptionServer.validateConsumptionRequest(player, foodModel)
 	return true
 end
 
-function FoodConsumptionServer.consumeFood(player, foodModel, hungerValue, isCooked)
+function FoodConsumptionServer.consumeFood(player, foodInstance, hungerValue, isCooked)
 	local success = PlayerStatsManager.AddHunger(player, hungerValue)
 	
 	if not success then
 		warn("[FoodConsumptionServer] Failed to add hunger for", player.Name)
 		return
 	end
-	FoodConsumptionServer.createConsumptionEffects(player, foodModel, hungerValue, isCooked)
-	foodModel:Destroy()
+	FoodConsumptionServer.createConsumptionEffects(player, foodInstance, hungerValue, isCooked)
+	foodInstance:Destroy()
 	
-	print("[FoodConsumptionServer]", player.Name, "consumed", foodModel:GetAttribute("FoodType"), "(+" .. hungerValue .. " hunger)")
+	if EconomyConfig.Debug.Enabled then
+		print("[FoodConsumptionServer]", player.Name, "consumed", foodInstance:GetAttribute("FoodType"), "(+" .. hungerValue .. " hunger)")
+	end
 end
 
 function FoodConsumptionServer.createConsumptionEffects(player, foodModel, hungerValue, isCooked)

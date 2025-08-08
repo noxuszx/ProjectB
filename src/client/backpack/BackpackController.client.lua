@@ -28,7 +28,7 @@ until _G.InteractableHandler
 
 
 local InteractableHandler = _G.InteractableHandler
-local STORE_COOLDOWN = 0.5
+local STORE_COOLDOWN = 0
 local lastStoreTime  = 0
 local currentBackpackContents = {}
 local lastUIHint     = ""

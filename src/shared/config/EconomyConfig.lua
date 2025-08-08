@@ -54,15 +54,17 @@ local EconomyConfig = {
 			ItemName = "Medkit",
 			Cost = 10,
 			SpawnWeight = 0.4,
-			Category = "Food",
-			Type = "Tool"
+			Category = "Tool",
+			Type = "Tool",
+			GiveToolName = "Medkit"
 		},
 		{
 			ItemName = "Bandage",
 			Cost = 5,
-			SpawnWeight = 0.6,
-			Category = "Food",
-			Type = "Tool"
+			SpawnWeight = 0.7,
+			Category = "Tool",
+			Type = "Tool",
+			GiveToolName = "Bandage"
 		},
 		-- Ammo (consumable items that add to inventory)
 		{
@@ -73,15 +75,6 @@ local EconomyConfig = {
 			Type = "Ammo",
 			AmmoType = "CrossbowBolt",
 			AmmoAmount = 5
-		},
-		
-		-- Objects (draggable/storable items with no special use)
-		{
-			ItemName = "Pot",
-			Cost = 20,
-			SpawnWeight = 0.6,
-			Category = "Food",
-			Type = "Object"
 		},
 	},
 	

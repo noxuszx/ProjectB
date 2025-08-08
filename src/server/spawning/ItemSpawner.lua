@@ -165,7 +165,7 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 			raycastParams.FilterDescendantsInstances = { spawnerPart, itemFolder }
 
 			local raycastResult = workspace:Raycast(
-				Vector3.new(spawnPosition.X, spawnPosition.Y + probeHeight, spawnPosition.Z),
+				Vector3.new(spawnPosition.X, spawnerPosition.Y, spawnPosition.Z),
 				Vector3.new(0, -downLength, 0),
 				raycastParams
 			)

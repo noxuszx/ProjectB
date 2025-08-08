@@ -141,7 +141,7 @@ function FoodDropSystem.setupFoodModel(foodModel, foodType)
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.WELDABLE)
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.STORABLE)
 
-	CollectionService:AddTag(foodModel, "Consumable")
+	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.CONSUMABLE)
 	CollectionService:AddTag(foodModel, "RawMeat")
 end
 
@@ -154,17 +154,29 @@ function FoodDropSystem.setFoodState(foodModel, foodType, state)
 	local isCooked = (state == "cooked")
 	local color = isCooked and config.CookedColor or config.RawColor
 	local hungerValue = isCooked and config.CookedHunger or config.RawHunger
-	local meatPart = foodModel:FindFirstChild("Meat")
-
-	if meatPart and meatPart:IsA("BasePart") then
-		meatPart.Color = color
+	
+	-- Find all parts named "Meat" in the model
+	local meatParts = {}
+	for _, descendant in pairs(foodModel:GetDescendants()) do
+		if descendant:IsA("BasePart") and descendant.Name == "Meat" then
+			table.insert(meatParts, descendant)
+		end
+	end
+	
+	-- Apply color to all meat parts
+	if #meatParts > 0 then
+		for _, meatPart in pairs(meatParts) do
+			meatPart.Color = color
+		end
+		print("[FoodDropSystem] Updated color for", #meatParts, "Meat parts in", foodModel.Name)
 	else
-
+		-- Fallback to PrimaryPart if no "Meat" parts found
 		if foodModel.PrimaryPart then
 		   foodModel.PrimaryPart.Color = color
+		   print("[FoodDropSystem] No 'Meat' parts found in", foodModel.Name, "- using PrimaryPart")
+		else
+			warn("[FoodDropSystem] No 'Meat' parts or PrimaryPart found in", foodModel.Name)
 		end
-		warn("[FoodDropSystem] No 'Meat' part found in", foodModel.Name, "- using PrimaryPart")
-
 	end
 
 	foodModel:SetAttribute("IsCooked", isCooked)
@@ -223,21 +235,36 @@ function FoodDropSystem.setupCookingDetection()
 		end
 	end
 
-	for _, consumable in pairs(CollectionService:GetTagged("Consumable")) do
+	for _, consumable in pairs(CollectionService:GetTagged(CollectionServiceTags.CONSUMABLE)) do
 		onConsumableAdded(consumable)
 	end
 
-	CollectionService:GetInstanceAddedSignal("Consumable"):Connect(onConsumableAdded)
+	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.CONSUMABLE):Connect(onConsumableAdded)
 end
 
 function FoodDropSystem.setupCookingForFood(foodModel)
-	if not foodModel.PrimaryPart then
-		return
+	-- Find all parts named "Meat" for cooking detection
+	local meatParts = {}
+	for _, descendant in pairs(foodModel:GetDescendants()) do
+		if descendant:IsA("BasePart") and descendant.Name == "Meat" then
+			table.insert(meatParts, descendant)
+		end
+	end
+	
+	-- Fallback to PrimaryPart if no "Meat" parts found
+	if #meatParts == 0 then
+		if foodModel.PrimaryPart then
+			table.insert(meatParts, foodModel.PrimaryPart)
+			print("[FoodDropSystem] No 'Meat' parts found in", foodModel.Name, "- using PrimaryPart for cooking detection")
+		else
+			warn("[FoodDropSystem] No 'Meat' parts or PrimaryPart found in", foodModel.Name, "- cannot setup cooking")
+			return
+		end
 	end
 
 	local function onTouched(hit)
-		local isCookingSurface = CollectionService:HasTag(hit, "CookingSurface")
-			or CollectionService:HasTag(hit.Parent, "CookingSurface")
+		local isCookingSurface = CollectionService:HasTag(hit, CollectionServiceTags.COOKING_SURFACE)
+			or (hit.Parent and CollectionService:HasTag(hit.Parent, CollectionServiceTags.COOKING_SURFACE))
 
 		if not isCookingSurface then
 			return
@@ -251,11 +278,16 @@ function FoodDropSystem.setupCookingForFood(foodModel)
 		local foodType = foodModel:GetAttribute("FoodType")
 		if foodType then
 			FoodDropSystem.setFoodState(foodModel, foodType, "cooked")
-			print("[FoodDropSystem]", foodModel.Name, "was cooked by", hit.Parent.Name or hit.Name)
+			print("[FoodDropSystem]", foodModel.Name, "was cooked by", hit.Parent and hit.Parent.Name or hit.Name)
 		end
 	end
 
-	foodModel.PrimaryPart.Touched:Connect(onTouched)
+	-- Connect Touched event to all meat parts
+	for _, meatPart in pairs(meatParts) do
+		meatPart.Touched:Connect(onTouched)
+	end
+	
+	print("[FoodDropSystem] Setup cooking detection for", #meatParts, "parts in", foodModel.Name)
 end
 
 function FoodDropSystem.getFoodFolder()
