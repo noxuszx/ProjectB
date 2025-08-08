@@ -4,17 +4,18 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
-local RunService = game:GetService("RunService")
 
-local ItemConfig 			= require(ReplicatedStorage.Shared.config.ItemConfig)
+local ItemConfig             = require(ReplicatedStorage.Shared.config.ItemConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 
-local ItemSpawner 	 = {}
+local ItemSpawner   = {}
 local availableItems = {}
+local availableItemCount = 0
 
-local spawnedItemsCount 	 = 0
+local spawnedItemsCount    = 0
 local processedSpawnersCount = 0
+local isPopulating = false
 
 local SPAWN_TAG = "ItemSpawnPoint"
 local SPAWN_TYPE_ATTRIBUTE = "SpawnType"
@@ -33,6 +34,8 @@ local function discoverAvailableItems()
 	if not itemsFolder then
 		warn("[ItemSpawner] Items folder not found in ReplicatedStorage:", ItemConfig.Settings.ItemsFolder)
 		warn("[ItemSpawner] Please create a folder named '" .. ItemConfig.Settings.ItemsFolder .. "' in ReplicatedStorage")
+		availableItems = {}
+		availableItemCount = 0
 		return
 	end
 
@@ -43,7 +46,7 @@ local function discoverAvailableItems()
 	-- Function to scan items in a folder
 	local function scanFolder(folder, folderName)
 
-		for _, item in pairs(folder:GetChildren()) do
+		for _, item in ipairs(folder:GetChildren()) do
 			if item:IsA("MeshPart") or item:IsA("Tool") then
 				local isValid = true
 				local issues = {}
@@ -71,7 +74,7 @@ local function discoverAvailableItems()
 
 				if isValid then
 					availableItems[item.Name] = item
-					discoveredCount = discoveredCount + 1
+					discoveredCount += 1
 					debugPrint("Discovered item: " .. item.Name .. " (" .. item.ClassName .. ") from " .. folderName ..
 						(#issues > 0 and " (warnings: " .. table.concat(issues, ", ") .. ")" or ""))
 				else
@@ -92,13 +95,14 @@ local function discoverAvailableItems()
 		debugPrint("Weapons subfolder not found - create ReplicatedStorage.Items.Weapons for weapon Tools")
 	end
 
+	availableItemCount = discoveredCount
 	print("[ItemSpawner] Item discovery complete:")
 	print("  - Valid items discovered:", discoveredCount)
 	print("  - Items skipped:", #skippedItems)
 
 	if #skippedItems > 0 then
 		warn("[ItemSpawner] Skipped items with issues:")
-		for _, skippedItem in pairs(skippedItems) do
+		for _, skippedItem in ipairs(skippedItems) do
 			warn("  - " .. skippedItem.name .. ": " .. table.concat(skippedItem.issues, ", "))
 		end
 	end
@@ -129,6 +133,10 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 	local settings = ItemConfig.Settings
 	existingPositions = existingPositions or {}
 
+	local probeHeight = settings.RaycastProbeHeight or 100
+	local downLength = settings.RaycastDownLength or 200
+	local minDistance = settings.MinSpawnSpacing or 2
+
 	for attempt = 1, settings.MaxScatterAttempts do
 		local angle = math.random() * 2 * math.pi
 		local distance = math.random() * settings.ScatterRadius
@@ -143,11 +151,9 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 		)
 
 		local tooClose = false
-		local minDistance = 2
-
-		for _, existingPos in pairs(existingPositions) do
-			local distance = (spawnPosition - existingPos).Magnitude
-			if distance < minDistance then
+		for _, existingPos in ipairs(existingPositions) do
+			local d = (spawnPosition - existingPos).Magnitude
+			if d < minDistance then
 				tooClose = true
 				break
 			end
@@ -156,11 +162,11 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 		if not tooClose then
 			local raycastParams = RaycastParams.new()
 			raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-			raycastParams.FilterDescendantsInstances = {spawnerPart}
+			raycastParams.FilterDescendantsInstances = { spawnerPart, itemFolder }
 
 			local raycastResult = workspace:Raycast(
-				Vector3.new(spawnPosition.X, spawnPosition.Y + 10, spawnPosition.Z),
-				Vector3.new(0, -20, 0),
+				Vector3.new(spawnPosition.X, spawnPosition.Y + probeHeight, spawnPosition.Z),
+				Vector3.new(0, -downLength, 0),
 				raycastParams
 			)
 
@@ -193,7 +199,7 @@ local function performLootRoll(spawnerConfig)
 	local numRolls = math.random(spawnerConfig.MinRolls, spawnerConfig.MaxRolls)
 	debugPrint("Performing " .. numRolls .. " loot rolls")
 
-	for roll = 1, numRolls do
+	for _ = 1, numRolls do
 		local itemRolled = false
 		local weightedItems = {}
 		local totalWeight = 0
@@ -201,7 +207,7 @@ local function performLootRoll(spawnerConfig)
 		for itemName, chance in pairs(spawnerConfig.PossibleLoot) do
 			if availableItems[itemName] then
 				table.insert(weightedItems, {name = itemName, weight = chance * 100})
-				totalWeight = totalWeight + (chance * 100)
+				totalWeight += (chance * 100)
 			end
 		end
 
@@ -213,8 +219,8 @@ local function performLootRoll(spawnerConfig)
 		local randomValue = math.random() * totalWeight
 		local currentWeight = 0
 
-		for _, itemData in pairs(weightedItems) do
-			currentWeight = currentWeight + itemData.weight
+		for _, itemData in ipairs(weightedItems) do
+			currentWeight += itemData.weight
 			if randomValue <= currentWeight then
 				table.insert(rolledItems, itemData.name)
 				debugPrint("Rolled item: " .. itemData.name .. " (chance: " .. itemData.weight/100 .. ")")
@@ -228,9 +234,10 @@ local function performLootRoll(spawnerConfig)
 		end
 	end
 
+	-- Keep unique items as previous behavior
 	local uniqueItems = {}
 	local seen = {}
-	for _, itemName in pairs(rolledItems) do
+	for _, itemName in ipairs(rolledItems) do
 		if not seen[itemName] then
 			table.insert(uniqueItems, itemName)
 			seen[itemName] = true
@@ -265,39 +272,48 @@ local function spawnItem(itemName, position)
 		newItem:MoveTo(position)
 	end
 	
-newItem.Parent = itemFolder
+	newItem.Parent = itemFolder
 
-    -- Tag the spawned item based on its type
+	-- Copy all tags from template to spawned item, then add standard spawning tags
+	local function copyTagsFromTemplate(template, spawned)
+		for _, tag in pairs(CollectionService:GetTags(template)) do
+			CollectionServiceTags.addTag(spawned, tag)
+		end
+	end
+	
+	-- Tag the spawned item based on its type
 	if newItem:IsA("MeshPart") then
-		-- MeshParts are regular items - draggable and weldable
+		-- Copy tags from template first
+		copyTagsFromTemplate(itemTemplate, newItem)
+		-- Then add standard spawning tags
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 		debugPrint("Tagged MeshPart as draggable: " .. itemName)
 	elseif newItem:IsA("Tool") then
-		-- This is a regular tool - make it draggable
+		-- Copy tags from template first
+		copyTagsFromTemplate(itemTemplate, newItem)
+		-- Tag only the handle/baseparts for tools
 		local handle = newItem:FindFirstChild("Handle")
 		if handle and handle:IsA("BasePart") then
+			-- Copy tags from template handle to spawned handle
+			local templateHandle = itemTemplate:FindFirstChild("Handle")
+			if templateHandle then
+				copyTagsFromTemplate(templateHandle, handle)
+			end
 			CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
 			CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
 			debugPrint("Tagged Tool Handle as draggable: " .. itemName)
 		end
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
 	elseif newItem:IsA("Model") then
-		-- For Models, tag all BaseParts within them
-		for _, descendant in pairs(newItem:GetDescendants()) do
-			if descendant:IsA("BasePart") then
-				CollectionServiceTags.addTag(descendant, CollectionServiceTags.DRAGGABLE)
-				CollectionServiceTags.addTag(descendant, CollectionServiceTags.WELDABLE)
-			end
-		end
-		-- Also tag the Model itself
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.DRAGGABLE)
-		CollectionServiceTags.addTag(newItem, CollectionServiceTags.WELDABLE)
+		-- Copy tags from template first
+		copyTagsFromTemplate(itemTemplate, newItem)
+		-- Tag all BasePart descendants using helper
+		CollectionServiceTags.tagDescendants(newItem, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.tagDescendants(newItem, CollectionServiceTags.WELDABLE)
 		debugPrint("Tagged Model and its parts as draggable: " .. itemName)
 	end
 
-	spawnedItemsCount = spawnedItemsCount + 1
+	spawnedItemsCount += 1
 	debugPrint("Spawned item: " .. itemName .. " (" .. newItem.ClassName .. ") at " .. tostring(position))
 
 	return newItem
@@ -320,19 +336,19 @@ local function processSpawner(spawnerPart)
 	local itemsToSpawn = performLootRoll(spawnerConfig)
 	local usedPositions = {}
 
-	for _, itemName in pairs(itemsToSpawn) do
+	for _, itemName in ipairs(itemsToSpawn) do
 		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions)
 		spawnItem(itemName, spawnPosition)
 	end
 
-	processedSpawnersCount = processedSpawnersCount + 1
+	processedSpawnersCount += 1
 	debugPrint("Spawner processed. Items spawned: " .. #itemsToSpawn)
 end
 
 -- Clear all spawned items
 function ItemSpawner.ClearSpawnedItems()
 	debugPrint("Clearing spawned items...")
-	for _, child in pairs(itemFolder:GetChildren()) do
+	for _, child in ipairs(itemFolder:GetChildren()) do
 		child:Destroy()
 	end
 	spawnedItemsCount = 0
@@ -340,6 +356,11 @@ function ItemSpawner.ClearSpawnedItems()
 end
 
 function ItemSpawner.PopulateWorld()
+	if isPopulating then
+		warn("[ItemSpawner] PopulateWorld is already running; skipping re-entry")
+		return
+	end
+	isPopulating = true
 	debugPrint("Starting world population...")
 	
 	-- Clear any existing spawned items first
@@ -356,17 +377,25 @@ function ItemSpawner.PopulateWorld()
 	
 	if #spawnerParts == 0 then
 		debugPrint("No spawner parts found. Make sure parts are tagged with: " .. SPAWN_TAG)
+		isPopulating = false
 		return
 	end
-	
-	for _, spawnerPart in pairs(spawnerParts) do
-		processSpawner(spawnerPart)
+
+	local batchSize = ItemConfig.Settings.SpawnerBatchSize or 50
+	for i = 1, #spawnerParts, batchSize do
+		for j = i, math.min(i + batchSize - 1, #spawnerParts) do
+			local spawnerPart = spawnerParts[j]
+			processSpawner(spawnerPart)
+		end
+		-- Yield to avoid long frame hitches
+		task.wait()
 	end
 	
 	print("[ItemSpawner] World population complete!")
 	print("  - Processed spawners:", processedSpawnersCount)
 	print("  - Total items spawned:", spawnedItemsCount)
-	print("  - Available item types:", #availableItems)
+	print("  - Available item types:", availableItemCount)
+	isPopulating = false
 end
 
 -- Initialize the system (call this after world generation is complete)

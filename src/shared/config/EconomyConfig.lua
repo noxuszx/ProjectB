@@ -8,33 +8,80 @@ local EconomyConfig = {
 	
 	-- Sellable item values (matched to CollectionService tags)
 	SellableItems = {
+		SELLABLE_SCRAP = 5,
 		SELLABLE_LOW = 15,    -- Low-value items (scrap metal, wood scraps, cloth)
 		SELLABLE_MID = 25,    -- Mid-value items (refined materials, tools, electronics)
 		SELLABLE_HIGH = 50,   -- High-value items (rare materials, gems, advanced components)
 	},
 	
 	-- Buyable items that can spawn at buy zones
+	-- Type: "Tool" (equippable), "Ammo" (consumable), "Object" (draggable only)
 	BuyableItems = {
-		-- Tools and weapons (if available)
+		-- Tools and weapons (equippable items)
 		{
 			ItemName = "Spear",
 			Cost = 75,
-			SpawnWeight = 0.1,
-			Category = "Tools"
+			SpawnWeight = 0.3,
+			Category = "Tools",
+			Type = "Tool",
+			GiveToolName = "Spear"
 		},
 		{
 			ItemName = "Crossbow",
 			Cost = 100,
-			SpawnWeight = 0.05,
-			Category = "Weapons"
+			SpawnWeight = 0.4,
+			Category = "Weapons",
+			Type = "Tool",
+			GiveToolName = "Crossbow"
 		},
-		
-		-- Consumables/Food
+		{
+			ItemName = "Katana",
+			Cost = 100,
+			SpawnWeight = 0.1,
+			Category = "Weapons",
+			Type = "Tool",
+			GiveToolName = "Katana"
+		},
+		{
+			ItemName = "Machete",
+			Cost = 50,
+			SpawnWeight = 0.4,
+			Category = "Weapons",
+			Type = "Tool",
+			GiveToolName = "Machete"
+		},
 		{
 			ItemName = "Medkit",
 			Cost = 10,
 			SpawnWeight = 0.4,
-			Category = "Food"
+			Category = "Food",
+			Type = "Tool"
+		},
+		{
+			ItemName = "Bandage",
+			Cost = 5,
+			SpawnWeight = 0.6,
+			Category = "Food",
+			Type = "Tool"
+		},
+		-- Ammo (consumable items that add to inventory)
+		{
+			ItemName = "Bolts",
+			Cost = 10,
+			SpawnWeight = 0.6,
+			Category = "Ammo",
+			Type = "Ammo",
+			AmmoType = "CrossbowBolt",
+			AmmoAmount = 5
+		},
+		
+		-- Objects (draggable/storable items with no special use)
+		{
+			ItemName = "Pot",
+			Cost = 20,
+			SpawnWeight = 0.6,
+			Category = "Food",
+			Type = "Object"
 		},
 	},
 	
@@ -42,8 +89,8 @@ local EconomyConfig = {
 	Zones = {
 		-- Sell zone configuration
 		SellZone = {
-			TouchCooldown = 1.0, -- Seconds between sells to prevent spam
-			EffectDuration = 0.5, -- Visual effect duration
+			TouchCooldown = 1.0,
+			EffectDuration = 0.5,
 			SoundEnabled = true,
 		},
 		

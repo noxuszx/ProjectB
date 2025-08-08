@@ -7,21 +7,31 @@ local CollectionService = game:GetService("CollectionService")
 local CollectionServiceTags = {}
 
 -- Tag constants
-CollectionServiceTags.DRAGGABLE = "Draggable"
-CollectionServiceTags.NON_DRAGGABLE = "NonDraggable"
-CollectionServiceTags.WELDABLE = "Weldable"
-CollectionServiceTags.NON_WELDABLE = "NonWeldable"
-CollectionServiceTags.WATER_REFILL_SOURCE = "WaterRefillSource"
-CollectionServiceTags.STORABLE = "Storable"
+CollectionServiceTags.DRAGGABLE     = "DRAGGABLE"
+CollectionServiceTags.NON_DRAGGABLE = "NON_DRAGGABLE"
+CollectionServiceTags.WELDABLE      = "WELDABLE"
+CollectionServiceTags.NON_WELDABLE  = "NON_WELDABLE"
+CollectionServiceTags.WATER_REFILL_SOURCE = "WATER_SOURCE"
+CollectionServiceTags.STORABLE      = "STORABLE"
+
+-- Economy system tags
+CollectionServiceTags.SELL_ZONE      = "SELL_ZONE"
+CollectionServiceTags.BUY_ZONE       = "BUY_ZONE"
+CollectionServiceTags.SELLABLE_LOW   = "SELLABLE_LOW"
+CollectionServiceTags.SELLABLE_MID   = "SELLABLE_MID"
+CollectionServiceTags.SELLABLE_HIGH  = "SELLABLE_HIGH"
+CollectionServiceTags.SELLABLE_SCRAP = "SELLABLE_SCRAP"
+
 
 -- Protected geometry tags for CustomModelSpawner optimization
 CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
-CollectionServiceTags.PROTECTED_CORE = "CMS:ProtectedCore"
+CollectionServiceTags.PROTECTED_CORE    = "CMS:ProtectedCore"
 CollectionServiceTags.PROTECTED_SPAWNER = "CMS:ProtectedSpawner"
 
 -- Tower spawning system tags
-CollectionServiceTags.TOWER = "Tower"
+CollectionServiceTags.TOWER       = "Tower"
 CollectionServiceTags.MOB_SPAWNER = "MobSpawner"
+
 
 
 function CollectionServiceTags.addTag(object, tag)

@@ -13,19 +13,25 @@ local PoolConfig = {
 	-- Creature types that use pooling (animals only, not humanoids)
 	PooledCreatures = {
 		"Rabbit",
-		"Wolf"
+		"Coyote",
+		"Scorpion",
+		"Camel"
 	},
 	
 	-- Maximum creatures alive per type
 	MaxPopulation = {
 		Rabbit = 20,
-		Wolf = 15
+		Coyote = 15,
+		Scorpion = 12,
+		Camel = 8
 	},
 	
 	-- Respawn delay after creature dies
 	RespawnDelay = {
-		Rabbit = 10, -- seconds
-		Wolf = 15    -- seconds  
+		Rabbit = 10,   -- seconds
+		Coyote = 15,   -- seconds
+		Scorpion = 12, -- seconds
+		Camel = 20     -- seconds
 	}
 }
 

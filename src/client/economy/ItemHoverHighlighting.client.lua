@@ -37,7 +37,7 @@ local function isItemBuyable(item)
 	if not item or not item.Name then
 		return false
 	end
-	
+
 	local cost = getItemCost(item.Name)
 	return cost ~= nil
 end
@@ -58,14 +58,14 @@ local function createItemHighlight(item, canAfford)
 		hoveredItemHighlight:Destroy()
 		hoveredItemHighlight = nil
 	end
-	
+
 	-- Create new highlight
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "ItemHoverHighlight"
 	highlight.Parent = item
 	highlight.FillTransparency = EconomyConfig.UI.Highlighting.Transparency
 	highlight.OutlineTransparency = 0
-	
+
 	-- Set color based on affordability
 	if canAfford then
 		highlight.FillColor = EconomyConfig.UI.Highlighting.CanAfford -- Green
@@ -74,9 +74,9 @@ local function createItemHighlight(item, canAfford)
 		highlight.FillColor = EconomyConfig.UI.Highlighting.CannotAfford -- Red
 		highlight.OutlineColor = EconomyConfig.UI.Highlighting.CannotAfford
 	end
-	
+
 	hoveredItemHighlight = highlight
-	
+
 	if EconomyConfig.Debug.Enabled then
 		print("[ItemHoverHighlighting] Highlighted", item.Name, "- Can afford:", canAfford)
 	end
@@ -95,11 +95,11 @@ end
 local function checkMouseHover()
 	local mouse = player:GetMouse()
 	local target = mouse.Target
-	
+
 	-- Check if we're hovering over a different item
 	if target ~= lastHoveredItem then
 		removeItemHighlight()
-		
+
 		-- Check if new target is a buyable item model
 		if target then
 			local item = target.Parent
@@ -115,7 +115,7 @@ end
 -- Handle money updates
 local function onMoneyUpdated(newAmount)
 	currentMoney = newAmount
-	
+
 	-- Update highlight if we're currently hovering over an item
 	if lastHoveredItem and lastHoveredItem.Parent then
 		local item = lastHoveredItem.Parent
@@ -133,12 +133,12 @@ end
 local function init()
 	-- Connect to money updates
 	updateMoneyRemote.OnClientEvent:Connect(onMoneyUpdated)
-	
+
 	-- Click-based purchasing removed - now using ProximityPrompts
-	
+
 	-- Run hover detection continuously for visual feedback
 	RunService.Heartbeat:Connect(checkMouseHover)
-	
+
 	print("[ItemHoverHighlighting] Initialized successfully (click purchasing disabled)")
 end
 

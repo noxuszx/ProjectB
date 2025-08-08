@@ -47,11 +47,22 @@ local function createCashPrompt(cashItem)
 end
 
 local function onCashCollected(promptObject, player)
+	-- Only handle our own cash prompts
+	if promptObject.Name ~= "CashPrompt" then
+		return
+	end
+
 	local cashItem = promptObject.Parent
+	if not cashItem or not cashItem:IsA("BasePart") then
+		-- Prompt fired but no valid parent; ignore safely
+		return
+	end
 
 	local cashValue = cashItem:GetAttribute("CashValue")
 	if not cashValue or cashValue <= 0 then
-		warn("[CashCollectionHandler] Cash item has no value:", cashItem.Name)
+		if EconomyConfig.Debug.Enabled then
+			warn("[CashCollectionHandler] Cash item has no value or missing attribute:", cashItem.Name)
+		end
 		return
 	end
 
@@ -92,7 +103,7 @@ local function monitorWorkspaceChildAdded()
 	workspace.ChildAdded:Connect(function(child)
 		if child:IsA(
 			"MeshPart"
-		) and (child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
+		) and (child.Name == "cash5" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
 			-- Wait a frame to ensure attributes are set
 			RunService.Heartbeat:Wait()
 
@@ -125,7 +136,7 @@ local function init()
 	for _, child in pairs(workspace:GetChildren()) do
 		if child:IsA(
 			"MeshPart"
-		) and (child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
+		) and (child.Name == "cash5" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
 			cashItems[child] = true
 			createCashPrompt(child)
 

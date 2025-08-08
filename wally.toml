@@ -1,0 +1,11 @@
+[package]
+name = "projectb/projectb"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+description = "ProjectB game package"
+
+[dependencies]
+zoneplus = "mattschrubb/zoneplus@3.2.0"
+

@@ -7,9 +7,76 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
-
-
 local buyZoneItems = {}
+
+-- Helper function to find item config by ItemName
+local function findItemConfig(itemName)
+	for _, itemConfig in pairs(EconomyConfig.BuyableItems) do
+		if itemConfig.ItemName == itemName then
+			return itemConfig
+		end
+	end
+	return nil
+end
+
+-- Helper function to attach UsePrompt to purchased items
+local function attachUsePrompt(itemModel, itemConfig)
+	-- Determine prompt text based on item type
+	local actionText, objectText, useType
+	
+	if itemConfig.Type == "Tool" then
+		actionText = "Equip " .. itemConfig.ItemName
+		objectText = "Tool"
+		useType = "GrantTool"
+	elseif itemConfig.Type == "Ammo" then
+		actionText = "Collect " .. itemConfig.ItemName .. " (+" .. itemConfig.AmmoAmount .. ")"
+		objectText = "Ammo"
+		useType = "AddAmmo"
+	else
+		warn("[BuyZoneHandler] Unsupported item type for UsePrompt:", itemConfig.Type)
+		return
+	end
+	
+	-- Create UsePrompt
+	local usePrompt = Instance.new("ProximityPrompt")
+	usePrompt.Name = "UsePrompt"
+	usePrompt.ActionText = actionText
+	usePrompt.ObjectText = objectText
+	usePrompt.HoldDuration = 0 -- Instant pickup
+	usePrompt.MaxActivationDistance = 8
+	usePrompt.RequiresLineOfSight = false
+	usePrompt.Style = Enum.ProximityPromptStyle.Default
+	
+	-- Set attributes for ItemUseHandler routing
+	usePrompt:SetAttribute("UseType", useType)
+	usePrompt:SetAttribute("ItemName", itemConfig.ItemName)
+	
+	if itemConfig.Type == "Tool" then
+		usePrompt:SetAttribute("ToolTemplate", itemConfig.GiveToolName)
+	elseif itemConfig.Type == "Ammo" then
+		usePrompt:SetAttribute("AmmoType", itemConfig.AmmoType)
+		usePrompt:SetAttribute("AmmoAmount", itemConfig.AmmoAmount)
+	end
+	
+	-- Find a part to host the prompt (same logic as BuyPrompt)
+	local mainPart
+	if itemModel:IsA("BasePart") then
+		mainPart = itemModel
+	else
+		mainPart = itemModel.PrimaryPart
+		if not mainPart then
+			mainPart = itemModel:FindFirstChildOfClass("BasePart")
+		end
+	end
+	
+	if mainPart then
+		usePrompt.Parent = mainPart
+		print("[BuyZoneHandler] Attached UsePrompt to", itemConfig.ItemName, "- Type:", itemConfig.Type)
+	else
+		warn("[BuyZoneHandler] Could not find part to attach UsePrompt to!")
+		usePrompt:Destroy()
+	end
+end
 
 local function selectRandomItem()
 	local availableItems = EconomyConfig.BuyableItems
@@ -52,11 +119,7 @@ local function spawnItemAtBuyZone(buyZone)
 
 	local itemModel = itemsFolder:FindFirstChild(selectedItem.ItemName)
 	if not itemModel then
-		warn(
-			"[BuyZoneHandler] Item",
-			selectedItem.ItemName,
-			"not found in Items folder"
-		)
+		warn("[BuyZoneHandler] Item", selectedItem.ItemName, "not found in Items folder")
 		return
 	end
 
@@ -64,14 +127,28 @@ local function spawnItemAtBuyZone(buyZone)
 	clonedItem.Parent = workspace
 	local spawnPosition = buyZone.Position + Vector3.new(0, 1, 0)
 
-	if clonedItem.PrimaryPart then
-		clonedItem:SetPrimaryPartCFrame(CFrame.new(spawnPosition))
-	else
-		local firstPart = clonedItem:FindFirstChildOfClass("Part")
-		if firstPart then
-			firstPart.Position = spawnPosition
+	-- Position cloned item depending on its type
+	if clonedItem:IsA("Model") then
+		if clonedItem.PrimaryPart then
+			clonedItem:SetPrimaryPartCFrame(CFrame.new(spawnPosition))
 		else
-			warn("[BuyZoneHandler] No parts found in cloned item!")
+			local firstPart = clonedItem:FindFirstChildOfClass("BasePart")
+			if firstPart then
+				firstPart.CFrame = CFrame.new(spawnPosition)
+			else
+				warn("[BuyZoneHandler] Model has no PrimaryPart or BasePart child to position!")
+			end
+		end
+	elseif clonedItem:IsA("BasePart") then
+		-- MeshPart/Part directly under Items
+		clonedItem.CFrame = CFrame.new(spawnPosition)
+	else
+		-- Fallback: try to find any BasePart descendant
+		local firstDescPart = clonedItem:FindFirstChildOfClass("BasePart")
+		if firstDescPart then
+			firstDescPart.CFrame = CFrame.new(spawnPosition)
+		else
+			warn("[BuyZoneHandler] Could not position cloned item (no BasePart found):", clonedItem.Name)
 		end
 	end
 
@@ -88,24 +165,24 @@ local function spawnItemAtBuyZone(buyZone)
 	proximityPrompt.RequiresLineOfSight = false
 	proximityPrompt.Style = Enum.ProximityPromptStyle.Default
 
-	local mainPart = clonedItem.PrimaryPart
-	if not mainPart then
-		mainPart =
-			clonedItem:FindFirstChildOfClass(
-				"Part"
-			) or clonedItem:FindFirstChildOfClass("MeshPart")
+	-- Choose a part to host the prompt
+	local mainPart
+	if clonedItem:IsA("BasePart") then
+		mainPart = clonedItem
+	else
+		mainPart = clonedItem.PrimaryPart
+		if not mainPart then
+			mainPart = clonedItem:FindFirstChildOfClass("BasePart")
+		end
 	end
 
 	if mainPart then
-
 		proximityPrompt.Parent = mainPart
 		proximityPrompt:SetAttribute("ItemName", selectedItem.ItemName)
 		proximityPrompt:SetAttribute("ItemCost", selectedItem.Cost)
 		proximityPrompt:SetAttribute("BuyZone", buyZone.Name)
 	else
-		warn(
-			"[BuyZoneHandler] Could not find part to attach ProximityPrompt to!"
-		)
+		warn("[BuyZoneHandler] Could not find part to attach ProximityPrompt to!")
 		proximityPrompt:Destroy()
 	end
 
@@ -116,15 +193,13 @@ end
 
 local function setupBuyZone(buyZone)
 	if not buyZone:IsA("Part") and not buyZone:IsA("MeshPart") then
-		warn(
-			"[BuyZoneHandler] Buy zone",
-			buyZone.Name,
-			"is not a Part or MeshPart"
-		)
+		warn("[BuyZoneHandler] Buy zone", buyZone.Name, "is not a Part or MeshPart")
 		return
 	end
 
-	if buyZoneItems[buyZone] then return end
+	if buyZoneItems[buyZone] then
+		return
+	end
 	spawnItemAtBuyZone(buyZone)
 
 	buyZone.AncestryChanged:Connect(function()
@@ -135,7 +210,6 @@ local function setupBuyZone(buyZone)
 		end
 	end)
 end
-
 
 local function onBuyZoneAdded(buyZone)
 	setupBuyZone(buyZone)
@@ -156,8 +230,12 @@ local function getSpawnedItem(buyZone)
 end
 
 local function onProximityPromptTriggered(promptObject, player)
-	if promptObject.Name ~= "BuyPrompt" then return end
-	if not promptObject.Enabled then return end
+	if promptObject.Name ~= "BuyPrompt" then
+		return
+	end
+	if not promptObject.Enabled then
+		return
+	end
 
 	local itemName = promptObject:GetAttribute("ItemName")
 	local itemCost = promptObject:GetAttribute("ItemCost")
@@ -169,33 +247,43 @@ local function onProximityPromptTriggered(promptObject, player)
 	end
 
 	local itemPart = promptObject.Parent
-	local itemModel = itemPart.Parent
-
-	if not itemModel or not itemModel:IsA("Model") then
-		warn("[BuyZoneHandler] Could not find item model for purchase")
+	-- Determine the root of the spawned item: could be a Model or a BasePart in workspace
+	local spawnedRoot
+	if itemPart and itemPart:IsA("BasePart") then
+		if itemPart.Parent == workspace then
+			spawnedRoot = itemPart -- BasePart item
+		else
+			spawnedRoot = itemPart.Parent -- Likely a Model
+		end
+	end
+	if not spawnedRoot then
+		warn("[BuyZoneHandler] Could not resolve purchased item root")
 		return
 	end
 
 	local EconomyService = require(script.Parent.Parent.services.EconomyService)
-	if not EconomyService.canAfford(player, itemCost) then return end
+	if not EconomyService.canAfford(player, itemCost) then
+		return
+	end
 
 	if EconomyService.removeMoney(player, itemCost) then
+		-- Remove buy prompt and detach zone mapping
 		promptObject:Destroy()
 
-		local buyZoneForRespawn = nil
 		for buyZone, spawnedItem in pairs(buyZoneItems) do
-			if spawnedItem == itemModel then
-				buyZoneForRespawn = buyZone
+			if spawnedItem == spawnedRoot then
 				buyZoneItems[buyZone] = nil
 				break
 			end
 		end
 
-		-- The item remains in the world as a regular draggable object
-		-- Player can now drag it, store it, weld it, etc.
+		-- Attach UsePrompt for Tool/Ammo types based on config
+		local itemConfig = findItemConfig(itemName)
+		if itemConfig and (itemConfig.Type == "Tool" or itemConfig.Type == "Ammo") then
+			attachUsePrompt(spawnedRoot, itemConfig)
+		end
 
-		-- TODO: New items will spawn during specific times of day via time-based system
-		-- For now, no instant respawning - buy zones become empty after purchase
+		-- Item remains in the world; buy zone stays empty until time-based respawn (future)
 	end
 end
 
@@ -207,9 +295,7 @@ local function init()
 	end
 
 	CollectionService:GetInstanceAddedSignal("BUY_ZONE"):Connect(onBuyZoneAdded)
-	CollectionService:GetInstanceRemovedSignal("BUY_ZONE"):Connect(
-		onBuyZoneRemoved
-	)
+	CollectionService:GetInstanceRemovedSignal("BUY_ZONE"):Connect(onBuyZoneRemoved)
 
 	local ProximityPromptService = game:GetService("ProximityPromptService")
 	ProximityPromptService.PromptTriggered:Connect(onProximityPromptTriggered)

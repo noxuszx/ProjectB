@@ -2,14 +2,17 @@
 -- Abstract base class for all AI creatures
 -- Provides common functionality and interface
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Debris = game:GetService("Debris")
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
-local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
-local FoodDropSystem = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local Debris 			  = game:GetService("Debris")
+
+local AIConfig			  = require(ReplicatedStorage.Shared.config.ai.AIConfig)
+local RagdollModule 	  = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local FoodDropSystem 	  = require(script.Parent.Parent.Parent.loot.FoodDropSystem)
 local CreaturePoolManager = require(script.Parent.Parent.CreaturePoolManager)
-local CS_tags =
-	require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local CS_tags 			  = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+
+local BaseCreature = {}
+BaseCreature.__index = BaseCreature
 
 local function getUpdateCreatureHealthRemote()
 	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
@@ -30,8 +33,7 @@ local function getUpdateCreatureHealthRemote()
 	return updateCreatureHealthRemote
 end
 
-local BaseCreature = {}
-BaseCreature.__index = BaseCreature
+
 
 function BaseCreature.new(model, creatureType, spawnPosition)
 	local self = setmetatable({}, BaseCreature)
@@ -131,6 +133,7 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 	return self
 end
 
+
 function BaseCreature:update(deltaTime)
 	if not self.isActive or not self.model or not self.model.Parent then return end
 
@@ -144,12 +147,10 @@ function BaseCreature:update(deltaTime)
 		return
 	end
 
-	-- Per-frame movement completion checks (runs regardless of LOD)
 	if self.currentBehavior and self.currentBehavior.followUp then
 		self.currentBehavior:followUp(self, deltaTime)
 	end
 
-	-- LOD-gated expensive thinking (pathfinding, decisions)
 	if self.currentBehavior then
 		self.currentBehavior:update(self, deltaTime)
 	end
@@ -264,6 +265,7 @@ function BaseCreature:die()
 	end
 
 	local config = AIConfig.CreatureTypes[self.creatureType]
+	
 	if self:shouldRagdoll() then
 		print("[BaseCreature] Ragdolling", self.creatureType)
 		local success = RagdollModule.PermanentNpcRagdoll(self.model)

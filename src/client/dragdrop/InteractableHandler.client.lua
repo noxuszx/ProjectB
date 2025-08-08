@@ -1,29 +1,27 @@
-local RS = game:GetService("RunService")
+local RS  = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local RP = game:GetService("ReplicatedStorage")
+local RP  = game:GetService("ReplicatedStorage")
 
-local CS_tags = require(RP.Shared.utilities.CollectionServiceTags)
+local CS_tags 	 = require(RP.Shared.utilities.CollectionServiceTags)
 local WeldSystem = require(script.Parent.WeldSystem)
 
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local player 	  = game.Players.LocalPlayer
+local camera 	  = workspace.CurrentCamera
+
+local isMobile    = true
+local currTargs   = nil
+local carrying 	  = false
+local currentWeld = nil
 
 local highlight = Instance.new("Highlight")
-	highlight.Name = "DragDropHighlight"
-	highlight.FillColor = Color3.fromRGB(0, 162, 255)
-	highlight.OutlineColor = Color3.fromRGB(0, 162, 255)
-	highlight.FillTransparency = 0.8
-	highlight.OutlineTransparency = 0.2
+highlight.Name = "DragDropHighlight"
+highlight.FillColor = Color3.fromRGB(0, 162, 255)
+highlight.OutlineColor = Color3.fromRGB(0, 162, 255)
+highlight.FillTransparency = 0.8
+highlight.OutlineTransparency = 0.2
 
-local isMobile = true
-
-local currTargs = nil
-local carrying = false
-local currentWeld = nil -- Track current weld state
-
--- Rotation system state
 local currentRotationAxis = 1
-local rotationCount = {0, 0, 0}
+local rotationCount = { 0, 0, 0 }
 local originalCFrame = nil
 local rotationStep = math.rad(15)
 
@@ -39,7 +37,6 @@ local function hasAnchoredParts(object)
 	elseif object.PrimaryPart then
 		partToCheck = object.PrimaryPart
 	else
-		-- Find first BasePart in the object
 		for _, descendant in pairs(object:GetDescendants()) do
 			if descendant:IsA("BasePart") then
 				partToCheck = descendant
@@ -64,18 +61,18 @@ local function getCurrentRotation()
 	return xRotation * yRotation * zRotation
 end
 
-
-
 local range = 12
 local carryDistance = 9
 local carryDist = 20
-local carrySmooth = .06
+local carrySmooth = 0.06
 local throwBoost = 8
 local lastVelo = Vector3.new()
 local targetPos = nil
 
 UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
-	if gameProcessedEvent then return end
+	if gameProcessedEvent then
+		return
+	end
 
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		LeftClick()
@@ -104,27 +101,33 @@ UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 	elseif input.KeyCode == Enum.KeyCode.X then
 		if carrying and currTargs then
 			currentRotationAxis = (currentRotationAxis % 3) + 1
-			local axisNames = {"X", "Y", "Z"}
+			local axisNames = { "X", "Y", "Z" }
 			print("Switched to", axisNames[currentRotationAxis], "axis")
 		end
 	end
 end)
 
-UIS.InputEnded:Connect(function(input: InputObject, gameProcessedEvent: boolean)  
-	if gameProcessedEvent then return end
+UIS.InputEnded:Connect(function(input: InputObject, gameProcessedEvent: boolean)
+	if gameProcessedEvent then
+		return
+	end
 
 	if input.UserInputType == Enum.UserInputType.MouseButton1 and carrying then
 		LeftUnClick()
 	end
 end)
 
-UIS.TouchStarted:Connect(function(touchPositions: {any}, gameProcessedEvent: boolean)  
-	if gameProcessedEvent then return end
+UIS.TouchStarted:Connect(function(touchPositions: { any }, gameProcessedEvent: boolean)
+	if gameProcessedEvent then
+		return
+	end
 
 	LeftClick()
 end)
-UIS.TouchEnded:Connect(function(touchPositions: {any}, gameProcessedEvent: boolean)  
-	if gameProcessedEvent then return end
+UIS.TouchEnded:Connect(function(touchPositions: { any }, gameProcessedEvent: boolean)
+	if gameProcessedEvent then
+		return
+	end
 
 	if carrying then
 		LeftUnClick()
@@ -145,18 +148,18 @@ RS.RenderStepped:Connect(function(dT)
 		end
 	end
 
-if targObj and not carrying and targObj ~= currTargs then
+	if targObj and not carrying and targObj ~= currTargs then
 		currTargs = targObj
-highlight.Parent = targObj
+		highlight.Parent = targObj
 	elseif not targObj and currTargs ~= nil and not carrying then
 		currTargs = nil
-highlight.Parent = nil
+		highlight.Parent = nil
 	end
-	
+
 	if carrying and currTargs ~= nil then
 		if hasAnchoredParts(currTargs) then
 			showWeldFeedback("Can't move - attached to anchored object", 1)
-DropItem(false)
+			DropItem(false)
 			highlight.Parent = nil
 			return
 		end
@@ -171,7 +174,7 @@ DropItem(false)
 			local currentCFrame = currTargs.CFrame
 			local newCFrame = currentCFrame:Lerp(targetCFrame, carrySmooth)
 			currTargs.CFrame = newCFrame
-			currTargs.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			currTargs.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
 			if (camera.CFrame.Position - currTargs.CFrame.Position).Magnitude > carryDist then
 				DropItem(false)
@@ -184,7 +187,7 @@ DropItem(false)
 			local currentCFrame = currTargs.PrimaryPart.CFrame
 			local newCFrame = currentCFrame:Lerp(targetCFrame, carrySmooth)
 			currTargs:SetPrimaryPartCFrame(newCFrame)
-			currTargs.PrimaryPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			currTargs.PrimaryPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
 			if (camera.CFrame.Position - currTargs.PrimaryPart.CFrame.Position).Magnitude > carryDist then
 				DropItem(false)
@@ -200,7 +203,6 @@ DropItem(false)
 	end
 
 	WeldSystem.updateHoveredObject(carrying, CS_tags.isDraggable)
-
 end)
 
 function LeftClick()
@@ -216,7 +218,9 @@ function LeftClick()
 		end
 
 		carrying = true
-		if currTargs == nil then return end
+		if currTargs == nil then
+			return
+		end
 
 		-- Store original orientation and reset rotation counts
 		if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
@@ -230,7 +234,7 @@ function LeftClick()
 		end
 
 		-- Reset rotation state
-		rotationCount = {0, 0, 0}
+		rotationCount = { 0, 0, 0 }
 		currentRotationAxis = 1 -- Start with X axis
 
 		RP.Remotes.PickupItem:FireServer(currTargs)
@@ -253,7 +257,6 @@ function LeftClick()
 	end
 end
 
-
 function LeftUnClick()
 	carrying = false
 	if currTargs then
@@ -261,9 +264,8 @@ function LeftUnClick()
 	end
 end
 
-
-function DropItem(AddForce : boolean ?)
-	local velocity = Vector3.new(0,0,0)
+function DropItem(AddForce: boolean?)
+	local velocity = Vector3.new(0, 0, 0)
 	if AddForce and targetPos then
 		local objectPosition
 		if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
@@ -281,11 +283,9 @@ function DropItem(AddForce : boolean ?)
 	WeldSystem.cleanup()
 
 	-- Reset rotation state
-	rotationCount = {0, 0, 0}
+	rotationCount = { 0, 0, 0 }
 	currentRotationAxis = 1
 	originalCFrame = nil
-
-
 
 	RP.Remotes.DropItem:FireServer(currTargs, velocity)
 
@@ -317,5 +317,5 @@ end
 
 -- Export for other scripts to use
 _G.InteractableHandler = {
-	GetCurrentTarget = GetCurrentTarget
+	GetCurrentTarget = GetCurrentTarget,
 }

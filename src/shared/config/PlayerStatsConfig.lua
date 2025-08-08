@@ -3,46 +3,38 @@
 -- Centralized settings for stat decay rates, max values, and damage amounts
 
 local PlayerStatsConfig = {
-	-- Maximum stat values (starting values for new players)
+
 	MAX_HEALTH = 100,
 	MAX_HUNGER = 100,
 	MAX_THIRST = 100,
-	STARTING_MONEY = 0, -- Economy system integration
-	
-	-- Stat decay system settings
-	TICK_INTERVAL = 1, -- Seconds between each decay tick (faster for testing)
-	
-	-- Decay rates per tick (how much stats decrease each interval)
-	HUNGER_DECAY_PER_TICK = 0.5, -- Hunger decreases by 0.5 every 1 second
-	THIRST_DECAY_PER_TICK = 0.75, -- Thirst decreases by 0.75 every 1 second (slightly faster than hunger)
-	
-	-- Damage dealt when stats reach 0
-	STARVATION_DAMAGE_PER_TICK = 2, -- Health damage when Hunger = 0
-	DEHYDRATION_DAMAGE_PER_TICK = 3, -- Health damage when Thirst = 0 (more dangerous)
-	
-	-- Respawn system
-	RESPAWN_COST_ROBUX = 39, -- Cost to respawn (developer product)
-	RESPAWN_RESTORE_ALL_STATS = true, -- Whether respawn restores all stats to max
-	
-	-- UI Settings (for client reference)
+	STARTING_MONEY = 9999,
+
+	TICK_INTERVAL = 1,
+
+	HUNGER_DECAY_PER_TICK = 0.5,
+	THIRST_DECAY_PER_TICK = 0.75,
+
+	STARVATION_DAMAGE_PER_TICK = 2,
+	DEHYDRATION_DAMAGE_PER_TICK = 3,
+
+	RESPAWN_COST_ROBUX = 39,
+	RESPAWN_RESTORE_ALL_STATS = true,
+
 	UI = {
-		-- Bar colors
-		HUNGER_COLOR = Color3.fromRGB(255, 255, 0), -- Yellow
-		THIRST_COLOR = Color3.fromRGB(0, 162, 255), -- Blue
-		
-		-- Bar dimensions
+		HUNGER_COLOR = Color3.fromRGB(255, 255, 0),
+		THIRST_COLOR = Color3.fromRGB(0, 162, 255),
+
 		BAR_WIDTH = 200,
 		BAR_HEIGHT = 20,
-		BAR_POSITION_LEFT_OFFSET = 20, -- Pixels from left edge of screen
-		BAR_SPACING = 10, -- Vertical spacing between bars
-		
-		-- Update frequency
-		UI_UPDATE_SMOOTHNESS = 0.2, -- TweenInfo duration for smooth bar changes
+		BAR_POSITION_LEFT_OFFSET = 20,
+		BAR_SPACING = 10,
+
+		UI_UPDATE_SMOOTHNESS = 0.2,
 	},
-	
+
 	-- Debug settings
-	DEBUG_MODE = true, -- Enable console logging for stat changes
-	SHOW_EXACT_VALUES = false, -- Show precise decimal values in debug (vs rounded)
+	DEBUG_MODE = true,
+	SHOW_EXACT_VALUES = false,
 }
 
 return PlayerStatsConfig

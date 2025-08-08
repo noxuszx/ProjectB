@@ -53,7 +53,7 @@ local AIConfig = {
 		
 		Camel = {
 			Type = "Passive",
-			Health = 40,
+			Health = 100,
 			MoveSpeed = 12,
 			DetectionRange = 20,
 			FleeSpeed = 13,
@@ -144,10 +144,10 @@ local AIConfig = {
 
 		Scorpion = {
 			Type = "Hostile",
-			Health = 100,
+			Health = 200,
 			MoveSpeed = 16,
 			DetectionRange = 40,
-			TouchDamage = 0,
+			TouchDamage = 10,
 			ChaseSpeed = 16,
 			RoamRadius = 25,
 			IdleTime = {5, 12},
@@ -159,7 +159,7 @@ local AIConfig = {
 		
 		Skeleton = {
 			Type = "Hostile",
-			Health = 60,
+			Health = 120,
 			MoveSpeed = 20,
 			DetectionRange = 45,
 			TouchDamage = 12,
@@ -175,7 +175,7 @@ local AIConfig = {
 			Health = 150,
 			MoveSpeed = 15,
 			DetectionRange = 30,
-			TouchDamage = 20,
+			TouchDamage = 5,
 			ChaseSpeed = 18,
 			RoamRadius = 18,
 			IdleTime = {6, 15},
@@ -185,7 +185,7 @@ local AIConfig = {
 		
 		SkeletonArcher = {
 			Type = "RangedHostile",
-			Health = 50,
+			Health = 100,
 			MoveSpeed = 14,
 			DetectionRange = 70,
 			TouchDamage = 0,
@@ -211,10 +211,10 @@ local AIConfig = {
 		-- Tower-specific creatures (separate models)
 		TowerSkeleton = {
 			Type = "Hostile",
-			Health = 80,
+			Health = 100,
 			MoveSpeed = 22,
 			DetectionRange = 45,
-			TouchDamage = 15,
+			TouchDamage = 10,
 			ChaseSpeed = 28,
 			RoamRadius = 20,
 			IdleTime = {3, 8},
@@ -287,11 +287,11 @@ local AIConfig = {
 		Towers = {
 			Tower_A = {
 				MaxCreatures = 25,
-				CreatureTypes = {"TowerSkeleton", "TowerMummy"}
+				CreatureTypes = {"TowerSkeleton", "TowerMummy", "Scorpion"}
 			},
 			Tower_B = {
 				MaxCreatures = 30,
-				CreatureTypes = {"TowerMummy", "TowerSkeleton"}
+				CreatureTypes = {"TowerMummy", "TowerSkeleton", "Scorpion"}
 			}
 		}
 	},
@@ -300,7 +300,7 @@ local AIConfig = {
 	Debug = {
 		ShowDetectionRanges = false, 		-- Visualize detection ranges
 		ShowWaypoints = false, 		 		-- Show creature waypoints
-		ShowStateLabels = true, 	 		-- Show current behavior state above creatures
+		ShowStateLabels = false, 	 		-- Show current behavior state above creatures
 		ShowPerformanceStats = false,		-- Display performance statistics
 		LogBehaviorChanges = false,	 		-- Print behavior state changes (DISABLED to reduce spam)
 		LogSpawning = false, 		 		-- Print creature spawning events

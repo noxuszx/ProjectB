@@ -7,51 +7,60 @@ local ItemConfig = {
 		ItemsFolder = "Items",
 		ScatterRadius = 5,
 		MaxScatterAttempts = 10,
-		SpawnHeight = 3,
+		SpawnHeight = 1,
 		DebugMode = false,
 	},
 
 	SpawnTypes = {
-["VillageCommon"] = {
-			MaxRolls = 2,
+		["build"] = {
+			MaxRolls = 3,
 			MinRolls = 0,
 			PossibleLoot = {
 				["MetalRoof"] = 0.4,
-				["WoodPlank1"] = 0.6,
-				["WoodPlank2"] = 0.5,
-
+				["Wooden Pallet"] = 0.6,
 			}
 		},
 
-		["DungeonChest"] = {
-			MaxRolls = 1,
-			MinRolls = 0,
-			PossibleLoot = {
-				["MetalRoof"] = 0.6,
-				["WoodPlank1"] = 0.4,
-				["WoodPlank2"] = 0.4,
-
-			}
-		},
-
-		["BuildingResource"] = {
-			MaxRolls = 3,
-			MinRolls = 1,
-			PossibleLoot = {
-				["WoodPlank1"] = 0.7,
-				["WoodPlank2"] = 0.7,
-				["MetalRoof"] = 0.3,
-
-			}
-		},
-
-		["ConstructionSite"] = {
+		["scrap"] = {
 			MaxRolls = 2,
 			MinRolls = 0,
 			PossibleLoot = {
-				["MetalRoof"] = 0.8,
-				["WoodPlank1"] = 0.5,
-				["WoodPlank2"] = 0.5,
+				["ClayVase1"] = 0.6,
+				["ClayVase2"] = 0.4,
+				["Bucket"] = 0.4,
+				["Barrel"] = 0.4,
+				["Kettle"] = 0.4,
+			}
+		},
+		["low"] = {
+			MaxRolls = 2,
+			MinRolls = 0,
+			PossibleLoot = {
+				["Silver Bar"] = 0.3,
+				["Silver Cup"] = 0.4,
+				["Silver Plate"] = 0.4,
+
+			}
+		},
+
+		["mid"] = {
+			MaxRolls = 1,
+			MinRolls = 0,
+			PossibleLoot = {
+				["Gold Bar"] = 0.3,
+				["Gold Vase1"] = 0.7,
+				["Gold Vase2"] = 0.6,
+				["Gold Vase3"] = 0.5
+
+			}
+		},
+
+		["high"] = {
+			MaxRolls = 2,
+			MinRolls = 0,
+			PossibleLoot = {
+				["Gold Statue"] = 0.8,
+				["Gold Crown"] = 0.5,
 
 			}
 		}

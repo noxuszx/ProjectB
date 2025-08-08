@@ -1,4 +1,4 @@
-{
+  {
   "name": "ProjectB",
   "tree": {
     "$className": "DataModel",
@@ -13,7 +13,10 @@
           "$path": "src/shared/utilities"
         },
         "modules": {
-          "$path": "src/shared/modules"
+          "$path": "src/shared/modules",
+          "zoneplus": {
+            "$path": "Packages/_Index/mattschrubb_zoneplus@3.2.0/zoneplus"
+          }
         }
       },
       "Items": {
@@ -90,6 +93,9 @@
             "$className": "RemoteEvent"
           }
         }
+      },
+      "Packages": {
+        "$path": "Packages"
       }
     },
 

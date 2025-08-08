@@ -13,11 +13,11 @@ local FoodConfig = {
 
 	AnimalFoods = {
 		Rabbit = "RabbitMeat",
-		Wolf = "WolfMeat",
-		Lizard = "LizardMeat",
+		Coyote = "CoyoteMeat",
+		Scorpion = "ScorpionMeat",
+		Camel = "CamelMeat",
 	},
 
-	-- Food properties
 	FoodProperties = {
 		RabbitMeat = {
 			RawHunger = 15,
@@ -25,17 +25,23 @@ local FoodConfig = {
 			RawColor = Color3.fromRGB(200, 100, 100),
 			CookedColor = Color3.fromRGB(139, 69, 19),
 		},
-		WolfMeat = {
+		CoyoteMeat = {
 			RawHunger = 20,
 			CookedHunger = 35,
 			RawColor = Color3.fromRGB(180, 80, 80),
 			CookedColor = Color3.fromRGB(120, 60, 20),
 		},
-		LizardMeat = {
+		ScorpionMeat = {
 			RawHunger = 12,
 			CookedHunger = 20,
 			RawColor = Color3.fromRGB(220, 120, 120),
 			CookedColor = Color3.fromRGB(150, 75, 25),
+		},
+		CamelMeat = {
+			RawHunger = 30,
+			CookedHunger = 50,
+			RawColor = Color3.fromRGB(160, 70, 70),
+			CookedColor = Color3.fromRGB(110, 50, 15),
 		},
 	},
 
@@ -51,20 +57,22 @@ local foodFolder = Instance.new("Folder")
 foodFolder.Name = "DroppedFood"
 foodFolder.Parent = workspace
 
+----------------------------------------------------------------------------------
 ----------------------- INIT -----------------------------------------------------
+----------------------------------------------------------------------------------
+
 
 function FoodDropSystem.init()
-	print("[FoodDropSystem] Initializing food drop system...")
 	FoodDropSystem.setupCookingDetection()
-	print("[FoodDropSystem] Food drop system ready!")
+	print("[FoodDropSystem] Food drop system Initialized")
 	return true
 end
 
--- Drop food when an animal dies
 function FoodDropSystem.dropFood(creatureType, position, dyingCreatureModel)
+	
 	local totalStart = os.clock()
-
 	local foodType = FoodConfig.AnimalFoods[creatureType]
+	
 	if not foodType then
 		warn("[FoodDropSystem] No food configured for creature type:", creatureType)
 		return false
@@ -77,7 +85,13 @@ function FoodDropSystem.dropFood(creatureType, position, dyingCreatureModel)
 		return false
 	end
 
-	local foodTemplate = itemsFolder:FindFirstChild(foodType)
+	local foodTemplateFolder = itemsFolder:FindFirstChild("Food")
+	if not foodTemplateFolder then
+		warn("[FoodDropSystem] Food folder not found in ReplicatedStorage/Items")
+		return false
+	end
+
+	local foodTemplate = foodTemplateFolder:FindFirstChild(foodType)
 	if not foodTemplate then
 		warn("[FoodDropSystem] Food model not found:", foodType)
 		return false
@@ -98,18 +112,17 @@ function FoodDropSystem.dropFood(creatureType, position, dyingCreatureModel)
 		return false
 	end
 
-	-- Set up food properties
 	local setupStart = os.clock()
 	FoodDropSystem.setupFoodModel(foodModel, foodType)
 	print("[FoodDropSystem] Model setup took:", (os.clock() - setupStart) * 1000, "ms")
 
-	-- Parent to world
 	foodModel.Parent = foodFolder
 
 	print("[FoodDropSystem] Total dropFood took:", (os.clock() - totalStart) * 1000, "ms")
 	print("[FoodDropSystem] Dropped", foodType, "at", dropPosition)
 	return true
 end
+
 
 function FoodDropSystem.setupFoodModel(foodModel, foodType)
 	local config = FoodConfig.FoodProperties[foodType]
@@ -118,24 +131,20 @@ function FoodDropSystem.setupFoodModel(foodModel, foodType)
 		return
 	end
 
-	-- Set initial raw state
 	FoodDropSystem.setFoodState(foodModel, foodType, "raw")
 
-	-- Add food-specific attributes
 	foodModel:SetAttribute("FoodType", foodType)
 	foodModel:SetAttribute("IsCooked", false)
 	foodModel:SetAttribute("HungerValue", config.RawHunger)
 
-	-- Tag for drag-drop system integration
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.DRAGGABLE)
 	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.WELDABLE)
+	CollectionServiceTags.addTag(foodModel, CollectionServiceTags.STORABLE)
 
-	-- Add consumption and meat state tags
 	CollectionService:AddTag(foodModel, "Consumable")
 	CollectionService:AddTag(foodModel, "RawMeat")
 end
 
--- Set food state (raw or cooked)
 function FoodDropSystem.setFoodState(foodModel, foodType, state)
 	local config = FoodConfig.FoodProperties[foodType]
 	if not config then
@@ -145,36 +154,33 @@ function FoodDropSystem.setFoodState(foodModel, foodType, state)
 	local isCooked = (state == "cooked")
 	local color = isCooked and config.CookedColor or config.RawColor
 	local hungerValue = isCooked and config.CookedHunger or config.RawHunger
-
-	-- Only color the "Meat" part, not bones or other parts
 	local meatPart = foodModel:FindFirstChild("Meat")
+
 	if meatPart and meatPart:IsA("BasePart") then
 		meatPart.Color = color
 	else
-		-- Fallback: if no "Meat" part found, color PrimaryPart
+
 		if foodModel.PrimaryPart then
-			foodModel.PrimaryPart.Color = color
+		   foodModel.PrimaryPart.Color = color
 		end
 		warn("[FoodDropSystem] No 'Meat' part found in", foodModel.Name, "- using PrimaryPart")
+
 	end
 
-	-- Update attributes
 	foodModel:SetAttribute("IsCooked", isCooked)
 	foodModel:SetAttribute("HungerValue", hungerValue)
 
-	-- Update meat state tags
 	if isCooked then
 		CollectionService:RemoveTag(foodModel, "RawMeat")
-		CollectionService:AddTag(foodModel, "CookedMeat")
+		CollectionService:AddTag   (foodModel, "CookedMeat")
 	else
 		CollectionService:RemoveTag(foodModel, "CookedMeat")
-		CollectionService:AddTag(foodModel, "RawMeat")
+		CollectionService:AddTag   (foodModel, "RawMeat")
 	end
 
 	print("[FoodDropSystem] Set", foodModel.Name, "to", state, "state (Hunger:", hungerValue .. ")")
 end
 
--- Find a valid drop position near the death location
 function FoodDropSystem.getDropPosition(centerPosition, dyingCreatureModel)
 	local settings = FoodConfig.DropSettings
 
@@ -206,36 +212,30 @@ function FoodDropSystem.getDropPosition(centerPosition, dyingCreatureModel)
 		end
 	end
 
-	-- Fallback to original position if raycast fails
 	return centerPosition + Vector3.new(0, settings.DropHeight, 0)
 end
 
--- Set up cooking surface detection
 function FoodDropSystem.setupCookingDetection()
-	-- Monitor all consumable food items for cooking surface contact
+
 	local function onConsumableAdded(instance)
 		if instance:IsA("Model") and instance:GetAttribute("FoodType") then
 			FoodDropSystem.setupCookingForFood(instance)
 		end
 	end
 
-	-- Connect to existing consumables
 	for _, consumable in pairs(CollectionService:GetTagged("Consumable")) do
 		onConsumableAdded(consumable)
 	end
 
-	-- Connect to new consumables
 	CollectionService:GetInstanceAddedSignal("Consumable"):Connect(onConsumableAdded)
 end
 
--- Set up cooking detection for a specific food item
 function FoodDropSystem.setupCookingForFood(foodModel)
 	if not foodModel.PrimaryPart then
 		return
 	end
 
 	local function onTouched(hit)
-		-- Check if the hit part or its parent is tagged as a cooking surface
 		local isCookingSurface = CollectionService:HasTag(hit, "CookingSurface")
 			or CollectionService:HasTag(hit.Parent, "CookingSurface")
 
@@ -243,13 +243,11 @@ function FoodDropSystem.setupCookingForFood(foodModel)
 			return
 		end
 
-		-- Only cook if it's raw
 		local isCooked = foodModel:GetAttribute("IsCooked")
 		if isCooked then
 			return
 		end
 
-		-- Cook the food
 		local foodType = foodModel:GetAttribute("FoodType")
 		if foodType then
 			FoodDropSystem.setFoodState(foodModel, foodType, "cooked")
@@ -257,16 +255,13 @@ function FoodDropSystem.setupCookingForFood(foodModel)
 		end
 	end
 
-	-- Connect touch event to primary part
 	foodModel.PrimaryPart.Touched:Connect(onTouched)
 end
 
--- Get food folder for external access
 function FoodDropSystem.getFoodFolder()
 	return foodFolder
 end
 
--- Clean up all dropped food (utility function)
 function FoodDropSystem.cleanup()
 	if foodFolder then
 		foodFolder:ClearAllChildren()

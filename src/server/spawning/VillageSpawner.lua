@@ -86,6 +86,10 @@ local function calculateRect(modelTemplate, cframe, buffer)
 	return rect, cf, size
 end
 
+-------------------------------------------------------------------------------------------------
+--------------- HELPERS -------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------
+
 
 local function applyRotation(baseCFrame, chunkPosition, modelName)
 	local rotationSettings = villageConfig.ROTATION_SETTINGS[villageConfig.ROTATION_MODE]
@@ -124,7 +128,6 @@ local function applyRotation(baseCFrame, chunkPosition, modelName)
 end
 
 
--- Helper: Check if position overlaps with core structure circles
 local function overlapsWithCoreStructures(position, radius)
 	local coreCircles = CoreStructureSpawner.getOccupiedCircles()
 	for _, circle in ipairs(coreCircles) do
@@ -136,16 +139,14 @@ local function overlapsWithCoreStructures(position, radius)
 	return false
 end
 
--- Helper: Check if position is valid (not in protected spawn zone or core structures)
+
 local function isValidPosition(position, halfX, halfZ)
 	local maxRadius = math.max(halfX, halfZ)
 	
-	-- Check player spawn protection
 	if position.Magnitude < (PLAYER_SPAWN_PROTECT_RADIUS + maxRadius) then
 		return false
 	end
 	
-	-- Check core structure overlap
 	if overlapsWithCoreStructures(position, maxRadius) then
 		return false
 	end
@@ -153,7 +154,7 @@ local function isValidPosition(position, halfX, halfZ)
 	return true
 end
 
--- Helper: Place campfire at village center
+
 local function placeCampfire(models, villageCenter, occupiedRects)
 	local modelTemplate = models["Campfire"]
 	if not modelTemplate then
@@ -161,24 +162,18 @@ local function placeCampfire(models, villageCenter, occupiedRects)
 		return nil
 	end
 	
-	-- Determine terrain height at center
 	local terrainHeight = terrain.getTerrainHeight(villageCenter.X, villageCenter.Z)
 	local baseCFrame = CFrame.new(villageCenter.X, terrainHeight, villageCenter.Z)
 	
-	-- Apply rotation (none for campfire)
 	local cframe = applyRotation(baseCFrame, villageCenter, "Campfire")
-	
-	-- Calculate rect with campfire buffer
 	local rect, cf, size = calculateRect(modelTemplate, cframe, villageConfig.CAMPFIRE_BUFFER)
 	
-	-- Check if position is valid
 	local halfX = size.X / 2 + villageConfig.CAMPFIRE_BUFFER
 	local halfZ = size.Z / 2 + villageConfig.CAMPFIRE_BUFFER
 	if not isValidPosition(cf.Position, halfX, halfZ) then
 		return nil
 	end
 	
-	-- Add to occupied rects
 	table.insert(occupiedRects, rect)
 	
 	return {
@@ -189,7 +184,7 @@ local function placeCampfire(models, villageCenter, occupiedRects)
 	}
 end
 
--- Helper: Place mandatory structure (Shop1, Shop2, Well)
+
 local function placeMandatory(models, name, chunkPosition, occupiedRects)
 	local modelTemplate = models[name]
 	if not modelTemplate then
@@ -197,30 +192,24 @@ local function placeMandatory(models, name, chunkPosition, occupiedRects)
 		return nil
 	end
 	
-	-- Try up to MAX_ATTEMPTS to find valid position
 	for attempt = 1, MAX_ATTEMPTS do
+
 		local offsetX = random:NextNumber(-villageConfig.VILLAGE_RADIUS, villageConfig.VILLAGE_RADIUS)
 		local offsetZ = random:NextNumber(-villageConfig.VILLAGE_RADIUS, villageConfig.VILLAGE_RADIUS)
 		local flatPosition = chunkPosition + Vector3.new(offsetX, 0, offsetZ)
 		
-		-- Determine terrain height at candidate
 		local terrainHeight = terrain.getTerrainHeight(flatPosition.X, flatPosition.Z)
 		local baseCFrame = CFrame.new(flatPosition.X, terrainHeight, flatPosition.Z)
 		
-		-- Apply rotation
 		local cframe = applyRotation(baseCFrame, chunkPosition, name)
-		
-		-- Calculate rect with structure spacing
 		local rect, cf, size = calculateRect(modelTemplate, cframe, villageConfig.STRUCTURE_SPACING)
 		
-		-- Check if position is valid
 		local halfX = size.X / 2 + villageConfig.STRUCTURE_SPACING
 		local halfZ = size.Z / 2 + villageConfig.STRUCTURE_SPACING
 		if not isValidPosition(cf.Position, halfX, halfZ) then
 			continue
 		end
 		
-		-- Check overlap with already placed structures
 		local hasOverlap = false
 		for _, oRect in ipairs(occupiedRects) do
 			if rectsOverlap(rect, oRect) then
@@ -230,7 +219,6 @@ local function placeMandatory(models, name, chunkPosition, occupiedRects)
 		end
 		
 		if not hasOverlap then
-			-- Success! Add to occupied rects
 			table.insert(occupiedRects, rect)
 			return {
 				modelName = name,
@@ -241,70 +229,69 @@ local function placeMandatory(models, name, chunkPosition, occupiedRects)
 		end
 	end
 	
-	-- Failed to place after MAX_ATTEMPTS
 	return nil
 end
 
--- Helper: Place optional structure
 local function placeOptional(models, name, chunkPosition, occupiedRects)
-	-- Use same logic as mandatory but don't warn on failure
 	return placeMandatory(models, name, chunkPosition, occupiedRects)
 end
 
--- Main village spawning function
+-------------------------------------------------------------------------------------------------
+------------------ MAIN SPAWNING ----------------------------------------------------------------
+-------------------------------------------------------------------------------------------------
+
 local function spawnVillage(models, chunkPosition)
-	local occupiedRects = {} -- keeps placed structure footprints to prevent overlaps
+
+	local occupiedRects  = {}
 	local placementInfos = {}
-	
-	-- Step 1: Place Campfire at village center
+
 	local campfireInfo = placeCampfire(models, chunkPosition, occupiedRects)
 	if not campfireInfo then
 		warn("[VillageSpawner] Mandatory structure failed – skipping village (Campfire placement failed)")
 		return false
 	end
+
 	table.insert(placementInfos, campfireInfo)
 	
-	-- Step 2: Place mandatory structures (Shop1, Shop2, Well)
-for _, structureName in ipairs(villageConfig.MANDATORY_STRUCTURES) do
-    if structureName ~= "Campfire" then -- Campfire already placed
+	for _, structureName in ipairs(villageConfig.MANDATORY_STRUCTURES) do
+    if structureName ~= "Campfire" then
 		local placementInfo = placeMandatory(models, structureName, chunkPosition, occupiedRects)
 		if not placementInfo then
-warn("[VillageSpawner] mandatory '"..structureName.."' failed – skipping village")
+	warn("[VillageSpawner] mandatory '"..structureName.."' failed – skipping village")
 			return false
 		end
-table.insert(placementInfos, placementInfo)
-    end
-end
-	
-	-- Step 3: Place optional structures
-	local mandatoryCount = #villageConfig.MANDATORY_STRUCTURES
-	local numStructures = random:NextInteger(villageConfig.STRUCTURES_PER_VILLAGE[1], villageConfig.STRUCTURES_PER_VILLAGE[2])
-	local optionalCount = math.max(0, numStructures - mandatoryCount)
-	
--- Optional pool without mandatory names
-local optionalPool = {}
-for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
-    if not mandatorySet[name] then
-        table.insert(optionalPool, name)
-    end
-end
--- Safeguard: if pool is empty, skip optional placement
-if #optionalPool > 0 then
-for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
-    if not mandatorySet[name] then
-        table.insert(optionalPool, name)
-    end
-end
+	table.insert(placementInfos, placementInfo)
+    	end
+	end
 
-for i = 1, optionalCount do
-    local randomStructure = optionalPool[random:NextInteger(1, #optionalPool)]
-		local placementInfo = placeOptional(models, randomStructure, chunkPosition, occupiedRects)
-		if placementInfo then
-			table.insert(placementInfos, placementInfo)
-		end
--- Continue even if optional structure fails to place
-    end
-end
+		local mandatoryCount = #villageConfig.MANDATORY_STRUCTURES
+		local numStructures = random:NextInteger(villageConfig.STRUCTURES_PER_VILLAGE[1], villageConfig.STRUCTURES_PER_VILLAGE[2])
+		local optionalCount = math.max(0, numStructures - mandatoryCount)
+
+
+-- Optional pool without mandatory names
+	local optionalPool = {}
+	for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
+    	if not mandatorySet[name] then
+        	table.insert(optionalPool, name)
+    	end
+	end
+	-- Safeguard: if pool is empty, skip optional placement
+	if #optionalPool > 0 then
+	for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
+    	if not mandatorySet[name] then
+        	table.insert(optionalPool, name)
+    	end
+	end
+
+	for i = 1, optionalCount do
+    	local randomStructure = optionalPool[random:NextInteger(1, #optionalPool)]
+			local placementInfo = placeOptional(models, randomStructure, chunkPosition, occupiedRects)
+			if placementInfo then
+				table.insert(placementInfos, placementInfo)
+			end
+    	end
+	end
 	
 	-- Step 4: Actually spawn all placed structures (frame-batched)
 	local batchSize = FrameBudgetConfig.getBatchSize("VILLAGES")
@@ -326,8 +313,10 @@ end
 	
 	return true
 end
+-------------------------------------------------------------------------------------------------
+---------- FRAME BATCHING -----------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------
 
--- Spawn all villages with frame batching
 function VillageSpawner.spawnVillages()
 	print("Spawning villages...")
 	local models = loadVillageModels()
