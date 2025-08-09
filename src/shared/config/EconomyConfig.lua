@@ -14,10 +14,7 @@ local EconomyConfig = {
 		SELLABLE_HIGH = 50,   -- High-value items (rare materials, gems, advanced components)
 	},
 	
-	-- Buyable items that can spawn at buy zones
-	-- Type: "Tool" (equippable), "Ammo" (consumable), "Object" (draggable only)
 	BuyableItems = {
-		-- Tools and weapons (equippable items)
 		{
 			ItemName = "Spear",
 			Cost = 75,

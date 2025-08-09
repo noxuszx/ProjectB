@@ -2,13 +2,13 @@
     Crossbow.client.lua
     Ranged weapon system with hitscan mechanics and realistic bullet tracers
     Uses instant hit detection with visual tracer animation for best gameplay feel
-]] --
+]]
+--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local Debris = game:GetService("Debris")
+local CollectionService = game:GetService("CollectionService")
 
 local tool = script.Parent
 local player = Players.LocalPlayer
@@ -37,20 +37,19 @@ local function initializeRemote()
 end
 
 local function isOnCooldown()
-	local currentTime = os.clock()
+	local currentTime = tick()
 	local timeSinceLastFire = currentTime - lastFireTime
 	return timeSinceLastFire < config.Cooldown
 end
 
 local function getCooldownRemaining()
-	local currentTime = os.clock()
+	local currentTime = tick()
 	local timeSinceLastFire = currentTime - lastFireTime
 	return math.max(0, config.Cooldown - timeSinceLastFire)
 end
 
 local function findMuzzlePoint()
-	local muzzlePart =
-		tool:FindFirstChild("Muzzle") or tool:FindFirstChild("Barrel")
+	local muzzlePart = tool:FindFirstChild("Muzzle") or tool:FindFirstChild("Barrel")
 	if muzzlePart then
 		return muzzlePart.CFrame
 	end
@@ -66,6 +65,19 @@ local function findMuzzlePoint()
 	return CFrame.new()
 end
 
+local function getZoneParts()
+	local zoneParts = {}
+	
+	-- Find all zone trigger parts (used by ZonePlus)
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and obj.Name == "Trigger" and obj.CanQuery then
+			table.insert(zoneParts, obj)
+		end
+	end
+	
+	return zoneParts
+end
+
 local function performHitscan(muzzlePos, mouseHitPos)
 	if not currentCharacter or not currentCharacter.PrimaryPart then
 		return nil, nil
@@ -75,10 +87,17 @@ local function performHitscan(muzzlePos, mouseHitPos)
 	local raycastParams = RaycastParams.new()
 
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.FilterDescendantsInstances = { currentCharacter, tool }
+	
+	-- Filter out character, tool, and zone parts so we can hit targets inside zones
+	local filterList = { currentCharacter, tool }
+	local zoneParts = getZoneParts()
+	for _, zonePart in pairs(zoneParts) do
+		table.insert(filterList, zonePart)
+	end
+	
+	raycastParams.FilterDescendantsInstances = filterList
 
-	local raycastResult =
-		workspace:Raycast(muzzlePos, rayDirection, raycastParams)
+	local raycastResult = workspace:Raycast(muzzlePos, rayDirection, raycastParams)
 
 	if raycastResult then
 		return raycastResult.Instance, raycastResult.Position
@@ -132,7 +151,7 @@ local function executeFire()
 		return false
 	end
 
-	lastFireTime = os.clock()
+	lastFireTime = tick()
 
 	local mouse = player:GetMouse()
 	local mouseHitPos = mouse.Hit.Position
@@ -167,7 +186,9 @@ tool.Unequipped:Connect(function()
 end)
 
 tool.Activated:Connect(function()
-	if not isEquipped then return end
+	if not isEquipped then
+		return
+	end
 
 	executeFire()
 end)

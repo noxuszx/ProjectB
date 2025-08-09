@@ -25,6 +25,10 @@ CollectionServiceTags.SELLABLE_MID   = "SELLABLE_MID"
 CollectionServiceTags.SELLABLE_HIGH  = "SELLABLE_HIGH"
 CollectionServiceTags.SELLABLE_SCRAP = "SELLABLE_SCRAP"
 
+-- Puzzle system tags
+CollectionServiceTags.PEDESTAL = "PEDESTAL"
+CollectionServiceTags.EGYPT_DOOR = "EGYPT_DOOR"
+CollectionServiceTags.TOWER_BALL = "TOWER_BALL"
 
 -- Protected geometry tags for CustomModelSpawner optimization
 CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
