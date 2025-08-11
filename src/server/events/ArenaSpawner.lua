@@ -48,8 +48,6 @@ local function expandEntriesForMarker(markerName, entries)
 end
 
 local function buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
-	-- phaseWaves is ArenaConfig.Waves.PhaseX
-	-- markerOrder is an array of marker names to consider
 	local buckets = {}
 	local total = 0
 	for _, markerName in ipairs(markerOrder) do
@@ -143,7 +141,6 @@ end
 function ArenaSpawner.spawnSkeletonMummyWave()
 	print("[ArenaSpawner] DEBUG: spawnSkeletonMummyWave called")
 	
-	-- Start the Arena AI Manager if not already running
 	local aiManager = ArenaAIManager.getInstance()
 	print("[ArenaSpawner] DEBUG: ArenaAIManager isActive:", aiManager.isActive)
 	if not aiManager.isActive then

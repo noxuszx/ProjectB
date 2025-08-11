@@ -7,9 +7,33 @@ local RunService = game:GetService("RunService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+-- External modules
+local RagdollModule  = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local FoodDropSystem = require(ServerScriptService.Server.loot.FoodDropSystem)
 
 local ArenaCreature = {}
 ArenaCreature.__index = ArenaCreature
+
+-- RemoteEvent helper for health bar updates (matches Base creature pattern)
+local function getUpdateCreatureHealthRemote()
+	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
+	if not remotesFolder then
+		remotesFolder = Instance.new("Folder")
+		remotesFolder.Name = "Remotes"
+		remotesFolder.Parent = ReplicatedStorage
+	end
+
+	local updateCreatureHealthRemote = remotesFolder:FindFirstChild("UpdateCreatureHealth")
+	if not updateCreatureHealthRemote then
+		updateCreatureHealthRemote = Instance.new("RemoteEvent")
+		updateCreatureHealthRemote.Name = "UpdateCreatureHealth"
+		updateCreatureHealthRemote.Parent = remotesFolder
+	end
+
+	return updateCreatureHealthRemote
+end
 
 -- ============================================
 -- CONFIGURATION
@@ -43,7 +67,6 @@ local CONFIG = {
 -- ============================================
 
 function ArenaCreature.new(model, creatureType, spawnPosition)
-	print("[ArenaCreature] DEBUG: Constructor called for", creatureType)
 	local self = setmetatable({}, ArenaCreature)
 	
 	-- Model and identity
@@ -51,20 +74,16 @@ function ArenaCreature.new(model, creatureType, spawnPosition)
 	self.creatureType = creatureType
 	self.spawnPosition = spawnPosition
 	self.uniqueId = creatureType .. "_" .. tostring(tick())
-	print("[ArenaCreature] DEBUG: Basic properties set")
 	
 	-- Components
 	self.humanoid = model:FindFirstChild("Humanoid")
 	self.rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart")
-	print("[ArenaCreature] DEBUG: Found humanoid:", self.humanoid ~= nil, "rootPart:", self.rootPart ~= nil)
 	
 	if not self.humanoid or not self.rootPart then
 		warn("[ArenaCreature] Missing Humanoid or RootPart for", creatureType)
 		if not self.humanoid then
-			print("[ArenaCreature] DEBUG: Missing Humanoid")
 		end
 		if not self.rootPart then
-			print("[ArenaCreature] DEBUG: Missing RootPart - PrimaryPart:", model.PrimaryPart, "HumanoidRootPart:", model:FindFirstChild("HumanoidRootPart"))
 		end
 		return nil
 	end
@@ -103,16 +122,16 @@ function ArenaCreature.new(model, creatureType, spawnPosition)
 	self.stuckCounter = 0
 	
 	-- Set up death handling
-	print("[ArenaCreature] DEBUG: Setting up death handling...")
 	self:setupDeathHandling()
+
+	-- Set up health display updates for client UI
+	self:setupHealthDisplay()
 	
 	-- Set collision group for better movement
-	print("[ArenaCreature] DEBUG: Setting up collisions...")
 	self:setupCollisions()
 	
 	print(string.format("[ArenaCreature] Created %s at position (%.1f, %.1f, %.1f)", 
 		creatureType, spawnPosition.X, spawnPosition.Y, spawnPosition.Z))
-	print("[ArenaCreature] DEBUG: Constructor completed successfully")
 	
 	return self
 end
@@ -121,25 +140,50 @@ end
 -- INITIALIZATION
 -- ============================================
 
+function ArenaCreature:setupHealthDisplay()
+	-- Hook health changes to drive client health bars
+	local humanoid = self.humanoid
+	if not humanoid then return end
+	
+	humanoid.HealthChanged:Connect(function(newHealth)
+		local maxHealth = humanoid.MaxHealth or 100
+		-- Only send when hurt; client hides when full
+		if newHealth < maxHealth then
+			local remote = getUpdateCreatureHealthRemote()
+			remote:FireAllClients(self.model, newHealth, maxHealth)
+		end
+		-- If dead or zero, notify as well so client can remove
+		if newHealth <= 0 then
+			local remote = getUpdateCreatureHealthRemote()
+			remote:FireAllClients(self.model, 0, maxHealth)
+		end
+	end)
+end
+
 function ArenaCreature:setupDeathHandling()
+	-- Ensure joints are preserved on death so ragdoll can convert Motor6Ds to constraints
+	self.humanoid.BreakJointsOnDeath = false
+	print("[ArenaCreature] DEBUG: BreakJointsOnDeath set to false for", self.creatureType)
+
 	self.humanoid.Died:Connect(function()
+		print("[ArenaCreature] DEBUG: Humanoid.Died fired for", self.creatureType)
 		self:die()
 	end)
 	
 	-- Hide health bar
 	self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	self.humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+	
+	-- Tag the humanoid so weapons can damage it properly
+	CollectionService:AddTag(self.humanoid, "Creature")
+	CollectionService:AddTag(self.model, "Creature")
 end
 
 function ArenaCreature:setupCollisions()
-	print("[ArenaCreature] DEBUG: Setting collision groups for model parts...")
-	-- Set collision group for creature parts
-	local partCount = 0
+	-- Only unanchor parts and set network owner - no collision groups for now
 	local anchoredCount = 0
 	for _, part in ipairs(self.model:GetDescendants()) do
 		if part:IsA("BasePart") then
-			part.CollisionGroup = "Creature"
-			partCount = partCount + 1
 			-- Check if any parts are anchored (they shouldn't be!)
 			if part.Anchored then
 				anchoredCount = anchoredCount + 1
@@ -148,12 +192,9 @@ function ArenaCreature:setupCollisions()
 			end
 		end
 	end
-	print("[ArenaCreature] DEBUG: Set collision group for", partCount, "parts, unanchored", anchoredCount, "parts")
 	
 	-- Ensure server owns physics
-	print("[ArenaCreature] DEBUG: Setting network owner to server...")
 	self.rootPart:SetNetworkOwner(nil)
-	print("[ArenaCreature] DEBUG: Collision setup complete")
 end
 
 -- ============================================
@@ -161,7 +202,6 @@ end
 -- ============================================
 
 function ArenaCreature:setTarget(player)
-	print("[ArenaCreature] DEBUG: setTarget called for", self.creatureType, "with player:", player and player.Name or "nil")
 	if self.currentTarget == player then
 		return
 	end
@@ -231,7 +271,6 @@ function ArenaCreature:updatePath()
 	
 	-- Use direct movement for short distances
 	if distance < CONFIG.PATH_COMPUTE_DISTANCE then
-		print("[ArenaCreature] DEBUG: Close range - using direct movement")
 		self.humanoid:MoveTo(targetPosition)
 		self.currentPath = nil
 		-- Keep waypoints empty but save target position to prevent recomputation
@@ -245,7 +284,6 @@ function ArenaCreature:updatePath()
 		local targetMoved = (targetPosition - self.lastTargetPosition).Magnitude
 		if targetMoved < CONFIG.PATH_RECOMPUTE_DISTANCE and self.currentPath and #self.waypoints > 0 then
 			-- Target hasn't moved much and we still have waypoints, keep using current path
-			print("[ArenaCreature] DEBUG: Target hasn't moved much, keeping current path")
 			return true
 		end
 	end
@@ -277,7 +315,6 @@ function ArenaCreature:computePath(targetPosition)
 		return false
 	end
 	
-	print("[ArenaCreature] DEBUG: Computing path from", self.rootPart.Position, "to", targetPosition)
 	
 	-- Record that we're computing a path
 	aiManager:recordPathCompute(self.uniqueId)
@@ -303,18 +340,11 @@ function ArenaCreature:computePath(targetPosition)
 		return false
 	end
 	
-	print("[ArenaCreature] DEBUG: Path status:", path.Status)
 	if path.Status == Enum.PathStatus.Success then
 		self.currentPath = path
 		self.waypoints = path:GetWaypoints()
 		self.currentWaypointIndex = 1
-		print("[ArenaCreature] DEBUG: Got", #self.waypoints, "waypoints")
 		
-		-- Debug first few waypoints
-		for i = 1, math.min(3, #self.waypoints) do
-			local wp = self.waypoints[i]
-			print("  Waypoint", i, ":", wp.Position, "Action:", wp.Action)
-		end
 		
 		-- Start moving to first waypoint
 		if #self.waypoints > 0 then
@@ -347,7 +377,6 @@ function ArenaCreature:moveToWaypoint()
 	end
 	
 	-- Move to waypoint
-	print("[ArenaCreature] DEBUG: Moving to waypoint", self.currentWaypointIndex, "at", waypoint.Position)
 	self.humanoid:MoveTo(waypoint.Position)
 end
 
@@ -367,7 +396,6 @@ function ArenaCreature:updateMovement()
 			
 			-- Check if reached waypoint (using XZ distance)
 			if xzDistance < CONFIG.WAYPOINT_THRESHOLD then
-				print("[ArenaCreature] DEBUG: Reached waypoint", self.currentWaypointIndex, "moving to next")
 				self.currentWaypointIndex = self.currentWaypointIndex + 1
 				self:moveToWaypoint()
 			end
@@ -509,7 +537,6 @@ function ArenaCreature:update(deltaTime)
 	
 	-- Validate and update target
 	if not self:validateTarget() then
-		print("[ArenaCreature] DEBUG: Lost target for", self.creatureType)
 		self.currentTarget = nil
 		return
 	end
@@ -540,7 +567,6 @@ function ArenaCreature:update(deltaTime)
 					if targetMoved >= CONFIG.PATH_RECOMPUTE_DISTANCE then
 						-- Only log if we can actually compute
 						if self:updatePath() then
-							print("[ArenaCreature] DEBUG: Target moved, path updated")
 							self.lastPathComputeTime = currentTime
 						end
 					end
@@ -582,6 +608,13 @@ function ArenaCreature:takeDamage(amount)
 	end
 	
 	self.humanoid:TakeDamage(amount)
+	-- Explicitly send an update (HealthChanged will also fire, but this is immediate)
+	local health = self.humanoid.Health
+	local maxHealth = self.humanoid.MaxHealth
+	if health < maxHealth then
+		local remote = getUpdateCreatureHealthRemote()
+		remote:FireAllClients(self.model, health, maxHealth)
+	end
 end
 
 -- ============================================
@@ -598,18 +631,59 @@ function ArenaCreature:die()
 	
 	print(string.format("[ArenaCreature] %s died", self.creatureType))
 	
+	-- Notify clients to remove health bar
+	local remote = getUpdateCreatureHealthRemote()
+	local mh = self.humanoid and self.humanoid.MaxHealth or 100
+	remote:FireAllClients(self.model, 0, mh)
+	
 	-- Clean up
 	self.currentTarget = nil
 	self.currentPath = nil
 	self.waypoints = {}
 	
-	-- Destroy model after a short delay
-	Debris:AddItem(self.model, 2)
+	-- Handle death effects based on creature type via shared systems
+	if self.creatureType:find("Scorpion") then
+		-- Scorpion drops 1-2 food items using server FoodDropSystem
+		local drops = math.random(1, 2)
+		for i = 1, drops do
+			local ok = pcall(function()
+				FoodDropSystem.dropFood("Scorpion", self.rootPart.Position, self.model)
+			end)
+			if not ok then
+				warn("[ArenaCreature] FoodDropSystem.dropFood failed for Scorpion (drop #" .. i .. ")")
+			end
+		end
+		Debris:AddItem(self.model, 2)
+	else
+		-- Debug: count Motor6D joints before ragdoll to ensure they still exist
+		local motorCount = 0
+		for _, d in ipairs(self.model:GetDescendants()) do
+			if d:IsA("Motor6D") then motorCount += 1 end
+		end
+		print(string.format("[ArenaCreature] DEBUG: %s has %d Motor6D joints at death", self.creatureType, motorCount))
+
+		-- Use shared RagdollModule for permanent NPC ragdoll
+		local ok, res = pcall(function()
+			return RagdollModule.PermanentNpcRagdoll(self.model)
+		end)
+		if not ok or not res then
+			warn("[ArenaCreature] RagdollModule.PermanentNpcRagdoll failed for", self.creatureType)
+		end
+		Debris:AddItem(self.model, 10)
+	end
 end
 
 function ArenaCreature:destroy()
 	self.isActive = false
 	self.isDead = true
+	
+	-- Remove tags
+	if self.humanoid then
+		CollectionService:RemoveTag(self.humanoid, "Creature")
+	end
+	if self.model then
+		CollectionService:RemoveTag(self.model, "Creature")
+	end
 	
 	if self.model and self.model.Parent then
 		self.model:Destroy()

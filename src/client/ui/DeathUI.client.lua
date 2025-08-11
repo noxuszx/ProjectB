@@ -16,6 +16,9 @@ local titleLabel 	  = deathGui:WaitForChild("TextLabel")
 local timerLabel 	  = deathGui:WaitForChild("TextTimer")
 local deathFrame 	  = deathGui:WaitForChild("DeathFrame")
 
+-- Reference to ArenaGui to hide it when death UI shows
+local arenaGui = playerGui:WaitForChild("ArenaGui")
+
 local reviveButton 	  = deathFrame:WaitForChild("ReviveBTN")
 local lobbyButton 	  = deathFrame:WaitForChild("LobbyBTN")
 local reviveAllButton = deathFrame:FindFirstChild("RevivAllBTN")
@@ -33,6 +36,9 @@ local function showDeathUI(timeoutSeconds)
 
 	isShowingDeathUI = true
 	deathGui.Enabled = true
+	
+	-- Hide ArenaUI when death UI is shown to prevent overlap
+	arenaGui.Enabled = false
 
 	print("[DeathUI] Showing death UI with", timeoutSeconds, "second timeout")
 
