@@ -1,13 +1,17 @@
 -- src/server/events/ArenaSpawner.server.lua
 -- Spawns arena waves at predefined Workspace.ArenaSpawns markers
+-- Now uses dedicated Arena AI system for better performance and behavior
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace 		= game:GetService("Workspace")
+local Workspace = game:GetService("Workspace")
 local CollectionService = game:GetService("CollectionService")
 
-local ArenaConfig 	  = require(ReplicatedStorage.Shared.config.ArenaConfig)
-local CS_tags 	 	  = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-local CreatureSpawner = require(script.Parent.Parent.ai.CreatureSpawner)
+local ArenaConfig = require(ReplicatedStorage.Shared.config.ArenaConfig)
+local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+
+-- Use the new Arena AI system
+local ArenaAIManager = require(script.Parent.Parent.ai.arena.ArenaAIManager)
+local ArenaCreatureSpawner = require(script.Parent.Parent.ai.arena.ArenaCreatureSpawner)
 
 local ArenaSpawner = {}
 
@@ -23,25 +27,10 @@ local function getTaggedSpawnMarkers()
 	return markers
 end
 
-local function enhanceEnemyAggro(aiController)
-	if not aiController then
-		return
-	end
-	local model = aiController.model or aiController.Model or nil
+-- Enhanced aggro is now handled by the Arena AI system
+local function tagArenaEnemy(model)
 	if model then
 		CollectionService:AddTag(model, CS_tags.ARENA_ENEMY)
-	end
-	if aiController.DetectionRange ~= nil then
-		aiController.DetectionRange = ArenaConfig.Aggro.DetectionRange
-	end
-	if aiController.ChaseRange ~= nil then
-		aiController.ChaseRange = ArenaConfig.Aggro.ChaseRange
-	end
-	aiController.detectionRange = ArenaConfig.Aggro.DetectionRange
-	if tostring(aiController.creatureType) ~= "Scorpion" then
-		aiController.usePathfinding = true
-	else
-		aiController.usePathfinding = false
 	end
 end
 
@@ -91,26 +80,52 @@ local function buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
 end
 
 local function spawnOneAtMarker(markerInstance, creatureType)
+	print("[ArenaSpawner] DEBUG: spawnOneAtMarker called with:", creatureType, "at marker:", markerInstance.Name)
 	local pos = markerInstance.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3))
-	local ok, ai = pcall(function()
-		return CreatureSpawner.spawnCreature(creatureType, pos, { activationMode = "Zone" })
-	end)
-	if ok and ai then
-		enhanceEnemyAggro(ai)
-		local AIManager = require(script.Parent.Parent.ai.AIManager)
-		local manager = AIManager.getInstance()
-		if manager and manager.registerCreature then
-			manager:registerCreature(ai)
-		end
+	print("[ArenaSpawner] DEBUG: Spawn position:", tostring(pos))
+	
+	-- Map old creature types to new Arena variants
+	local arenaCreatureType = creatureType
+	if creatureType == "EgyptianSkeleton" then
+		arenaCreatureType = "ArenaEgyptianSkeleton"
+	elseif creatureType == "EgyptianSkeleton2" then
+		arenaCreatureType = "ArenaEgyptianSkeleton2"
+	elseif creatureType == "Scorpion" then
+		arenaCreatureType = "ArenaScorpion"
+	elseif creatureType == "Mummy" then
+		-- If Mummy is used, default to ArenaEgyptianSkeleton
+		arenaCreatureType = "ArenaEgyptianSkeleton"
+	end
+	print("[ArenaSpawner] DEBUG: Mapped", creatureType, "to", arenaCreatureType)
+	
+	-- Spawn using the new Arena system
+	print("[ArenaSpawner] DEBUG: Calling ArenaCreatureSpawner.spawnCreature...")
+	local creature = ArenaCreatureSpawner.spawnCreature(arenaCreatureType, pos)
+	if creature and creature.model then
+		print("[ArenaSpawner] DEBUG: Creature spawned successfully, tagging as arena enemy")
+		tagArenaEnemy(creature.model)
 		return true
+	else
+		print("[ArenaSpawner] DEBUG: Failed to spawn creature")
 	end
 	return false
 end
 
 local function spawnPhase(phaseName, phaseWaves, markerOrder)
+	print("[ArenaSpawner] DEBUG: spawnPhase called for:", phaseName)
+	print("[ArenaSpawner] DEBUG: markerOrder:", table.concat(markerOrder, ", "))
+	
 	local markers = getTaggedSpawnMarkers()
+	print("[ArenaSpawner] DEBUG: Found markers:")
+	for name, marker in pairs(markers) do
+		print("  -", name, "at", tostring(marker.Position))
+	end
+	
 	local stagger = (ArenaConfig.SpawnStaggerSeconds and ArenaConfig.SpawnStaggerSeconds[phaseName]) or 0.2
+	print("[ArenaSpawner] DEBUG: Stagger time:", stagger)
+	
 	local plan = buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
+	print("[ArenaSpawner] DEBUG: Spawn plan has", #plan, "entries")
 
 	local spawned = 0
 	for _, item in ipairs(plan) do
@@ -126,7 +141,26 @@ local function spawnPhase(phaseName, phaseWaves, markerOrder)
 end
 
 function ArenaSpawner.spawnSkeletonMummyWave()
+	print("[ArenaSpawner] DEBUG: spawnSkeletonMummyWave called")
+	
+	-- Start the Arena AI Manager if not already running
+	local aiManager = ArenaAIManager.getInstance()
+	print("[ArenaSpawner] DEBUG: ArenaAIManager isActive:", aiManager.isActive)
+	if not aiManager.isActive then
+		print("[ArenaSpawner] DEBUG: Starting ArenaAIManager...")
+		local success = aiManager:start()
+		print("[ArenaSpawner] DEBUG: ArenaAIManager start result:", success)
+	end
+	
 	local w = ArenaConfig.Waves.Phase1
+	print("[ArenaSpawner] DEBUG: Phase1 wave config:")
+	for spawnerName, spawns in pairs(w) do
+		print("  ", spawnerName, ":", #spawns, "spawn groups")
+		for i, spawn in ipairs(spawns) do
+			print("    ", spawn.Type, "x", spawn.Count)
+		end
+	end
+	
 	return spawnPhase("Phase1", w, { "WideSpawner1", "WideSpawner2" })
 end
 
@@ -142,6 +176,15 @@ function ArenaSpawner.spawnScorpionElites()
 		table.insert(order, "ScorpionSpawner" .. i)
 	end
 	return spawnPhase("Phase3", w, order)
+end
+
+-- Clean up function for when arena ends
+function ArenaSpawner.cleanup()
+	local aiManager = ArenaAIManager.getInstance()
+	if aiManager.isActive then
+		aiManager:stop()
+	end
+	ArenaCreatureSpawner.cleanupAllCreatures()
 end
 
 return ArenaSpawner

@@ -1,11 +1,11 @@
-
-local Players 			= game:GetService("Players")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
-local TweenService 		= game:GetService("TweenService")
+local TweenService = game:GetService("TweenService")
 
 local ArenaConfig = require(ReplicatedStorage.Shared.config.ArenaConfig)
-local CS_tags 	  = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local ArenaAIManager = require(script.Parent.Parent.ai.arena.ArenaAIManager)
 
 local ArenaManager = {}
 
@@ -122,6 +122,12 @@ function ArenaManager.start()
 		inArena[p.UserId] = true
 	end
 
+	-- Start the Arena AI Manager
+	local aiManager = ArenaAIManager.getInstance()
+	if not aiManager.isActive then
+		aiManager:start()
+	end
+
 	setSealEnabled(true)
 	fireAll(ArenaConfig.Remotes.StartTimer, { startTime = startTime, endTime = endTime })
 
@@ -199,6 +205,19 @@ function ArenaManager.victory()
 		return false
 	end
 	currentState = State.Victory
+	
+	-- Stop the Arena AI Manager and clean up creatures
+	local aiManager = ArenaAIManager.getInstance()
+	if aiManager.isActive then
+		aiManager:stop()
+	end
+	
+	-- Clean up arena spawner
+	local ArenaSpawner = require(script.Parent.ArenaSpawner)
+	if ArenaSpawner.cleanup then
+		ArenaSpawner.cleanup()
+	end
+	
 	setSealEnabled(false)
 	fireAll(ArenaConfig.Remotes.Victory, { message = ArenaConfig.UI.VictoryMessage })
 	return true

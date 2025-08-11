@@ -122,6 +122,12 @@ local function init()
 		return false
 	end
 
+	-- Initialize the Egypt door system first
+	if not EgyptDoor.init() then
+		warn("[PedestalController] Failed to initialize Egypt door!")
+		return false
+	end
+
 	-- Setup pedestal zones
 	if not setupPedestals() then
 		warn("[PedestalController] Failed to setup pedestals!")

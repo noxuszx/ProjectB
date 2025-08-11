@@ -131,15 +131,12 @@ function EgyptDoor.getDoorPart()
 	return doorPart
 end
 
-local function init()
+function EgyptDoor.init()
 	if not initializeDoor() then
 		return false
 	end
 
 	return true
 end
-
--- Initialize on module load
-init()
 
 return EgyptDoor

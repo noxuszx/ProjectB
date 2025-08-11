@@ -22,27 +22,39 @@ ArenaConfig.SpawnStaggerSeconds = {
 
 -- Enemy aggro overrides for arena-only spawns
 ArenaConfig.Aggro = {
-	DetectionRange = 70,
-	ChaseRange = 70,
+	DetectionRange = 150, -- Large detection range for instant engagement
+	ChaseRange = 200, -- Extended chase range to prevent losing targets
+	AttackRange = 5, -- Melee attack range
 }
 
--- Wave composition (keep peak ~35)
+-- Wave composition with arena-specific creatures
 ArenaConfig.Waves = {
 	Phase1 = {
-		WideSpawner1 = { {Type = "EgyptianSkeleton", Count = 3}, {Type = "Mummy", Count = 2} },
-		WideSpawner2 = { {Type = "EgyptianSkeleton", Count = 3}, {Type = "Mummy", Count = 2} },
+		-- Initial wave: balanced count for performance
+		WideSpawner1 = { {Type = "EgyptianSkeleton", Count = 5} },
+		WideSpawner2 = { {Type = "EgyptianSkeleton", Count = 5} },
 	},
 	Phase2 = {
+		-- Reinforcement wave: stronger skeletons (total: 10 creatures)
 		WideSpawner1 = { {Type = "EgyptianSkeleton2", Count = 5} },
 		WideSpawner2 = { {Type = "EgyptianSkeleton2", Count = 5} },
 	},
 	Phase3 = {
+		-- Elite wave: scorpions spread across arena (total: 5 creatures)
 		ScorpionSpawner1 = { {Type = "Scorpion", Count = 1} },
 		ScorpionSpawner2 = { {Type = "Scorpion", Count = 1} },
 		ScorpionSpawner3 = { {Type = "Scorpion", Count = 1} },
 		ScorpionSpawner4 = { {Type = "Scorpion", Count = 1} },
 		ScorpionSpawner5 = { {Type = "Scorpion", Count = 1} },
 	},
+}
+
+-- Arena AI configuration
+ArenaConfig.AI = {
+	MaxCreaturesPerPlayer = 5, -- Prevent overwhelming single players
+	TargetRedistributionInterval = 2.0, -- Seconds between redistributing targets
+	PathfindingUpdateRate = 0.5, -- How often to update pathfinding
+	EnableSmartTargeting = true, -- Distribute enemies across players
 }
 
 -- Workspace instance paths (can be overridden if you restructure)
