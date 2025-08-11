@@ -7,14 +7,17 @@
 local Village = {}
 
 -- Essential Village spawning parameters
-Village.VILLAGES_TO_SPAWN = {3, 4}				-- Min and max villages to spawn
-Village.STRUCTURES_PER_VILLAGE = {5, 10}		-- Min and max structures per Village (increased min to 4 for mandatory structures)
-Village.VILLAGE_RADIUS = 80					-- Maximum spread of structures in a Village (increased from 50)
-Village.STRUCTURE_SPACING = 5					-- Minimum distance between structures in Village (corrected from 50 to match plan)
+Village.VILLAGES_TO_SPAWN = {3, 4}				-- Min and max villages to spawn (increased)
+Village.STRUCTURES_PER_VILLAGE = {8, 14}		-- Min and max structures per Village (more buildings)
+Village.VILLAGE_RADIUS = 120					-- Maximum spread of structures in a Village (increased to fit more)
+Village.STRUCTURE_SPACING = 5					-- Minimum distance between structures in Village (kept tight for density)
 
 -- NEW: Mandatory structure system
 Village.MANDATORY_STRUCTURES = {"Shop1", "Shop2", "Campfire", "Well"}	-- Must appear once per village
-Village.CAMPFIRE_BUFFER = 15					-- Minimum gap (studs) between campfire and other structures
+Village.CAMPFIRE_BUFFER = 10					-- Minimum gap (studs) between campfire and other structures (reduced for density)
+
+-- NEW: Global spacing between villages
+Village.MIN_VILLAGE_DISTANCE = 0			-- Minimum center-to-center distance between villages (0 disables spacing)
 
 -- NEW: Frame budgeting
 Village.BATCH_SIZE = 1							-- Structures to spawn per frame (will be adjusted per device)

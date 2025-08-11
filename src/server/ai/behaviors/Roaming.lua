@@ -102,12 +102,22 @@ function RoamingBehavior:followUp(creature, deltaTime)
 			return
 		end
 
-		-- Continue moving towards target (this call is cheap)
-		if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.02 then -- Log 2% of the time to avoid spam
-			print(string.format("[RoamingBehavior] %s followUp - still moving, distance: %.1f, time: %.1f", 
-				creature.creatureType, distanceToTarget, timeSinceStart))
+		-- Continue moving towards target
+		if creature.usePathfinding then
+			local PathNav = require(script.Parent.Parent.PathNav)
+			local stillFollowing = PathNav.step(creature, creature.moveSpeed)
+			-- If path ended or could not be followed, pick a new destination instead of standing
+			if not stillFollowing then
+				self.state = RoamingState.CHOOSING_DESTINATION
+				return
+			end
+		else
+			if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.02 then -- Log 2% of the time to avoid spam
+				print(string.format("[RoamingBehavior] %s followUp - still moving, distance: %.1f, time: %.1f", 
+					creature.creatureType, distanceToTarget, timeSinceStart))
+			end
+			self:moveTowards(creature, self.targetPosition, creature.moveSpeed, deltaTime)
 		end
-		self:moveTowards(creature, self.targetPosition, creature.moveSpeed, deltaTime)
 	end
 end
 
@@ -117,6 +127,9 @@ function RoamingBehavior:update(creature, deltaTime)
 
 	-- Check for threats/players first (expensive player detection)
 	local nearestPlayer, distance = self:findNearestPlayer(creature)
+	if AIConfig.Debug.LogBehaviorChanges then
+		print(string.format("[RoamingBehavior] %s detection check: nearest=%s dist=%.1f range=%.1f", creature.creatureType, tostring(nearestPlayer and nearestPlayer.Name), distance or -1, creature.detectionRange or -1))
+	end
 	if nearestPlayer then
 		local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 
@@ -234,12 +247,28 @@ function RoamingBehavior:updateChoosingDestination(creature)
 	self.state = RoamingState.MOVING
 	self.moveStartTime = nil -- Reset move start time for new movement
 	
-	-- Immediately issue the first MoveTo command
+	-- Movement: use pathfinding for arena enemies, else direct MoveTo
 	local humanoid = creature.model:FindFirstChild("Humanoid")
 	if humanoid then
-		humanoid:MoveTo(self.targetPosition)
-		self.lastMoveGoal = self.targetPosition
-		humanoid.WalkSpeed = creature.moveSpeed
+		if creature.usePathfinding then
+			local PathNav = require(script.Parent.Parent.PathNav)
+			local waypoints = select(1, PathNav.computePath(creature.model.PrimaryPart.Position, self.targetPosition))
+			if waypoints and #waypoints > 0 then
+				PathNav.setPath(creature, waypoints)
+				-- Kick first step immediately
+				PathNav.step(creature, creature.moveSpeed)
+			else
+				-- Fallback: direct MoveTo if path fails
+				humanoid:MoveTo(self.targetPosition)
+				self.lastMoveGoal = self.targetPosition
+				humanoid.WalkSpeed = creature.moveSpeed
+			end
+		else
+			-- Legacy movement
+			humanoid:MoveTo(self.targetPosition)
+			self.lastMoveGoal = self.targetPosition
+			humanoid.WalkSpeed = creature.moveSpeed
+		end
 	end
 
 	if AIConfig.Debug.LogBehaviorChanges then

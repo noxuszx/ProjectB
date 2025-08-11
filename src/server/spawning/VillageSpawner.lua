@@ -19,9 +19,10 @@ local random = Random.new()
 
 local VillageSpawner = {}
 local mandatorySet 	 = {}
+local spawnedVillageCenters = {}
 
 local PLAYER_SPAWN_PROTECT_RADIUS = 50
-local MAX_ATTEMPTS = 10
+local MAX_ATTEMPTS = 40
 
 local villageFolder = Instance.new("Folder")
 villageFolder.Name = "SpawnedVillages"
@@ -269,7 +270,7 @@ local function spawnVillage(models, chunkPosition)
 		local optionalCount = math.max(0, numStructures - mandatoryCount)
 
 
--- Optional pool without mandatory names
+	-- Optional pool without mandatory names
 	local optionalPool = {}
 	for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
     	if not mandatorySet[name] then
@@ -278,19 +279,13 @@ local function spawnVillage(models, chunkPosition)
 	end
 	-- Safeguard: if pool is empty, skip optional placement
 	if #optionalPool > 0 then
-	for _, name in ipairs(villageConfig.AVAILABLE_STRUCTURES) do
-    	if not mandatorySet[name] then
-        	table.insert(optionalPool, name)
-    	end
-	end
-
-	for i = 1, optionalCount do
-    	local randomStructure = optionalPool[random:NextInteger(1, #optionalPool)]
-			local placementInfo = placeOptional(models, randomStructure, chunkPosition, occupiedRects)
-			if placementInfo then
-				table.insert(placementInfos, placementInfo)
-			end
-    	end
+		for i = 1, optionalCount do
+    		local randomStructure = optionalPool[random:NextInteger(1, #optionalPool)]
+				local placementInfo = placeOptional(models, randomStructure, chunkPosition, occupiedRects)
+				if placementInfo then
+					table.insert(placementInfos, placementInfo)
+				end
+    		end
 	end
 	
 	-- Step 4: Actually spawn all placed structures (frame-batched)
@@ -335,11 +330,14 @@ function VillageSpawner.spawnVillages()
 		end
 	end
 	
+	-- Reset spawned village centers tracking
+	spawnedVillageCenters = {}
+	
 	-- Generate list of village positions to spawn
 	local numVillages = random:NextInteger(villageConfig.VILLAGES_TO_SPAWN[1], villageConfig.VILLAGES_TO_SPAWN[2])
 	local villageJobs = {}
 	local attempts = 0
-	local maxAttempts = numVillages * 5
+	local maxAttempts = numVillages * 20
 
 	-- Build job list of potential village positions
 	while #villageJobs < numVillages and attempts < maxAttempts do
@@ -363,14 +361,44 @@ function VillageSpawner.spawnVillages()
 	local spawnedVillages = 0
 	local batchSize = FrameBudgetConfig.getBatchSize("VILLAGES")
 	
+	local function isFarFromExisting(pos)
+		-- If min distance is 0 or not set, allow all placements
+		if not villageConfig.MIN_VILLAGE_DISTANCE or villageConfig.MIN_VILLAGE_DISTANCE <= 0 then
+			return true
+		end
+		for _, existing in ipairs(spawnedVillageCenters) do
+			if (pos - existing).Magnitude < villageConfig.MIN_VILLAGE_DISTANCE then
+				return false
+			end
+		end
+		return true
+	end
+	
 	FrameBatched.run(villageJobs, batchSize, function(chunkPosition)
+		-- Enforce minimum distance between villages
+		if not isFarFromExisting(chunkPosition) then
+			return
+		end
 		local success = spawnVillage(models, chunkPosition)
 		if success then
 			spawnedVillages = spawnedVillages + 1
+			table.insert(spawnedVillageCenters, chunkPosition)
 		end
 	end)
 
 	print(spawnedVillages .. " out of " .. numVillages .. " villages spawned successfully!")
+end
+
+-- Debug helpers
+function VillageSpawner.getSpawnedVillagePositions()
+	return spawnedVillageCenters
+end
+
+function VillageSpawner.debugPrint()
+	print("[VillageSpawner] Spawned villages:", #spawnedVillageCenters)
+	for i, pos in ipairs(spawnedVillageCenters) do
+		print(string.format("  %d) (%.1f, %.1f, %.1f)", i, pos.X, pos.Y, pos.Z))
+	end
 end
 
 return VillageSpawner

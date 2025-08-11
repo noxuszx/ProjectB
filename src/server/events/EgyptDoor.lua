@@ -24,16 +24,12 @@ local doorState = "closed" -- "closed", "opening", "open", "closing"
 
 -- Initialize door references and calculate positions
 local function initializeDoor()
-	local doors = CollectionService:GetTagged(CollectionServiceTags.EGYPT_DOOR)
+	local doors = CollectionServiceTags.getLiveTagged(CollectionServiceTags.EGYPT_DOOR)
 
 	if #doors == 0 then
-		warn("[EgyptDoor] No door found with EGYPT_DOOR tag")
 		return false
 	end
 
-	if #doors > 1 then
-		warn("[EgyptDoor] Multiple doors found with EGYPT_DOOR tag, using first one")
-	end
 
 	doorPart = doors[1]
 	originalPosition = doorPart.Position
@@ -42,7 +38,6 @@ local function initializeDoor()
 	local doorHeight = doorPart.Size.Y
 	openPosition = originalPosition - Vector3.new(0, doorHeight + 2, 0)
 
-	print("[EgyptDoor] Door initialized at position:", originalPosition)
 	return true
 end
 
@@ -69,7 +64,6 @@ end
 -- Open the door (slide down)
 function EgyptDoor.openDoor()
 	if not doorPart then
-		warn("[EgyptDoor] Door not initialized, cannot open")
 		return
 	end
 
@@ -77,7 +71,6 @@ function EgyptDoor.openDoor()
 		return
 	end
 
-	print("[EgyptDoor] Opening door")
 	doorState = "opening"
 
 	-- Cancel any existing tween
@@ -92,7 +85,6 @@ function EgyptDoor.openDoor()
 	currentTween.Completed:Connect(function(playbackState)
 		if playbackState == Enum.PlaybackState.Completed then
 			doorState = "open"
-			print("[EgyptDoor] Door opened successfully")
 		end
 		currentTween = nil
 	end)
@@ -103,7 +95,6 @@ end
 -- Close the door (slide up)
 function EgyptDoor.closeDoor()
 	if not doorPart then
-		warn("[EgyptDoor] Door not initialized, cannot close")
 		return
 	end
 
@@ -111,7 +102,6 @@ function EgyptDoor.closeDoor()
 		return -- Already closed or closing
 	end
 
-	print("[EgyptDoor] Closing door")
 	doorState = "closing"
 
 	-- Cancel any existing tween
@@ -126,7 +116,6 @@ function EgyptDoor.closeDoor()
 	currentTween.Completed:Connect(function(playbackState)
 		if playbackState == Enum.PlaybackState.Completed then
 			doorState = "closed"
-			print("[EgyptDoor] Door closed successfully")
 		end
 		currentTween = nil
 	end)
@@ -144,11 +133,9 @@ end
 
 local function init()
 	if not initializeDoor() then
-		warn("[EgyptDoor] Failed to initialize door system")
 		return false
 	end
 
-	print("[EgyptDoor] Module initialized successfully")
 	return true
 end
 

@@ -8,6 +8,11 @@ local RunService = game:GetService("RunService")
 
 local TimeConfig = require(ReplicatedStorage.Shared.config.Time)
 
+-- Cache RemoteEvents
+local remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TimeSystem")
+local periodChangedRemote = remotes:WaitForChild("PeriodChanged")
+local syncTimeRemote = remotes:WaitForChild("SyncTime")
+
 local DayNightCycle = {}
 local currentTime = TimeConfig.START_TIME
 local cycleStartTime = os.clock()
@@ -51,13 +56,13 @@ local function updateTime()
 	local gameTimeProgress = (elapsedTime / TimeConfig.DAY_LENGTH) * 24
 
 	currentTime = (TimeConfig.START_TIME + gameTimeProgress) % 24
-	local Lighting = game:GetService("Lighting")
-	Lighting.ClockTime = currentTime
 	local newPeriod = getTimePeriod(currentTime)
 
+	-- Only fire RemoteEvent when period actually changes
 	if newPeriod ~= currentPeriod then
 		lastPeriod = currentPeriod
 		currentPeriod = newPeriod
+		periodChangedRemote:FireAllClients(newPeriod, currentTime)
 	end
 end
 
@@ -122,8 +127,19 @@ function DayNightCycle.init()
 	cycleStartTime = os.clock()
 	currentPeriod = getTimePeriod(currentTime)
 	
+	-- Use throttled updates instead of every frame
+	local lastUpdate = 0
 	RunService.Heartbeat:Connect(function()
-		updateTime()
+		local now = os.clock()
+		if now - lastUpdate >= TimeConfig.UPDATE_INTERVAL then
+			updateTime()
+			lastUpdate = now
+		end
+	end)
+	
+	-- Handle time sync requests from clients
+	syncTimeRemote.OnServerEvent:Connect(function(player)
+		syncTimeRemote:FireClient(player, currentTime)
 	end)
 	
 	print("Day/Night cycle initialized...")

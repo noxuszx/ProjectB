@@ -217,8 +217,12 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
     elseif cmd == "unfly" or cmd == "walk" then disableFly(plr)
 elseif cmd == "god" then applyGodMode(plr)
     elseif cmd == "ungod" then removeGodMode(plr)
-    elseif cmd == "noclip" or cmd == "nc"   then enableNoclip(plr)
-    elseif cmd == "clip"                       then disableNoclip(plr) end
+    elseif cmd == "noclip" or cmd == "nc"   then
+        enableNoclip(plr)
+        enableFly(plr)
+    elseif cmd == "clip" then
+        disableNoclip(plr)
+    end
 end
 
 ---------------------------------------------------------------------

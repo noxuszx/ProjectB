@@ -136,6 +136,20 @@ end
 
 function BaseCreature:update(deltaTime)
 	if not self.isActive or not self.model or not self.model.Parent then return end
+	
+	-- Gate AI behavior when creature is being ridden
+	if self.model:GetAttribute("Mounted") then return end
+	
+	-- Check if we just got dismounted and need to restore behavior
+	if self._wasMounted and not self.model:GetAttribute("Mounted") then
+		self._wasMounted = false
+		self:restorePostMountBehavior()
+	end
+	
+	-- Track mounted state for next update
+	if self.model:GetAttribute("Mounted") then
+		self._wasMounted = true
+	end
 
 	if not self.model.PrimaryPart then
 		print(
@@ -483,6 +497,11 @@ function BaseCreature:destroyDebugGUI()
 		self.debugGUI:Destroy()
 		self.debugGUI = nil
 	end
+end
+
+function BaseCreature:restorePostMountBehavior()
+	-- Default implementation - subclasses should override this
+	-- For camels, restore to appropriate default behavior
 end
 
 return BaseCreature

@@ -18,19 +18,34 @@ local ballCounts = {}
 
 -- Initialize pedestal detection system
 local function setupPedestals()
-	local pedestalParts = CollectionService:GetTagged(CollectionServiceTags.PEDESTAL)
+	-- Use utility to get only workspace pedestals
+	local pedestalParts = CollectionServiceTags.getLiveTagged(CollectionServiceTags.PEDESTAL)
+	
+	print("[PedestalController] Found", #pedestalParts, "pedestals in workspace")
 
 	if #pedestalParts == 0 then
-		warn("[PedestalController] No pedestals found with PEDESTAL tag")
+		print("[PedestalController] No workspace pedestal parts found!")
 		return false
 	end
 
-	print("[PedestalController] Found", #pedestalParts, "pedestals")
-
 	for i, pedestal in ipairs(pedestalParts) do
 		if not pedestal:IsA("BasePart") then
-			warn("[PedestalController] Pedestal", i, "is not a BasePart, skipping")
+			print("[PedestalController] Skipping non-BasePart:", pedestal.Name)
 			continue
+		end
+
+		print("[PedestalController] Setting up pedestal", i, ":", pedestal.Name, "at", pedestal.Position)
+		
+		-- Debug: Check all tags on this pedestal
+		local tags = CollectionService:GetTags(pedestal)
+		print("[PedestalController] Pedestal", i, "tags:", table.concat(tags, ", "))
+
+		-- Remove protection that blocks ZonePlus detection
+		if CollectionService:HasTag(pedestal, "CMS:ProtectedCore") then
+			CollectionService:RemoveTag(pedestal, "CMS:ProtectedCore")
+			print("[PedestalController] Removed CMS:ProtectedCore from pedestal", i)
+		else
+			print("[PedestalController] Pedestal", i, "does not have CMS:ProtectedCore tag")
 		end
 
 		-- Store pedestal reference
@@ -40,6 +55,8 @@ local function setupPedestals()
 
 		local zone = ZonePlus.new(pedestal)
 		pedestalZones[i] = zone
+		
+		print("[PedestalController] Created ZonePlus zone for pedestal", i)
 
 		zone.partEntered:Connect(function(part)
 			onBallEntered(zone, part, i)
@@ -48,11 +65,9 @@ local function setupPedestals()
 		zone.partExited:Connect(function(part)
 			onBallExited(zone, part, i)
 		end)
-
-		print("[PedestalController] Created ZonePlus zone for pedestal", i, "using pedestal part directly")
 	end
-
-	print("[PedestalController] Successfully set up", #pedestals, "pedestal zones")
+	
+	print("[PedestalController] Successfully set up", #pedestals, "pedestals with zones")
 	return true
 end
 
@@ -62,21 +77,8 @@ function onBallEntered(zone, part, pedestalIndex)
 	end
 
 	ballCounts[pedestalIndex] = ballCounts[pedestalIndex] + 1
-
-	local wasOccupied = pedestalStates[pedestalIndex]
 	pedestalStates[pedestalIndex] = ballCounts[pedestalIndex] > 0
-
-	print(
-		"[PedestalController] Ball entered pedestal",
-		pedestalIndex,
-		"- Balls:",
-		ballCounts[pedestalIndex],
-		"- State changed:",
-		wasOccupied,
-		"→",
-		pedestalStates[pedestalIndex]
-	)
-
+	
 	evaluateDoorState()
 end
 
@@ -86,21 +88,8 @@ function onBallExited(zone, part, pedestalIndex)
 	end
 
 	ballCounts[pedestalIndex] = math.max(0, ballCounts[pedestalIndex] - 1)
-
-	local wasOccupied = pedestalStates[pedestalIndex]
 	pedestalStates[pedestalIndex] = ballCounts[pedestalIndex] > 0
-
-	print(
-		"[PedestalController] Ball exited pedestal",
-		pedestalIndex,
-		"- Balls:",
-		ballCounts[pedestalIndex],
-		"- State changed:",
-		wasOccupied,
-		"→",
-		pedestalStates[pedestalIndex]
-	)
-
+	
 	evaluateDoorState()
 end
 
@@ -116,74 +105,64 @@ function evaluateDoorState()
 		end
 	end
 
-	print("[PedestalController] Pedestal status:", occupiedCount, "of", #pedestals, "occupied")
-
 	if allOccupied and #pedestals > 0 then
-		print("[PedestalController] All pedestals occupied - Opening door")
 		EgyptDoor.openDoor()
 	else
-		print("[PedestalController] Not all pedestals occupied - Closing door")
 		EgyptDoor.closeDoor()
 	end
 end
 
-local function getSystemStatus()
-	local status = {
-		pedestalCount = #pedestals,
-		pedestalStates = {},
-		ballCounts = {},
-		doorState = EgyptDoor.getDoorState(),
-	}
-
-	for i = 1, #pedestals do
-		status.pedestalStates[i] = pedestalStates[i]
-		status.ballCounts[i] = ballCounts[i]
-	end
-
-	return status
-end
-
 -- Initialize the system
 local function init()
-	print("[PedestalController] Initializing pedestal ball detection system...")
-
+	print("[PedestalController] Initializing pedestal detection system...")
+	
 	-- Wait for ZonePlus to be available
 	if not ZonePlus then
-		warn("[PedestalController] ZonePlus not found - cannot initialize")
+		warn("[PedestalController] ZonePlus not available!")
 		return false
 	end
 
 	-- Setup pedestal zones
 	if not setupPedestals() then
-		warn("[PedestalController] Failed to setup pedestals")
+		warn("[PedestalController] Failed to setup pedestals!")
 		return false
 	end
 
 	-- Initial door state evaluation
 	evaluateDoorState()
-
-	print("[PedestalController] System initialized successfully")
+	
+	print("[PedestalController] Pedestal system initialized successfully!")
 	return true
 end
 
+-- Wait for initialization signal from ChunkInit
+local function waitForInitSignal()
+	-- Check if event already exists
+	local existingEvent = ReplicatedStorage:FindFirstChild("InitPedestal")
+	if existingEvent then
+		print("[PedestalController] Found existing initialization signal!")
+		init()
+		return
+	end
+	
+	-- Otherwise wait for it
+	ReplicatedStorage.ChildAdded:Connect(function(child)
+		if child.Name == "InitPedestal" and child:IsA("BindableEvent") then
+			print("[PedestalController] Received initialization signal!")
+			init()
+		end
+	end)
+end
+
+-- Add small delay to ensure ChunkInit runs first, then check for signal
+task.wait(1)
+waitForInitSignal()
+
 -- Handle cleanup when server shuts down
 game:BindToClose(function()
-	print("[PedestalController] Cleaning up zones...")
 	for i, zone in ipairs(pedestalZones) do
 		if zone and zone.destroy then
 			zone:destroy()
 		end
 	end
 end)
-
--- Public API for debugging
-local PedestalController = {
-	getSystemStatus = getSystemStatus,
-	evaluateDoorState = evaluateDoorState,
-}
-
-if not init() then
-	warn("[PedestalController] Failed to initialize pedestal controller")
-end
-
-return PedestalController

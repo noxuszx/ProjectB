@@ -42,4 +42,11 @@ function PassiveCreature:takeDamage(amount, threatSource)
 	end
 end
 
+function PassiveCreature:restorePostMountBehavior()
+	-- Restore to roaming behavior after being dismounted
+	if not self.currentBehavior or self.currentBehavior.behaviorName ~= "Roaming" then
+		self:setBehavior(RoamingBehavior.new())
+	end
+end
+
 return PassiveCreature

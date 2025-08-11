@@ -234,6 +234,31 @@ local AIConfig = {
 			ModelFolder = "HostileCreatures",
 			DamageCooldown = 1.5,
 		},
+
+		EgyptianSkeleton = {
+			Type = "Hostile",
+			Health = 200,
+			MoveSpeed = 18,
+			DetectionRange = 30,
+			TouchDamage = 25,
+			ChaseSpeed = 22,
+			RoamRadius = 18,
+			IdleTime = {6, 15},
+			ModelFolder = "HostileCreatures",
+			DamageCooldown = 1.5,
+		},
+		EgyptianSkeleton2 = {
+			Type = "Hostile",
+			Health = 200,
+			MoveSpeed = 18,
+			DetectionRange = 30,
+			TouchDamage = 25,
+			ChaseSpeed = 22,
+			RoamRadius = 18,
+			IdleTime = {6, 15},
+			ModelFolder = "HostileCreatures",
+			DamageCooldown = 1.5,
+		},
 	},
 
 	-- Spawning system settings

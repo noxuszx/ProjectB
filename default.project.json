@@ -20,7 +20,10 @@
         }
       },
       "Items": {
-        "$className": "Folder"
+        "$className": "Folder",
+        "Artifacts": {
+          "$className": "Folder"
+        }
       },
       "Money": {
         "$className": "Folder"
@@ -63,6 +66,15 @@
         "StopRide": {
           "$className": "RemoteEvent"
         },
+        "TimeSystem": {
+          "$className": "Folder",
+          "PeriodChanged": {
+            "$className": "RemoteEvent"
+          },
+          "SyncTime": {
+            "$className": "RemoteEvent"
+          }
+        },
         "UpdateCreatureHealth": {
           "$className": "RemoteEvent"
         },
@@ -92,6 +104,24 @@
           "CollectCash": {
             "$className": "RemoteEvent"
           }
+        },
+        "Death": {
+          "$className": "Folder",
+          "ShowUI": {
+            "$className": "RemoteEvent"
+          },
+          "RequestRespawn": {
+            "$className": "RemoteEvent"
+          }
+        },
+        "Arena": {
+          "$className": "Folder",
+          "StartTimer": { "$className": "RemoteEvent" },
+          "Pause": { "$className": "RemoteEvent" },
+          "Resume": { "$className": "RemoteEvent" },
+          "Sync": { "$className": "RemoteEvent" },
+          "Victory": { "$className": "RemoteEvent" },
+          "PostGameChoice": { "$className": "RemoteEvent" }
         },
         "ConsumeFood": {
           "$className": "RemoteEvent"

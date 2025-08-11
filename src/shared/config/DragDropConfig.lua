@@ -4,11 +4,11 @@
 
 local DragDropConfig = {
     
-    DRAG_RANGE = 12,                    -- Maximum distance to detect draggable objects
-    CARRY_DISTANCE = 9,                 -- Distance to maintain objects while dragging
-    MAX_CARRY_DISTANCE = 20,            -- Maximum distance before auto-dropping
-    CARRY_SMOOTHNESS = 0.06,            -- Smoothing factor for drag movement
-    THROW_BOOST = 8,                    -- Velocity multiplier when throwing objects
+    DRAG_RANGE = 12,
+    CARRY_DISTANCE = 9,
+    MAX_CARRY_DISTANCE = 20,
+    CARRY_SMOOTHNESS = 0.06,
+    THROW_BOOST = 8,
     
     WELD_DETECTION_RADIUS = 3.0,
     WELD_HOVER_UPDATE_THROTTLE = 0.1,

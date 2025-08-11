@@ -5,9 +5,10 @@
 
 local TimeConfig = {}
 
-TimeConfig.DAY_LENGTH = 480
+TimeConfig.DAY_LENGTH = 270  -- 4.5 minutes total
 TimeConfig.START_TIME = 6
 
+-- Night period: 6 hours (1.5 minutes real time)
 TimeConfig.DAWN_START = 5.5
 TimeConfig.SUNRISE_START = 6.0
 TimeConfig.MORNING_START = 8.0
@@ -16,18 +17,18 @@ TimeConfig.AFTERNOON_START = 15.0
 TimeConfig.SUNSET_START = 18.0
 TimeConfig.DUSK_START = 19.0
 TimeConfig.NIGHT_START = 20.0
-TimeConfig.MIDNIGHT_START = 24.0
+TimeConfig.MIDNIGHT_START = 23.5  -- Night: 23.5 -> 5.5 = 6 hours
 
 TimeConfig.LIGHTING_PRESETS = {
 	
 	NIGHT = {
 		ClockTime = 3,
-		Ambient = Color3.fromRGB(15, 25, 45),
-		Brightness = 0.5,
-		ColorShift_Bottom = Color3.fromRGB(10, 15, 30),
-		ColorShift_Top = Color3.fromRGB(25, 35, 60),
-		OutdoorAmbient = Color3.fromRGB(20, 30, 50),
-		description = "Cool desert night with moon"
+		Ambient = Color3.fromRGB(60, 50, 70),
+		Brightness = 1.2,
+		ColorShift_Bottom = Color3.fromRGB(120, 80, 100),
+		ColorShift_Top = Color3.fromRGB(80, 60, 120),
+		OutdoorAmbient = Color3.fromRGB(100, 70, 90),
+		description = "Purple dusk"
 	},
 	
 	DAWN = {

@@ -132,6 +132,8 @@ function ZoneSpawnerController.setupFloor(towerId, floorIndex, floorModel)
 		lastSpawnTime = 0,
 		creatures = {},
 		zone = nil,
+		hasSpawned = false, -- Track if this spawner has already spawned its creatures
+		totalSpawned = 0,   -- Track how many creatures have been spawned total
 	}
 
 	towers[towerId].floors[floorIndex] = floorData
@@ -170,7 +172,7 @@ function ZoneSpawnerController.createZone(towerId, floorData)
 end
 
 function ZoneSpawnerController.handlePlayerEnteredZone(towerId, floorIndex, player)
-	local debounceKey = towerId .. "_" .. floorIndex .. "_" .. player.Name / l
+	local debounceKey = towerId .. "_" .. floorIndex .. "_" .. player.Name
 	if debounceTimers[debounceKey] then
 		return
 	end
@@ -217,26 +219,47 @@ function ZoneSpawnerController.floorSpawningLoop(towerId, floorIndex)
 	local tower = towers[towerId]
 	local floorData = tower.floors[floorIndex]
 
-	while floorData.active and tower.model.Parent do
+	-- If this spawner has already spawned its creatures, don't spawn anymore
+	if floorData.hasSpawned then
+		print(string.format("[ZoneSpawnerController] Floor %d already spawned its creatures, skipping", floorIndex))
+		floorData.active = false
+		return
+	end
+
+	-- Use original loop logic but with one-time spawning limit
+	local targetSpawns = floorData.maxActive
+	local spawned = 0
+	
+	print(string.format("[ZoneSpawnerController] Starting one-time spawn cycle for floor %d (target: %d creatures)", floorIndex, targetSpawns))
+
+	while floorData.active and tower.model.Parent and spawned < targetSpawns do
 		local aiManager = AIManager.getInstance()
 		if aiManager:getCreatureCount() >= AIConfig.Settings.MaxCreatures then
 			task.wait(10)
 			continue
 		end
 
-		if
-			#floorData.creatures < floorData.maxActive
-			and tower.totalCreatures < AIConfig.TowerSpawning.Settings.MaxTowerCreatures
-		then
-			local currentTime = os.clock()
-			if currentTime - floorData.lastSpawnTime >= floorData.spawnInterval then
-				ZoneSpawnerController.spawnCreatureOnFloor(towerId, floorIndex)
-				floorData.lastSpawnTime = currentTime
-			end
+		if tower.totalCreatures >= AIConfig.TowerSpawning.Settings.MaxTowerCreatures then
+			print("[ZoneSpawnerController] Tower creature limit reached, stopping spawn")
+			break
+		end
+
+		local currentTime = os.clock()
+		if currentTime - floorData.lastSpawnTime >= floorData.spawnInterval then
+			ZoneSpawnerController.spawnCreatureOnFloor(towerId, floorIndex)
+			floorData.lastSpawnTime = currentTime
+			spawned = spawned + 1
 		end
 
 		task.wait(1)
 	end
+	
+	-- Mark this spawner as having completed its spawn cycle
+	floorData.hasSpawned = true
+	floorData.totalSpawned = spawned
+	floorData.active = false -- Permanently disable this spawner
+	
+	print(string.format("[ZoneSpawnerController] Floor %d spawning complete: %d creatures spawned, spawner permanently disabled", floorIndex, spawned))
 end
 
 function ZoneSpawnerController.spawnCreatureOnFloor(towerId, floorIndex)

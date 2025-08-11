@@ -11,6 +11,7 @@ local DayNightCycle         = require(script.Parent.environment.DayNightCycle)
 local VillageSpawner        = require(script.Parent.spawning.VillageSpawner)
 local CoreStructureSpawner  = require(script.Parent.spawning.CoreStructureSpawner)
 local ItemSpawner           = require(script.Parent.spawning.ItemSpawner)
+local EventItemSpawner      = require(script.Parent.events.EventItemSpawner)
 local LightingManager       = require(script.Parent.environment.Lighting)
 local ChunkConfig           = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
@@ -38,6 +39,17 @@ local function mobileOptimizedInit()
 	
 	print("Spawning world content (terrain-dependent)...")
 	CoreStructureSpawner.spawnLandmarks()
+	
+	-- Add delay to ensure pyramids are fully positioned before pedestal init
+	task.wait(0.5)
+	
+	-- Initialize pedestal system after pyramids are spawned and positioned
+	local initPedestalEvent = Instance.new("BindableEvent")
+	initPedestalEvent.Name = "InitPedestal"
+	initPedestalEvent.Parent = game.ReplicatedStorage
+	print("[ChunkInit] Firing pedestal initialization signal...")
+	initPedestalEvent:Fire()
+	
 	VillageSpawner.spawnVillages()
 	
 	local SpawnerPlacement = require(script.Parent.ai.SpawnerPlacement)
@@ -46,6 +58,9 @@ local function mobileOptimizedInit()
 	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
 
 	ItemSpawner.Initialize()
+	
+	print("Spawning event items on pedestals...")
+	EventItemSpawner.initialize()
 
 	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)
@@ -74,6 +89,17 @@ local function desktopOptimizedInit()
 		ChunkManager.init()
 		-- Place core structures first to establish landmarks
 		CoreStructureSpawner.spawnLandmarks()
+		
+		-- Add delay to ensure pyramids are fully positioned before pedestal init
+		task.wait(0.5)
+		
+		-- Initialize pedestal system after pyramids are spawned and positioned
+		local initPedestalEvent = Instance.new("BindableEvent")
+		initPedestalEvent.Name = "InitPedestal"
+		initPedestalEvent.Parent = game.ReplicatedStorage
+		print("[ChunkInit] Firing pedestal initialization signal...")
+		initPedestalEvent:Fire()
+		
 		-- Place villages after core structures to avoid overlaps
 		VillageSpawner.spawnVillages()
 		-- After villages, place creature spawners
@@ -117,6 +143,9 @@ local function desktopOptimizedInit()
 	
 	print("Initializing items...")
 	ItemSpawner.Initialize()
+	
+	print("Spawning event items on pedestals...")
+	EventItemSpawner.initialize()
 	
 	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)

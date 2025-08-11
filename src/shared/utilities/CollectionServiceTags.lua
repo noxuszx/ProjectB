@@ -30,6 +30,20 @@ CollectionServiceTags.PEDESTAL = "PEDESTAL"
 CollectionServiceTags.EGYPT_DOOR = "EGYPT_DOOR"
 CollectionServiceTags.TOWER_BALL = "TOWER_BALL"
 
+-- Arena system tags
+CollectionServiceTags.ARENA_ANKH    = "ARENA_ANKH"
+CollectionServiceTags.ARENA_ENEMY   = "ARENA_ENEMY"
+CollectionServiceTags.TREASURE_DOOR = "TREASURE_DOOR"
+CollectionServiceTags.ARENA_SPAWN   = "ARENA_SPAWN" -- spawn point parts (e.g., WideSpawner1/2, ScorpionSpawner1..5)
+CollectionServiceTags.ARENA_TELEPORT_MARKER = "ARENA_TELEPORT_MARKER" -- player teleport markers around pedestal
+CollectionServiceTags.PYRAMID_SEAL  = "PYRAMID_SEAL" -- optional seal parts (fallback; EgyptDoor preferred)
+
+-- Event item pedestal tags
+CollectionServiceTags.PYRAMID_PEDESTAL = "PYRAMID_PEDESTAL" -- for Ankh spawning
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_1 = "BATTLE_TOWER_PEDESTAL_1" -- for Orb1 spawning
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_2 = "BATTLE_TOWER_PEDESTAL_2" -- for Orb2 spawning
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_3 = "BATTLE_TOWER_PEDESTAL_3" -- for Orb3 spawning
+
 -- Protected geometry tags for CustomModelSpawner optimization
 CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
 CollectionServiceTags.PROTECTED_CORE    = "CMS:ProtectedCore"
@@ -234,6 +248,25 @@ function CollectionServiceTags.getLiveTagged(tag)
         end
     end
     return live
+end
+
+-- Debug helper to show template vs workspace tagged instances
+function CollectionServiceTags.debugTaggedInstances(tag)
+    local all = CollectionService:GetTagged(tag)
+    local workspace_count = 0
+    local template_count = 0
+    
+    print("[DEBUG]", tag, "- Total found:", #all)
+    for _, inst in ipairs(all) do
+        if inst:IsDescendantOf(workspace) then
+            workspace_count = workspace_count + 1
+            print("[DEBUG]   Workspace:", inst.Name, "in", inst.Parent.Name)
+        else
+            template_count = template_count + 1
+            print("[DEBUG]   Template:", inst.Name, "in", inst.Parent.Name)
+        end
+    end
+    print("[DEBUG]", tag, "Summary: Workspace =", workspace_count, ", Templates =", template_count)
 end
 
 -- Helper function to tag a root object and all its BasePart descendants
