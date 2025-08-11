@@ -7,7 +7,7 @@ local AIBehavior = require(script.Parent.AIBehavior)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local PathNav = require(script.Parent.Parent.PathNav)
 
-local ChasingBehavior = setmetatable({}, {__index = AIBehavior})
+local ChasingBehavior = setmetatable({}, { __index = AIBehavior })
 ChasingBehavior.__index = ChasingBehavior
 
 function ChasingBehavior.new(targetPlayer)
@@ -24,7 +24,6 @@ function ChasingBehavior:enter(creature)
 	AIBehavior.enter(self, creature)
 
 	self.chaseStartTime = os.clock()
-
 
 	if AIConfig.Debug.LogBehaviorChanges then
 		local targetName = self.targetPlayer and self.targetPlayer.Name or "Unknown"
@@ -63,7 +62,6 @@ function ChasingBehavior:update(creature, deltaTime)
 	local chaseSpeed = creatureConfig and creatureConfig.ChaseSpeed or creature.moveSpeed * 1.2
 
 	if creature.usePathfinding then
-		-- Repath cadence + target movement threshold
 		local should = PathNav.shouldRepath(creature, targetPosition, 1.2, 8)
 		if should then
 			local waypoints = select(1, PathNav.computePath(currentPosition, targetPosition))
@@ -74,14 +72,12 @@ function ChasingBehavior:update(creature, deltaTime)
 		end
 		local following = PathNav.step(creature, chaseSpeed)
 		if not following then
-			-- Try one immediate repath if budget allows
 			local waypoints = select(1, PathNav.computePath(currentPosition, targetPosition))
 			if waypoints and #waypoints > 0 then
 				PathNav.setPath(creature, waypoints)
 				PathNav.markTarget(creature, targetPosition)
 				PathNav.step(creature, chaseSpeed)
 			else
-				-- Fallback to direct MoveTo to avoid freezing in place
 				self:moveTowards(creature, targetPosition, chaseSpeed, deltaTime)
 			end
 		end
@@ -91,18 +87,25 @@ function ChasingBehavior:update(creature, deltaTime)
 
 	-- Optional: Add some debug info
 	if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.01 then -- Log occasionally
-		print("[ChasingBehavior] " .. creature.creatureType .. " chasing " .. self.targetPlayer.Name ..
-			  " (distance: " .. string.format("%.1f", distance) .. ")")
+		print(
+			"[ChasingBehavior] "
+				.. creature.creatureType
+				.. " chasing "
+				.. self.targetPlayer.Name
+				.. " (distance: "
+				.. string.format("%.1f", distance)
+				.. ")"
+		)
 	end
 end
 
 function ChasingBehavior:isTargetValid()
-	return self.targetPlayer and
-		   self.targetPlayer.Parent and
-		   self.targetPlayer.Character and
-		   self.targetPlayer.Character.PrimaryPart and
-		   self.targetPlayer.Character:FindFirstChild("Humanoid") and
-		   self.targetPlayer.Character.Humanoid.Health > 0
+	return self.targetPlayer
+		and self.targetPlayer.Parent
+		and self.targetPlayer.Character
+		and self.targetPlayer.Character.PrimaryPart
+		and self.targetPlayer.Character:FindFirstChild("Humanoid")
+		and self.targetPlayer.Character.Humanoid.Health > 0
 end
 
 function ChasingBehavior:giveUpChase(creature, reason)

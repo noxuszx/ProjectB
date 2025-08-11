@@ -1,12 +1,11 @@
 -- src/server/ai/behaviors/FleeingBehavior.lua
 -- Simple fleeing behavior - creature runs away for a set time
--- TODO: Add actual movement later
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIBehavior = require(script.Parent.AIBehavior)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 
-local FleeingBehavior = setmetatable({}, {__index = AIBehavior})
+local FleeingBehavior = setmetatable({}, { __index = AIBehavior })
 FleeingBehavior.__index = FleeingBehavior
 
 function FleeingBehavior.new(threatSource)
@@ -15,8 +14,6 @@ function FleeingBehavior.new(threatSource)
 	self.threatSource = threatSource
 	self.fleeDuration = 0
 	self.fleeStartTime = 0
-	-- Removed: initialThreatDistance, minFleeDistance, lastPosition (unused in simplified version)
-
 	return self
 end
 
@@ -27,21 +24,25 @@ function FleeingBehavior:enter(creature)
 	self.fleeDuration = creatureConfig and creatureConfig.FleeDuration or 10
 	self.fleeStartTime = os.clock()
 
-
 	if AIConfig.Debug.LogBehaviorChanges then
 		local threatName = "Unknown"
 		if self.threatSource and self.threatSource.Name then
 			threatName = self.threatSource.Name
 		end
-		print("[FleeingBehavior] " .. creature.creatureType .. " fleeing from " .. threatName ..
-			  " for " .. self.fleeDuration .. " seconds")
+		print(
+			"[FleeingBehavior] "
+				.. creature.creatureType
+				.. " fleeing from "
+				.. threatName
+				.. " for "
+				.. self.fleeDuration
+				.. " seconds"
+		)
 	end
 end
 
 function FleeingBehavior:update(creature, deltaTime)
 	AIBehavior.update(self, creature, deltaTime)
-
-	-- Simple time-based fleeing - no complex distance calculations
 	local timeElapsed = os.clock() - self.fleeStartTime
 	if timeElapsed >= self.fleeDuration then
 		self:stopFleeing(creature, "time expired")
@@ -53,20 +54,20 @@ function FleeingBehavior:update(creature, deltaTime)
 	if fleeDirection then
 		local creatureConfig = AIConfig.CreatureTypes[creature.creatureType]
 		local fleeSpeed = creatureConfig and creatureConfig.FleeSpeed or creature.moveSpeed * 1.5
-
-		-- Use normal moveTowards instead of manual calculation
-		-- This ensures consistent movement with obstacle avoidance
 		local currentPosition = creature.model.PrimaryPart.Position
 		local fleeTargetPosition = currentPosition + (fleeDirection * 10) -- Look ahead 10 studs
-
 		self:moveTowards(creature, fleeTargetPosition, fleeSpeed, deltaTime)
 		self.lastPosition = currentPosition
 
-		-- Simplified debug logging
 		if AIConfig.Debug.LogBehaviorChanges and math.random() < 0.01 then
 			local remainingTime = self.fleeDuration - timeElapsed
-			print("[FleeingBehavior] " .. creature.creatureType .. " fleeing (" ..
-				  string.format("%.1f", remainingTime) .. "s remaining)")
+			print(
+				"[FleeingBehavior] "
+					.. creature.creatureType
+					.. " fleeing ("
+					.. string.format("%.1f", remainingTime)
+					.. "s remaining)"
+			)
 		end
 	end
 end
@@ -90,12 +91,10 @@ function FleeingBehavior:calculateFleeDirection(creature)
 		end
 	end
 
-	-- Fallback: random direction
 	local randomAngle = math.random() * math.pi * 2
 	return Vector3.new(math.cos(randomAngle), 0, math.sin(randomAngle))
 end
 
--- Helper function to get threat position from various threat source types
 function FleeingBehavior:getThreatPosition()
 	if not self.threatSource then
 		return nil
@@ -118,7 +117,6 @@ function FleeingBehavior:getThreatPosition()
 
 	return nil
 end
-
 
 function FleeingBehavior:stopFleeing(creature, reason)
 	if AIConfig.Debug.LogBehaviorChanges then

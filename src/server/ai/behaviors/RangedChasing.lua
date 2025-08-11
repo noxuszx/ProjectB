@@ -28,7 +28,6 @@ function RangedChasing:enter(creature)
 end
 
 function RangedChasing:update(creature, deltaTime)
-
 	AIBehavior.update(self, creature, deltaTime)
 	local currentTime = os.clock()
 
