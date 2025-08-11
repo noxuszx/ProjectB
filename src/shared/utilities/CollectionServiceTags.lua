@@ -53,6 +53,9 @@ CollectionServiceTags.PROTECTED_SPAWNER = "CMS:ProtectedSpawner"
 CollectionServiceTags.TOWER       = "Tower"
 CollectionServiceTags.MOB_SPAWNER = "MobSpawner"
 
+-- Treasure spawning system tags
+CollectionServiceTags.TREASURE_SPAWNER = "TREASURE_SPAWNER"
+
 
 
 function CollectionServiceTags.addTag(object, tag)

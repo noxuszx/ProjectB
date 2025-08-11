@@ -234,17 +234,23 @@ local function performLootRoll(spawnerConfig)
 		end
 	end
 
-	-- Keep unique items as previous behavior
-	local uniqueItems = {}
-	local seen = {}
-	for _, itemName in ipairs(rolledItems) do
-		if not seen[itemName] then
-			table.insert(uniqueItems, itemName)
-			seen[itemName] = true
+	-- Filter duplicates unless AllowDuplicates is true
+	if spawnerConfig.AllowDuplicates then
+		-- Return all rolled items including duplicates
+		return rolledItems
+	else
+		-- Keep unique items as previous behavior
+		local uniqueItems = {}
+		local seen = {}
+		for _, itemName in ipairs(rolledItems) do
+			if not seen[itemName] then
+				table.insert(uniqueItems, itemName)
+				seen[itemName] = true
+			end
 		end
+		
+		return uniqueItems
 	end
-
-	return uniqueItems
 end
 
 local function spawnItem(itemName, position)

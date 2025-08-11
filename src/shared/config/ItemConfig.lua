@@ -63,6 +63,25 @@ local ItemConfig = {
 				["Gold Crown"] = 0.5,
 
 			}
+		},
+
+		-- Dedicated pyramid treasure spawners
+		["goldbar"] = {
+			MaxRolls = 5,
+			MinRolls = 2,
+			AllowDuplicates = true,  -- Allow multiple of the same item
+			PossibleLoot = {
+				["Gold Bar"] = 1.0,  -- 100% chance to spawn gold bars
+			}
+		},
+
+		["goldstatue"] = {
+			MaxRolls = 2,
+			MinRolls = 2,
+			AllowDuplicates = true,  -- Allow multiple of the same item
+			PossibleLoot = {
+				["Gold Statue"] = 1.0,  -- 100% chance to spawn gold statues
+			}
 		}
 	}
 }

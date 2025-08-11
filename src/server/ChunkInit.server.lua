@@ -12,6 +12,7 @@ local VillageSpawner        = require(script.Parent.spawning.VillageSpawner)
 local CoreStructureSpawner  = require(script.Parent.spawning.CoreStructureSpawner)
 local ItemSpawner           = require(script.Parent.spawning.ItemSpawner)
 local EventItemSpawner      = require(script.Parent.events.EventItemSpawner)
+local TreasureSpawner       = require(script.Parent.spawning.TreasureSpawner)
 local LightingManager       = require(script.Parent.environment.Lighting)
 local ChunkConfig           = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local CollectionServiceTags = require(game.ReplicatedStorage.Shared.utilities.CollectionServiceTags)
@@ -49,6 +50,10 @@ local function mobileOptimizedInit()
 	initPedestalEvent.Parent = game.ReplicatedStorage
 	print("[ChunkInit] Firing pedestal initialization signal...")
 	initPedestalEvent:Fire()
+	
+	-- Initialize treasure spawning system after pyramid is built
+	print("Initializing treasure spawning system...")
+	TreasureSpawner.Initialize()
 	
 	VillageSpawner.spawnVillages()
 	
@@ -99,6 +104,10 @@ local function desktopOptimizedInit()
 		initPedestalEvent.Parent = game.ReplicatedStorage
 		print("[ChunkInit] Firing pedestal initialization signal...")
 		initPedestalEvent:Fire()
+		
+		-- Initialize treasure spawning system after pyramid is built
+		print("Initializing treasure spawning system...")
+		TreasureSpawner.Initialize()
 		
 		-- Place villages after core structures to avoid overlaps
 		VillageSpawner.spawnVillages()
