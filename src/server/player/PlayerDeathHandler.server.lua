@@ -1,29 +1,28 @@
 -- src/server/player/PlayerDeathHandler.server.lua
 -- Handles player death events and applies ragdoll physics
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RagdollModule = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local Players 			   = game:GetService("Players")
+local ReplicatedStorage    = game:GetService("ReplicatedStorage")
+local RagdollModule 	   = require(ReplicatedStorage.Shared.modules.RagdollModule)
 
--- Get death remotes
-local deathRemotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
-local showUIRemote = deathRemotes:WaitForChild("ShowUI")
+local deathRemotes 		   = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
+local showUIRemote 		   = deathRemotes:WaitForChild("ShowUI")
 local requestRespawnRemote = deathRemotes:WaitForChild("RequestRespawn")
+local revivalFeedbackRemote = deathRemotes:WaitForChild("RevivalFeedback")
 
-local PlayerDeathHandler = {}
-
--- Disable auto-respawn system
 Players.CharacterAutoLoads = false
 
-local ragdolledPlayers = {}
-local deadPlayers = {} -- Track death state per player
-local deathTimers = {} -- Track timeout timers per player
+local PlayerDeathHandler   = {}
+local ragdolledPlayers     = {}
+local deadPlayers 		   = {}
+local deathTimers 		   = {}
+local ragdollPositions 	   = {}
+local revivalPrompts	   = {}
 
--- Check if all players are dead
 local function areAllPlayersDead()
-	local alivePlayers = 0
-	local totalPlayers = 0
-	
+	local alivePlayers 	   = 0
+	local totalPlayers     = 0
+
 	for _, player in pairs(Players:GetPlayers()) do
 		if player and player.UserId then
 			totalPlayers = totalPlayers + 1
@@ -32,122 +31,195 @@ local function areAllPlayersDead()
 			end
 		end
 	end
-	
-	
-	-- Need at least one player and all must be dead
 	return totalPlayers > 0 and alivePlayers == 0
 end
 
--- Handle respawn requests
+
 local function handleRespawnRequest(player)
 	if not deadPlayers[player.UserId] then
-		return -- Player not dead, ignore
+		return
 	end
-	
-	
-	-- Cancel timeout timer
-	if deathTimers[player.UserId] then
-		task.cancel(deathTimers[player.UserId])
-		deathTimers[player.UserId] = nil
+
+	-- Prefer current body position (in case the body was dragged), fallback to original death position
+	local spawnPosition
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		spawnPosition = hrp.Position
+	else
+		spawnPosition = ragdollPositions[player.UserId]
 	end
-	
-	-- Clear death state
-	deadPlayers[player.UserId] = nil
+
+	if deathTimers  [player.UserId] then
+		task.cancel (deathTimers[player.UserId])
+		deathTimers [player.UserId]  = nil
+	end
+
+	deadPlayers		[player.UserId] = nil
 	ragdolledPlayers[player.UserId] = nil
+	ragdollPositions[player.UserId] = nil
 	
-	-- Respawn player
+	-- Clean up revival prompt
+	if revivalPrompts[player.UserId] then
+		revivalPrompts[player.UserId]:Destroy()
+		revivalPrompts[player.UserId] = nil
+	end
+
+	if spawnPosition then
+		-- Set position immediately when character spawns
+		local connection
+		connection = player.CharacterAdded:Connect(function(character)
+			connection:Disconnect()
+			local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+			humanoidRootPart.CFrame = CFrame.new(spawnPosition)
+		end)
+	end
+	
 	player:LoadCharacter()
 end
 
--- Handle forced respawn after timeout
+
 local function forceRespawn(player)
 	if not deadPlayers[player.UserId] then
-		return -- Player already respawned
+		return
 	end
-	
 	handleRespawnRequest(player)
 end
 
 local function onPlayerAdded(player)
-	-- Give initial character
 	player:LoadCharacter()
-	
+
 	local function onCharacterAdded(character)
 		local humanoid = character:WaitForChild("Humanoid")
-        humanoid.BreakJointsOnDeath = false
-        
-        -- Clear death state on new character
-        deadPlayers[player.UserId] = nil
-        ragdolledPlayers[player.UserId] = nil
-        
-        -- Cancel any existing timer
-        if deathTimers[player.UserId] then
-        	task.cancel(deathTimers[player.UserId])
-        	deathTimers[player.UserId] = nil
-        end
+		humanoid.BreakJointsOnDeath = false
+
+		deadPlayers[player.UserId] = nil
+		ragdolledPlayers[player.UserId] = nil
+		ragdollPositions[player.UserId] = nil
 		
+		-- Clean up revival prompt
+		if revivalPrompts[player.UserId] then
+			revivalPrompts[player.UserId]:Destroy()
+			revivalPrompts[player.UserId] = nil
+		end
+
+		if deathTimers[player.UserId] then
+			task.cancel(deathTimers[player.UserId])
+			deathTimers[player.UserId] = nil
+		end
+
 		humanoid.Died:Connect(function()
 			if ragdolledPlayers[player.UserId] or deadPlayers[player.UserId] then
-				return -- Already handled
+				return
 			end
-			
+
 			local success = RagdollModule.Ragdoll(character)
-			
+
 			if success then
 				ragdolledPlayers[player.UserId] = true
 				deadPlayers[player.UserId] = true
-				
-				-- Check if all players are now dead
-				local allDead = areAllPlayersDead()
-				
-				if allDead then
-					-- All players are now dead - show timer to ALL dead players
+				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+				if humanoidRootPart then
+					ragdollPositions[player.UserId] = humanoidRootPart.Position
 					
+					-- Create revival proximity prompt
+					local proximityPrompt = Instance.new("ProximityPrompt")
+					proximityPrompt.Name = "RevivalPrompt"
+					proximityPrompt.ActionText = "Revive Player"
+					proximityPrompt.ObjectText = player.Name
+					proximityPrompt.HoldDuration = 5
+					proximityPrompt.MaxActivationDistance = 12 -- restored to ensure reliability
+					proximityPrompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
+					proximityPrompt.RequiresLineOfSight = false -- ensure others can see/trigger even if parts obstruct
+					proximityPrompt.KeyboardKeyCode = Enum.KeyCode.E -- explicit "Hold E"
+					proximityPrompt.UIOffset = Vector2.new(0, -12) -- nudge it slightly off-center
+					proximityPrompt.Parent = humanoidRootPart
+					revivalPrompts[player.UserId] = proximityPrompt
+					
+					-- Hide the prompt from the dead player themselves
+					proximityPrompt:SetAttribute("HiddenFromPlayer", player.UserId)
+					
+					-- Handle revival attempts
+					proximityPrompt.Triggered:Connect(function(reviverPlayer)
+						if reviverPlayer == player then
+							return -- Dead player can't revive themselves
+						end
+						
+						-- Check if reviver has bandage or medkit
+						local backpack = reviverPlayer:FindFirstChild("Backpack")
+						local character = reviverPlayer.Character
+						local hasBandage = (backpack and backpack:FindFirstChild("Bandage")) or (character and character:FindFirstChild("Bandage"))
+						local hasMedkit = (backpack and backpack:FindFirstChild("Medkit")) or (character and character:FindFirstChild("Medkit"))
+						
+						if hasBandage or hasMedkit then
+							-- Consume the healing item
+							local healingTool = nil
+							if hasBandage then
+								healingTool = (backpack and backpack:FindFirstChild("Bandage")) or (character and character:FindFirstChild("Bandage"))
+							else
+								healingTool = (backpack and backpack:FindFirstChild("Medkit")) or (character and character:FindFirstChild("Medkit"))
+							end
+							
+							if healingTool then
+								healingTool:Destroy()
+								
+								-- Revive the player at their death location
+								handleRespawnRequest(player)
+							end
+						else
+							-- Show "requires healing item" message
+							revivalFeedbackRemote:FireClient(reviverPlayer, "requires_healing_item")
+						end
+					end)
+				end
+
+				local allDead = areAllPlayersDead()
+
+				if allDead then
 					for _, deadPlayer in pairs(Players:GetPlayers()) do
 						if deadPlayers[deadPlayer.UserId] then
-							showUIRemote:FireClient(deadPlayer, 30) -- 30 seconds timeout
-								
-							-- Start 30-second timeout timer for lobby return
+							showUIRemote:FireClient(deadPlayer, 30)
 							if deathTimers[deadPlayer.UserId] then
 								task.cancel(deathTimers[deadPlayer.UserId])
 							end
 							deathTimers[deadPlayer.UserId] = task.delay(30, function()
-								-- TODO: Send player back to lobby instead of respawning
 								forceRespawn(deadPlayer)
 							end)
 						end
 					end
 				else
-					-- Show death UI without timer (other players still alive)
-					showUIRemote:FireClient(player, 0) -- 0 = no timer
+					showUIRemote:FireClient(player, 0)
 				end
-				
 			else
 				warn("[PlayerDeathHandler] Failed to ragdoll player:", player.Name)
 			end
 		end)
 	end
-	
+
 	if player.Character then
 		onCharacterAdded(player.Character)
 	end
-	
+
 	player.CharacterAdded:Connect(onCharacterAdded)
 end
 
 local function onPlayerRemoving(player)
-	-- Clean up player data
 	ragdolledPlayers[player.UserId] = nil
 	deadPlayers[player.UserId] = nil
+	ragdollPositions[player.UserId] = nil
 	
-	-- Cancel any active timers
+	-- Clean up revival prompt
+	if revivalPrompts[player.UserId] then
+		revivalPrompts[player.UserId]:Destroy()
+		revivalPrompts[player.UserId] = nil
+	end
+
 	if deathTimers[player.UserId] then
 		task.cancel(deathTimers[player.UserId])
 		deathTimers[player.UserId] = nil
 	end
 end
 
--- Connect respawn request handler
 requestRespawnRemote.OnServerEvent:Connect(handleRespawnRequest)
 
 for _, player in pairs(Players:GetPlayers()) do
@@ -156,4 +228,3 @@ end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
-

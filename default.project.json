@@ -112,6 +112,9 @@
           },
           "RequestRespawn": {
             "$className": "RemoteEvent"
+          },
+          "RevivalFeedback": {
+            "$className": "RemoteEvent"
           }
         },
         "Arena": {

@@ -69,6 +69,47 @@ local throwBoost = 8
 local lastVelo = Vector3.new()
 local targetPos = nil
 
+-- Track temporary physics adjustments for carried character models
+local originalMassless = {}
+local originalProps = {}
+
+local function setAssemblyMassless(rootModel: Model, isMassless: boolean)
+	if not rootModel or not rootModel:IsA("Model") then return end
+	for _, d in ipairs(rootModel:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if isMassless then
+				-- store original once
+				if originalMassless[d] == nil then
+					originalMassless[d] = d.Massless
+				end
+				d.Massless = true
+				-- apply lighter custom physics similar to NPC handling
+				if originalProps[d] == nil then
+					originalProps[d] = d.CustomPhysicalProperties -- may be nil (use engine default)
+				end
+				d.CustomPhysicalProperties = PhysicalProperties.new(0.05, 0.2, 0, 0.5, 1)
+			else
+				-- restore if we have stored state
+				if originalMassless[d] ~= nil then
+					d.Massless = originalMassless[d]
+					originalMassless[d] = nil
+				else
+					-- default restore
+					d.Massless = false
+				end
+				-- restore original physical properties
+				if originalProps[d] ~= nil then
+					d.CustomPhysicalProperties = originalProps[d]
+					originalProps[d] = nil
+				else
+					-- clear to engine default
+					d.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5, 1, 1)
+				end
+			end
+		end
+	end
+end
+
 UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 	if gameProcessedEvent then
 		return
@@ -136,15 +177,24 @@ end)
 
 RS.RenderStepped:Connect(function(dT)
 	local ray = Ray.new(camera.CFrame.Position, camera.CFrame.LookVector * range)
-	local model, position = workspace:FindPartOnRay(ray, player.Character)
+	local hitPart, position = workspace:FindPartOnRay(ray, player.Character)
 
 	local targObj = nil
 
-	if model then
-		if CS_tags.isDraggable(model) then
-			targObj = model
-		elseif model.Parent and CS_tags.isDraggable(model.Parent) then
-			targObj = model.Parent
+	if hitPart then
+		-- Prefer selecting a ragdolled character model rather than a single limb
+		local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+		local hitModelPlayer = hitModel and game.Players:GetPlayerFromCharacter(hitModel)
+		if hitModel and CS_tags.hasTag(hitModel, CS_tags.DRAGGABLE) and hitModelPlayer ~= player then
+			-- Entire character is draggable; select the model (lighter to move)
+			targObj = hitModel
+		else
+			-- Fallback to original: part or its parent if tagged
+			if CS_tags.isDraggable(hitPart) then
+				targObj = hitPart
+			elseif hitPart.Parent and CS_tags.isDraggable(hitPart.Parent) then
+				targObj = hitPart.Parent
+			end
 		end
 	end
 
@@ -239,6 +289,12 @@ function LeftClick()
 
 		RP.Remotes.PickupItem:FireServer(currTargs)
 
+		-- If dragging a character model, make it lighter while being carried
+		local targHumanoid = currTargs:IsA("Model") and currTargs:FindFirstChildOfClass("Humanoid")
+		if targHumanoid then
+			setAssemblyMassless(currTargs, true)
+		end
+
 		if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
 			currTargs.CollisionGroup = "Item"
 		elseif currTargs:IsA("Tool") then
@@ -288,6 +344,11 @@ function DropItem(AddForce: boolean?)
 	originalCFrame = nil
 
 	RP.Remotes.DropItem:FireServer(currTargs, velocity)
+
+	-- Restore mass on character models
+	if currTargs and currTargs:IsA("Model") and currTargs:FindFirstChildOfClass("Humanoid") then
+		setAssemblyMassless(currTargs, false)
+	end
 
 	local objectToReset = currTargs
 	task.spawn(function()

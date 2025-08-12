@@ -2,6 +2,8 @@ local module = {}
 
 local remote = game.ReplicatedStorage.Remotes.Ragdoll
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 function module.Ragdoll(char : CharacterMesh)
 	local humanoid : Humanoid = char:WaitForChild("Humanoid")
@@ -50,11 +52,16 @@ function module.Ragdoll(char : CharacterMesh)
 		end
 	end
 	
-	-- If ragdoll was successful, make the body draggable (only tag the character model)
+	-- If ragdoll was successful, make the body draggable (tag the model DRAGGABLE; parts WELDABLE)
 	if ragdollSuccess then
-		CollectionService:AddTag(char, "Draggable")
-		CollectionService:AddTag(char, "Weldable")
-		
+		-- Mirror NPC behavior: fully enter physics state for lighter, predictable dragging
+		local humanoid: Humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+			humanoid.PlatformStand = true
+		end
+		CollectionServiceTags.addTag(char, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.tagDescendants(char, CollectionServiceTags.WELDABLE)
 		print("[RagdollModule] Player ragdolled and tagged for dragging:", char.Name)
 	end
 	
@@ -188,9 +195,8 @@ function module.PermanentNpcRagdoll(char : Model) -- Permanent ragdoll for creat
 		char:SetAttribute("Ragdolled", true)
 		char:SetAttribute("RagdollTime", os.clock())
 		
-		CollectionService:AddTag(char, "Draggable")
-		CollectionService:AddTag(char, "Weldable")
-		
+		CollectionServiceTags.addTag(char, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.tagDescendants(char, CollectionServiceTags.WELDABLE)
 		print("[RagdollModule] Successfully ragdolled and tagged for dragging:", char.Name)
 		return true
 	else
