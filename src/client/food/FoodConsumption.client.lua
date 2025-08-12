@@ -123,8 +123,8 @@ end
 -- Highlight a specific food item
 function FoodConsumption.highlightFood(food)
 	highlightedFood = food
-	if food:IsA("Model") and food.PrimaryPart then
-		highlight.Parent = food.PrimaryPart
+	if food:IsA("Model") then
+		highlight.Parent = food
 	elseif food:IsA("BasePart") then
 		highlight.Parent = food
 	else

@@ -30,7 +30,6 @@ function ZoneSpawnerController.init()
 
 	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.TOWER):Connect(function(towerModel)
 		if towerModel:IsDescendantOf(workspace) then
-			print("[ZoneSpawnerController] New tower detected:", towerModel.Name)
 			ZoneSpawnerController.setupTower(towerModel)
 		end
 	end)
@@ -38,7 +37,6 @@ function ZoneSpawnerController.init()
 	CollectionService:GetInstanceRemovedSignal(CollectionServiceTags.TOWER):Connect(function(towerModel)
 		local towerId = tostring(towerModel)
 		if towers[towerId] then
-			print("[ZoneSpawnerController] Tower removed:", towerModel.Name)
 			ZoneSpawnerController.cleanupTower(towerId)
 		end
 	end)
@@ -46,7 +44,6 @@ function ZoneSpawnerController.init()
 	local aiManager = AIManager.getInstance()
 	if aiManager.RegisterSpawnSource then
 		aiManager:RegisterSpawnSource("TowerSpawning", ZoneSpawnerController.handleSpawnRequest)
-		print("[ZoneSpawnerController] Registered with AIManager as spawn source")
 	else
 		warn("[ZoneSpawnerController] AIManager does not support RegisterSpawnSource - using fallback")
 	end
@@ -55,12 +52,11 @@ function ZoneSpawnerController.init()
 		ZoneSpawnerController.periodicUpdate()
 	end)
 
-	print("[ZoneSpawnerController] Tower spawning system initialized")
+	print("[ZoneSpawnerController] Tower spawning system initialized successfully!")
 end
 
 function ZoneSpawnerController.discoverTowers()
 	local towerModels = CollectionService:GetTagged(CollectionServiceTags.TOWER)
-	print("[ZoneSpawnerController] Found", #towerModels, "towers")
 
 	for _, towerModel in ipairs(towerModels) do
 		if towerModel:IsDescendantOf(workspace) then
@@ -71,7 +67,6 @@ end
 
 function ZoneSpawnerController.setupTower(towerModel)
 	local towerId = tostring(towerModel)
-	print("[ZoneSpawnerController] Setting up tower:", towerModel.Name)
 
 	towers[towerId] = {
 		model = towerModel,
@@ -221,7 +216,6 @@ function ZoneSpawnerController.floorSpawningLoop(towerId, floorIndex)
 
 	-- If this spawner has already spawned its creatures, don't spawn anymore
 	if floorData.hasSpawned then
-		print(string.format("[ZoneSpawnerController] Floor %d already spawned its creatures, skipping", floorIndex))
 		floorData.active = false
 		return
 	end
@@ -229,8 +223,6 @@ function ZoneSpawnerController.floorSpawningLoop(towerId, floorIndex)
 	-- Use original loop logic but with one-time spawning limit
 	local targetSpawns = floorData.maxActive
 	local spawned = 0
-	
-	print(string.format("[ZoneSpawnerController] Starting one-time spawn cycle for floor %d (target: %d creatures)", floorIndex, targetSpawns))
 
 	while floorData.active and tower.model.Parent and spawned < targetSpawns do
 		local aiManager = AIManager.getInstance()
@@ -240,7 +232,6 @@ function ZoneSpawnerController.floorSpawningLoop(towerId, floorIndex)
 		end
 
 		if tower.totalCreatures >= AIConfig.TowerSpawning.Settings.MaxTowerCreatures then
-			print("[ZoneSpawnerController] Tower creature limit reached, stopping spawn")
 			break
 		end
 
@@ -258,8 +249,6 @@ function ZoneSpawnerController.floorSpawningLoop(towerId, floorIndex)
 	floorData.hasSpawned = true
 	floorData.totalSpawned = spawned
 	floorData.active = false -- Permanently disable this spawner
-	
-	print(string.format("[ZoneSpawnerController] Floor %d spawning complete: %d creatures spawned, spawner permanently disabled", floorIndex, spawned))
 end
 
 function ZoneSpawnerController.spawnCreatureOnFloor(towerId, floorIndex)
@@ -360,8 +349,6 @@ function ZoneSpawnerController.cleanupTower(towerId)
 		return
 	end
 
-	print("[ZoneSpawnerController] Cleaning up tower:", tower.model.Name)
-
 	for floorIndex, zone in pairs(tower.zones) do
 		if zone and zone.destroy then
 			zone:destroy()
@@ -398,8 +385,6 @@ function ZoneSpawnerController.cleanupDeadCreatures()
 end
 
 function ZoneSpawnerController.shutdown()
-	print("[ZoneSpawnerController] Shutting down...")
-
 	if updateConnection then
 		updateConnection:Disconnect()
 		updateConnection = nil

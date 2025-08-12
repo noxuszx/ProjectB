@@ -21,31 +21,18 @@ local function setupPedestals()
 	-- Use utility to get only workspace pedestals
 	local pedestalParts = CollectionServiceTags.getLiveTagged(CollectionServiceTags.PEDESTAL)
 	
-	print("[PedestalController] Found", #pedestalParts, "pedestals in workspace")
-
 	if #pedestalParts == 0 then
-		print("[PedestalController] No workspace pedestal parts found!")
 		return false
 	end
 
 	for i, pedestal in ipairs(pedestalParts) do
 		if not pedestal:IsA("BasePart") then
-			print("[PedestalController] Skipping non-BasePart:", pedestal.Name)
 			continue
 		end
-
-		print("[PedestalController] Setting up pedestal", i, ":", pedestal.Name, "at", pedestal.Position)
-		
-		-- Debug: Check all tags on this pedestal
-		local tags = CollectionService:GetTags(pedestal)
-		print("[PedestalController] Pedestal", i, "tags:", table.concat(tags, ", "))
 
 		-- Remove protection that blocks ZonePlus detection
 		if CollectionService:HasTag(pedestal, "CMS:ProtectedCore") then
 			CollectionService:RemoveTag(pedestal, "CMS:ProtectedCore")
-			print("[PedestalController] Removed CMS:ProtectedCore from pedestal", i)
-		else
-			print("[PedestalController] Pedestal", i, "does not have CMS:ProtectedCore tag")
 		end
 
 		-- Store pedestal reference
@@ -55,8 +42,6 @@ local function setupPedestals()
 
 		local zone = ZonePlus.new(pedestal)
 		pedestalZones[i] = zone
-		
-		print("[PedestalController] Created ZonePlus zone for pedestal", i)
 
 		zone.partEntered:Connect(function(part)
 			onBallEntered(zone, part, i)
@@ -67,7 +52,6 @@ local function setupPedestals()
 		end)
 	end
 	
-	print("[PedestalController] Successfully set up", #pedestals, "pedestals with zones")
 	return true
 end
 
@@ -146,7 +130,6 @@ local function waitForInitSignal()
 	-- Check if event already exists
 	local existingEvent = ReplicatedStorage:FindFirstChild("InitPedestal")
 	if existingEvent then
-		print("[PedestalController] Found existing initialization signal!")
 		init()
 		return
 	end
@@ -154,7 +137,6 @@ local function waitForInitSignal()
 	-- Otherwise wait for it
 	ReplicatedStorage.ChildAdded:Connect(function(child)
 		if child.Name == "InitPedestal" and child:IsA("BindableEvent") then
-			print("[PedestalController] Received initialization signal!")
 			init()
 		end
 	end)

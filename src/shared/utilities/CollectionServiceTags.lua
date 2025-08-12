@@ -7,54 +7,49 @@ local CollectionService = game:GetService("CollectionService")
 local CollectionServiceTags = {}
 
 -- Tag constants
-CollectionServiceTags.DRAGGABLE     = "DRAGGABLE"
-CollectionServiceTags.NON_DRAGGABLE = "NON_DRAGGABLE"
-CollectionServiceTags.WELDABLE      = "WELDABLE"
-CollectionServiceTags.NON_WELDABLE  = "NON_WELDABLE"
-CollectionServiceTags.STORABLE      = "STORABLE"
+CollectionServiceTags.DRAGGABLE             = "DRAGGABLE"
+CollectionServiceTags.NON_DRAGGABLE         = "NON_DRAGGABLE"
+CollectionServiceTags.WELDABLE              = "WELDABLE"
+CollectionServiceTags.NON_WELDABLE          = "NON_WELDABLE"
+CollectionServiceTags.STORABLE              = "STORABLE"
 
-CollectionServiceTags.WATER_REFILL_SOURCE = "WATER_SOURCE"
-CollectionServiceTags.COOKING_SURFACE     = "COOKING_SURFACE"
-CollectionServiceTags.CONSUMABLE          = "CONSUMABLE"
+CollectionServiceTags.WATER_REFILL_SOURCE   = "WATER_SOURCE"
+CollectionServiceTags.COOKING_SURFACE       = "COOKING_SURFACE"
+CollectionServiceTags.CONSUMABLE            = "CONSUMABLE"
 
 -- Economy system tags
-CollectionServiceTags.SELL_ZONE      = "SELL_ZONE"
-CollectionServiceTags.BUY_ZONE       = "BUY_ZONE"
-CollectionServiceTags.SELLABLE_LOW   = "SELLABLE_LOW"
-CollectionServiceTags.SELLABLE_MID   = "SELLABLE_MID"
-CollectionServiceTags.SELLABLE_HIGH  = "SELLABLE_HIGH"
-CollectionServiceTags.SELLABLE_SCRAP = "SELLABLE_SCRAP"
+CollectionServiceTags.SELL_ZONE             = "SELL_ZONE"
+CollectionServiceTags.BUY_ZONE              = "BUY_ZONE"
+CollectionServiceTags.SELLABLE_LOW          = "SELLABLE_LOW"
+CollectionServiceTags.SELLABLE_MID          = "SELLABLE_MID"
+CollectionServiceTags.SELLABLE_HIGH         = "SELLABLE_HIGH"
+CollectionServiceTags.SELLABLE_SCRAP        = "SELLABLE_SCRAP"
 
 -- Puzzle system tags
-CollectionServiceTags.PEDESTAL = "PEDESTAL"
-CollectionServiceTags.EGYPT_DOOR = "EGYPT_DOOR"
-CollectionServiceTags.TOWER_BALL = "TOWER_BALL"
+CollectionServiceTags.PEDESTAL              = "PEDESTAL"
+CollectionServiceTags.EGYPT_DOOR            = "EGYPT_DOOR"
+CollectionServiceTags.TOWER_BALL            = "TOWER_BALL"
 
--- Arena system tags
-CollectionServiceTags.ARENA_ANKH    = "ARENA_ANKH"
-CollectionServiceTags.ARENA_ENEMY   = "ARENA_ENEMY"
-CollectionServiceTags.TREASURE_DOOR = "TREASURE_DOOR"
-CollectionServiceTags.ARENA_SPAWN   = "ARENA_SPAWN" -- spawn point parts (e.g., WideSpawner1/2, ScorpionSpawner1..5)
-CollectionServiceTags.ARENA_TELEPORT_MARKER = "ARENA_TELEPORT_MARKER" -- player teleport markers around pedestal
-CollectionServiceTags.PYRAMID_SEAL  = "PYRAMID_SEAL" -- optional seal parts (fallback; EgyptDoor preferred)
+CollectionServiceTags.ARENA_ANKH            = "ARENA_ANKH"
+CollectionServiceTags.ARENA_ENEMY           = "ARENA_ENEMY"
+CollectionServiceTags.TREASURE_DOOR         = "TREASURE_DOOR"
+CollectionServiceTags.ARENA_SPAWN           = "ARENA_SPAWN"
+CollectionServiceTags.ARENA_TELEPORT_MARKER = "ARENA_TELEPORT_MARKER"
+CollectionServiceTags.PYRAMID_SEAL          = "PYRAMID_SEAL"
 
--- Event item pedestal tags
-CollectionServiceTags.PYRAMID_PEDESTAL = "PYRAMID_PEDESTAL" -- for Ankh spawning
-CollectionServiceTags.BATTLE_TOWER_PEDESTAL_1 = "BATTLE_TOWER_PEDESTAL_1" -- for Orb1 spawning
-CollectionServiceTags.BATTLE_TOWER_PEDESTAL_2 = "BATTLE_TOWER_PEDESTAL_2" -- for Orb2 spawning
-CollectionServiceTags.BATTLE_TOWER_PEDESTAL_3 = "BATTLE_TOWER_PEDESTAL_3" -- for Orb3 spawning
+CollectionServiceTags.PYRAMID_PEDESTAL        = "PYRAMID_PEDESTAL"
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_1 = "BATTLE_TOWER_PEDESTAL_1"
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_2 = "BATTLE_TOWER_PEDESTAL_2"
+CollectionServiceTags.BATTLE_TOWER_PEDESTAL_3 = "BATTLE_TOWER_PEDESTAL_3"
 
--- Protected geometry tags for CustomModelSpawner optimization
-CollectionServiceTags.PROTECTED_VILLAGE = "CMS:ProtectedVillage"
-CollectionServiceTags.PROTECTED_CORE    = "CMS:ProtectedCore"
-CollectionServiceTags.PROTECTED_SPAWNER = "CMS:ProtectedSpawner"
+CollectionServiceTags.PROTECTED_VILLAGE     = "CMS:ProtectedVillage"
+CollectionServiceTags.PROTECTED_CORE        = "CMS:ProtectedCore"
+CollectionServiceTags.PROTECTED_SPAWNER     = "CMS:ProtectedSpawner"
 
--- Tower spawning system tags
-CollectionServiceTags.TOWER       = "Tower"
-CollectionServiceTags.MOB_SPAWNER = "MobSpawner"
+CollectionServiceTags.TOWER                 = "Tower"
+CollectionServiceTags.MOB_SPAWNER           = "MobSpawner"
 
--- Treasure spawning system tags
-CollectionServiceTags.TREASURE_SPAWNER = "TREASURE_SPAWNER"
+CollectionServiceTags.TREASURE_SPAWNER      = "TREASURE_SPAWNER"
 
 
 

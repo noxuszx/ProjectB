@@ -27,15 +27,15 @@ function AmmoService.addAmmo(player, ammoType, amount)
 		warn("[AmmoService] Invalid parameters for addAmmo")
 		return false
 	end
-	
+
 	if not playerAmmo[player] then
 		warn("[AmmoService] Player not found in ammo tracking:", player.Name)
 		return false
 	end
-	
+
 	local currentAmount = playerAmmo[player][ammoType] or 0
 	playerAmmo[player][ammoType] = currentAmount + amount
-	
+
 	print("[AmmoService] Added", amount, ammoType, "to", player.Name, "- Total:", playerAmmo[player][ammoType])
 	return true
 end
@@ -45,11 +45,11 @@ function AmmoService.getAmmo(player, ammoType)
 	if not player or not ammoType then
 		return 0
 	end
-	
+
 	if not playerAmmo[player] then
 		return 0
 	end
-	
+
 	return playerAmmo[player][ammoType] or 0
 end
 
@@ -68,7 +68,7 @@ function AmmoService.getAllAmmo(player)
 	if not player or not playerAmmo[player] then
 		return {}
 	end
-	
+
 	return playerAmmo[player]
 end
 
@@ -77,16 +77,16 @@ local function init()
 	-- Connect to player events
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
-	
+
 	-- Initialize existing players (if any)
 	for _, player in pairs(Players:GetPlayers()) do
 		onPlayerAdded(player)
 	end
-	
+
 	print("[AmmoService] Initialized - Memory-based ammo tracking active")
+	print("==================================================")
 end
 
--- Initialize on require
 init()
 
 return AmmoService
