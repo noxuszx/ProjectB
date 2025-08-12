@@ -7,6 +7,10 @@ local ReplicatedStorage  = game:GetService("ReplicatedStorage")
 local RunService         = game:GetService("RunService")
 local PhysicsService     = game:GetService("PhysicsService")
 
+-- Time/Environment modules for /time command
+local DayNightCycle      = require(script.Parent.Parent.environment.DayNightCycle)
+local TimeConfig         = require(ReplicatedStorage.Shared.config.Time)
+
 local AdminCommands = {}
 
 ---------------------------------------------------------------------
@@ -17,7 +21,7 @@ local ADMIN_USER_IDS = {
     3255890550, -- << change to your Roblox account ID
 }
 
-local COMMAND_PREFIX = ";"  -- chat prefix for admin commands
+local COMMAND_PREFIX = "/"  -- chat prefix for admin commands
 local FLY_SPEED      = 70   -- studs / second
 
 ---------------------------------------------------------------------
@@ -210,18 +214,67 @@ end
 -- COMMAND DISPATCH -------------------------------------------------
 ---------------------------------------------------------------------
 
+-- helper: set time period safely
+local function setTimePeriod(periodStr: string)
+    if not periodStr then return false end
+    local p = string.upper(periodStr)
+    local targets = {
+        DAWN = TimeConfig.DAWN_START,
+        NOON = TimeConfig.NOON_START,
+        DUSK = TimeConfig.DUSK_START,
+        NIGHT = TimeConfig.NIGHT_START,
+    }
+    local t = targets[p]
+    if t then
+        DayNightCycle.setTime(t)
+        return true
+    end
+    return false
+end
+
 function AdminCommands.RunCommand(plr: Player, msg: string)
     if not (isAdmin(plr) and msg:sub(1,#COMMAND_PREFIX)==COMMAND_PREFIX) then return end
-    local cmd = string.lower( (string.split(msg:sub(#COMMAND_PREFIX+1), " ")[1] or "") )
-    if cmd == "fly"      then enableFly(plr)
-    elseif cmd == "unfly" or cmd == "walk" then disableFly(plr)
-elseif cmd == "god" then applyGodMode(plr)
-    elseif cmd == "ungod" then removeGodMode(plr)
-    elseif cmd == "noclip" or cmd == "nc"   then
+    local content = msg:sub(#COMMAND_PREFIX+1)
+    local parts = string.split(content, " ")
+    local cmd = string.lower(parts[1] or "")
+    local arg1 = parts[2]
+
+    if cmd == "fly" then
+        enableFly(plr)
+    elseif cmd == "unfly" or cmd == "walk" then
+        disableFly(plr)
+    elseif cmd == "god" then
+        applyGodMode(plr)
+    elseif cmd == "ungod" then
+        removeGodMode(plr)
+    elseif cmd == "noclip" or cmd == "nc" or cmd == "cnoclip" then
         enableNoclip(plr)
         enableFly(plr)
     elseif cmd == "clip" then
         disableNoclip(plr)
+        disableFly(plr)
+    elseif cmd == "time" then
+        if arg1 and string.upper(arg1) == "NEXT" then
+            DayNightCycle.skipToNextPeriod()
+            print("[AdminCommands] Time advanced to next period")
+        else
+            if not setTimePeriod(arg1) then
+                warn("[AdminCommands] /time requires one of: DAWN, NOON, DUSK, NIGHT, NEXT")
+            else
+                print("[AdminCommands] Time set to", string.upper(arg1))
+            end
+        end
+    elseif cmd == "kill" then
+        local char = plr.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                local s = ensureState(plr)
+                if s.God then removeGodMode(plr) end
+                hum.Health = 0
+                print("[AdminCommands] Killed", plr.Name)
+            end
+        end
     end
 end
 

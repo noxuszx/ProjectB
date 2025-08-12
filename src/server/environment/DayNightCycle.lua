@@ -13,6 +13,11 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TimeSyst
 local periodChangedRemote = remotes:WaitForChild("PeriodChanged")
 local syncTimeRemote = remotes:WaitForChild("SyncTime")
 
+-- Server-side period change event for other systems
+local periodChangedServer = Instance.new("BindableEvent")
+periodChangedServer.Name = "PeriodChangedServer"
+periodChangedServer.Parent = ReplicatedStorage
+
 local DayNightCycle = {}
 local currentTime = TimeConfig.START_TIME
 local cycleStartTime = os.clock()
@@ -63,6 +68,7 @@ local function updateTime()
 		lastPeriod = currentPeriod
 		currentPeriod = newPeriod
 		periodChangedRemote:FireAllClients(newPeriod, currentTime)
+		periodChangedServer:Fire(newPeriod, currentTime)
 	end
 end
 

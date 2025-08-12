@@ -19,13 +19,31 @@ local ragdolledPlayers = {}
 local deadPlayers = {} -- Track death state per player
 local deathTimers = {} -- Track timeout timers per player
 
+-- Check if all players are dead
+local function areAllPlayersDead()
+	local alivePlayers = 0
+	local totalPlayers = 0
+	
+	for _, player in pairs(Players:GetPlayers()) do
+		if player and player.UserId then
+			totalPlayers = totalPlayers + 1
+			if not deadPlayers[player.UserId] then
+				alivePlayers = alivePlayers + 1
+			end
+		end
+	end
+	
+	
+	-- Need at least one player and all must be dead
+	return totalPlayers > 0 and alivePlayers == 0
+end
+
 -- Handle respawn requests
 local function handleRespawnRequest(player)
 	if not deadPlayers[player.UserId] then
 		return -- Player not dead, ignore
 	end
 	
-	print("[PlayerDeathHandler] Respawning player:", player.Name)
 	
 	-- Cancel timeout timer
 	if deathTimers[player.UserId] then
@@ -47,7 +65,6 @@ local function forceRespawn(player)
 		return -- Player already respawned
 	end
 	
-	print("[PlayerDeathHandler] Force respawning player after timeout:", player.Name)
 	handleRespawnRequest(player)
 end
 
@@ -74,23 +91,37 @@ local function onPlayerAdded(player)
 				return -- Already handled
 			end
 			
-			print("[PlayerDeathHandler] Player", player.Name, "died - applying ragdoll")
 			local success = RagdollModule.Ragdoll(character)
 			
 			if success then
 				ragdolledPlayers[player.UserId] = true
 				deadPlayers[player.UserId] = true
 				
-				-- Show death UI to player
-				showUIRemote:FireClient(player, 30) -- 30 seconds timeout
-				print("[PlayerDeathHandler] Death UI shown to player:", player.Name)
+				-- Check if all players are now dead
+				local allDead = areAllPlayersDead()
 				
-				-- Start 30-second timeout timer
-				deathTimers[player.UserId] = task.delay(30, function()
-					forceRespawn(player)
-				end)
+				if allDead then
+					-- All players are now dead - show timer to ALL dead players
+					
+					for _, deadPlayer in pairs(Players:GetPlayers()) do
+						if deadPlayers[deadPlayer.UserId] then
+							showUIRemote:FireClient(deadPlayer, 30) -- 30 seconds timeout
+								
+							-- Start 30-second timeout timer for lobby return
+							if deathTimers[deadPlayer.UserId] then
+								task.cancel(deathTimers[deadPlayer.UserId])
+							end
+							deathTimers[deadPlayer.UserId] = task.delay(30, function()
+								-- TODO: Send player back to lobby instead of respawning
+								forceRespawn(deadPlayer)
+							end)
+						end
+					end
+				else
+					-- Show death UI without timer (other players still alive)
+					showUIRemote:FireClient(player, 0) -- 0 = no timer
+				end
 				
-				print("[PlayerDeathHandler] Successfully ragdolled player:", player.Name)
 			else
 				warn("[PlayerDeathHandler] Failed to ragdoll player:", player.Name)
 			end
@@ -126,5 +157,3 @@ end
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
 
-print("[PlayerDeathHandler] Player death ragdoll system initialized")
-print("[PlayerDeathHandler] Auto-respawn disabled, manual respawn system active")

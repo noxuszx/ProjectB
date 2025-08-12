@@ -75,6 +75,11 @@ local function mobileOptimizedInit()
 	
 	CreaturePoolManager.init()
 	AIManager.getInstance():init()
+	
+	-- Initialize Night Hunt system
+	local NightHuntManager = require(script.Parent.ai.NightHuntManager)
+	NightHuntManager.init()
+	
 	FoodDropSystem.init()
 	
 	CreatureSpawner.populateWorld()
@@ -164,6 +169,11 @@ local function desktopOptimizedInit()
 	
 	CreaturePoolManager.init()
 	AIManager.getInstance():init()
+	
+	-- Initialize Night Hunt system
+	local NightHuntManager = require(script.Parent.ai.NightHuntManager)
+	NightHuntManager.init()
+	
 	FoodDropSystem.init()
 	
 	CreatureSpawner.populateWorld()

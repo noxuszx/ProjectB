@@ -315,7 +315,12 @@ function GetCurrentTarget()
 	return currTargs
 end
 
+local function IsCarrying()
+	return carrying == true
+end
+
 -- Export for other scripts to use
 _G.InteractableHandler = {
 	GetCurrentTarget = GetCurrentTarget,
+	IsCarrying = IsCarrying,
 }
