@@ -40,6 +40,18 @@ Village.ROTATION_SETTINGS = {
 	RANDOM = {}
 }
 
+-- NEW: A/B test for western main street layout
+Village.LAYOUT_AB_TEST_PROB = 0.8 -- 50% chance to use main street layout per village
+Village.MAIN_STREET = {
+	HalfWidth = 45,                 -- distance from street centerline to each row center
+	FrontageSpacing = {18, 26},     -- spacing between buildings along the row
+	JitterAlong = 3,                -- max along-street jitter (+/-)
+	JitterSetback = 2,              -- small setback variation (+/-) toward/away from street
+	SkipChance = 0.12,              -- chance to skip a frontage slot (empty lot)
+	TIntersectionChance = 0.4,      -- chance to add a short perpendicular T near the center
+	TCrossLengthRatio = 0.5         -- cross length relative to main street reach
+}
+
 -- NEW: Edge spawning prevention
 Village.EDGE_BUFFER = 1						-- Keep 1 chunk from world edge
 Village.CENTER_BIAS = 0.3					-- Optional: 30% chance near spawn
