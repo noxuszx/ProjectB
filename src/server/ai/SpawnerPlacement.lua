@@ -76,8 +76,11 @@ local function isAwayFromVillages(position)
 	local villageFolder = workspace:FindFirstChild("SpawnedVillages")
 	if villageFolder then
 		for _, village in pairs(villageFolder:GetChildren()) do
-			if village:IsA("Model") and village.PrimaryPart then
-				local villageDistance = (position - village.PrimaryPart.Position).Magnitude
+			if village:IsA("Model") then
+				-- Use GetPivot() to obtain the model's position without requiring a PrimaryPart
+				local pivotCFrame = village:GetPivot()
+				local villagePos = pivotCFrame.Position
+				local villageDistance = (position - villagePos).Magnitude
 				if villageDistance < minDistance then
 					return false
 				end

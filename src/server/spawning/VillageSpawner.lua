@@ -65,13 +65,8 @@ end
 
 local function calculateRect(modelTemplate, cframe, buffer)
 	local tempClone = modelTemplate:Clone()
-	if not tempClone.PrimaryPart then
-		local firstPart = tempClone:FindFirstChildOfClass("BasePart")
-		if firstPart then tempClone.PrimaryPart = firstPart end
-	end
-	if tempClone.PrimaryPart then
-		tempClone:SetPrimaryPartCFrame(cframe)
-	end
+	-- Use PivotTo to position the clone for bounding box calculation without requiring a PrimaryPart
+	tempClone:PivotTo(cframe)
 	local cf, size = tempClone:GetBoundingBox()
 	tempClone:Destroy()
 
@@ -102,15 +97,41 @@ local function applyRotation(baseCFrame, chunkPosition, modelName)
 	
 	if villageConfig.ROTATION_MODE 	   == "CARDINAL" then
 
-		local angle = rotationSettings.angles[random:NextInteger(1, #rotationSettings.angles)]
-		cframe = cframe * CFrame.Angles(0, math.rad(angle), 0)
+		-- Snap rotation to the nearest cardinal angle that faces the village center
+		local basePos = baseCFrame.Position
+		local centerPos = Vector3.new(chunkPosition.X, basePos.Y, chunkPosition.Z)
+		local dir = (centerPos - basePos)
+		local desiredDeg
+		if dir.Magnitude ~= 0 then
+			desiredDeg = math.deg(math.atan2(dir.X, dir.Z))
+		else
+			desiredDeg = 0
+		end
+		local offset = rotationSettings.angle_offset or 0
+		desiredDeg = desiredDeg + offset
+		
+		local nearest = rotationSettings.angles[1]
+		local function angDiff(a, b)
+			local d = (a - b) % 360
+			if d > 180 then d = d - 360 end
+			return math.abs(d)
+		end
+		for i = 2, #rotationSettings.angles do
+			local cand = rotationSettings.angles[i]
+			if angDiff(cand, desiredDeg) < angDiff(nearest, desiredDeg) then
+				nearest = cand
+			end
+		end
+		cframe = cframe * CFrame.Angles(0, math.rad(nearest), 0)
 
 	elseif villageConfig.ROTATION_MODE == "CENTER_FACING" then
 
-		local directionToCenter = (chunkPosition - baseCFrame.Position).Unit
-		local angle = math.atan2(directionToCenter.X, directionToCenter.Z) + math.rad(rotationSettings.angle_offset)
-
-		cframe = cframe * CFrame.Angles(0, angle, 0)
+		-- Use CFrame.lookAt to face the village center, with optional yaw offset
+		local basePos = baseCFrame.Position
+		local centerPos = Vector3.new(chunkPosition.X, basePos.Y, chunkPosition.Z)
+		local facing = CFrame.lookAt(basePos, centerPos)
+		local offset = rotationSettings.angle_offset or 0
+		cframe = facing * CFrame.Angles(0, math.rad(offset), 0)
 
 	elseif villageConfig.ROTATION_MODE == "CARDINAL_VARIED" then
 
@@ -294,12 +315,8 @@ local function spawnVillage(models, chunkPosition)
 		local model = models[info.modelName]
 		local clonedModel = model:Clone()
 		
-		if not clonedModel.PrimaryPart then
-			local firstPart = clonedModel:FindFirstChildOfClass("BasePart")
-			if firstPart then clonedModel.PrimaryPart = firstPart end
-		end
-		
-		clonedModel:SetPrimaryPartCFrame(info.cframe)
+		-- Use PivotTo for placement instead of relying on PrimaryPart
+		clonedModel:PivotTo(info.cframe)
 		clonedModel.Parent = villageFolder
 		
 		-- Tag village structure as protected geometry

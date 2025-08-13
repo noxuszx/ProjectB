@@ -13,7 +13,7 @@ Village.VILLAGE_RADIUS = 120					-- Maximum spread of structures in a Village (i
 Village.STRUCTURE_SPACING = 5					-- Minimum distance between structures in Village (kept tight for density)
 
 -- NEW: Mandatory structure system
-Village.MANDATORY_STRUCTURES = {"Shop1", "Shop2", "Campfire", "Well"}	-- Must appear once per village
+Village.MANDATORY_STRUCTURES = {"Hospital", "Sell", "Campfire", "Well"}	-- Must appear once per village
 Village.CAMPFIRE_BUFFER = 10					-- Minimum gap (studs) between campfire and other structures (reduced for density)
 
 -- NEW: Global spacing between villages
@@ -26,7 +26,8 @@ Village.BATCH_SIZE = 1							-- Structures to spawn per frame (will be adjusted 
 Village.ROTATION_MODE = "CARDINAL"				-- "RANDOM", "CARDINAL", "CENTER_FACING", "CARDINAL_VARIED"
 Village.ROTATION_SETTINGS = {
 	CARDINAL = { 
-		angles = {0, 90, 180, 270} 
+		angles = {0, 90, 180, 270},
+		angle_offset = 180
 	},
 	CENTER_FACING = { 
 		face_inward = true, 
@@ -51,10 +52,12 @@ Village.AVAILABLE_STRUCTURES = {
 	"House3",
 	"House4",
 	"Campfire",
-	"Shop1",
-	"Shop2",
+	"Hospital",
+	"Sell",
+	"Market",
+	"WeaponShop",
 	"Well"
 }
-Village.SPAWN_DELAY = 0.1					-- Delay between structure spawns (seconds)
+Village.SPAWN_DELAY = 0.1
 
 return Village
