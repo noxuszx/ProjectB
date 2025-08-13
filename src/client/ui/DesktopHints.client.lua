@@ -6,18 +6,31 @@ local Players = game:GetService("Players")
 local RS = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+
+-- Simple mobile detection like SprintController  
+local IS_MOBILE = UserInputService.TouchEnabled
+local IS_DESKTOP = not IS_MOBILE
+
+-- Debug output
+print("=== DesktopHints Debug ===")
+print("TouchEnabled:", UserInputService.TouchEnabled)
+print("MouseEnabled:", UserInputService.MouseEnabled) 
+print("KeyboardEnabled:", UserInputService.KeyboardEnabled)
+print("IS_MOBILE:", IS_MOBILE)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-local DragDropConfig = require(ReplicatedStorage.Shared.config.DragDropConfig)
+local DragDropConfig        = require(ReplicatedStorage.Shared.config.DragDropConfig)
 
 repeat task.wait(0.05) until _G.InteractableHandler
 repeat task.wait(0.05) until _G.BackpackController
 
 local InteractableHandler = _G.InteractableHandler
-local BackpackController = _G.BackpackController
+local BackpackController =  _G.BackpackController
 
 local desktopGui : ScreenGui? = nil
 local hintFrame : Frame? = nil
@@ -46,8 +59,14 @@ local function bindGuiElements()
 
     desktopGui = playerGui:FindFirstChild("DesktopGui")
     if not desktopGui then
+        print("DesktopGui not found in PlayerGui!")
         return false
     end
+
+    -- Enable GUI only on desktop devices
+    print("Setting desktopGui.Enabled to:", IS_DESKTOP)
+    desktopGui.Enabled = IS_DESKTOP
+    print("desktopGui.Enabled is now:", desktopGui.Enabled)
 
     hintFrame = desktopGui:FindFirstChild("HintFrame")
     if not hintFrame then
@@ -78,7 +97,6 @@ local function bindGuiElements()
     return true
 end
 
--- Helper to safely set visibility
 local function setVisible(guiObject, isVisible)
     if guiObject then
         guiObject.Visible = isVisible == true
@@ -245,6 +263,10 @@ RS.Heartbeat:Connect(function(dt)
         accumulator = 0
         if not desktopGui or not hintFrame then
             bindGuiElements()
+        end
+        if not IS_DESKTOP then
+            if desktopGui then desktopGui.Enabled = false end
+            return
         end
         update()
     end
