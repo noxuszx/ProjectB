@@ -9,7 +9,28 @@ local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.Collect
 
 local buyZoneItems = {}
 
--- Helper function to find item config by ItemName
+local function ensureShopFolder()
+	local folder = workspace:FindFirstChild("ShopItems")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "ShopItems"
+		folder.Parent = workspace
+	end
+	return folder
+end
+
+local function parseAllowedCategories(buyZone)
+	local attr = buyZone:GetAttribute("BuyZoneCategory")
+	if not attr or attr == "" then
+		return nil
+	end
+	local allowed = {}
+	for token in string.gmatch(string.lower(tostring(attr)), "[^,%s]+") do
+		allowed[token] = true
+	end
+	return allowed
+end
+
 local function findItemConfig(itemName)
 	for _, itemConfig in pairs(EconomyConfig.BuyableItems) do
 		if itemConfig.ItemName == itemName then
@@ -19,45 +40,43 @@ local function findItemConfig(itemName)
 	return nil
 end
 
--- Helper function to attach UsePrompt to purchased items
 local function attachUsePrompt(itemModel, itemConfig)
-	-- Determine prompt text based on item type
 	local actionText, objectText, useType
-	
+
 	if itemConfig.Type == "Tool" then
-		actionText = "Equip " .. itemConfig.ItemName
-		objectText = "Tool"
-		useType = "GrantTool"
+		actionText 		= "Equip " .. itemConfig.ItemName
+		objectText 		= "Tool"
+		useType 		= "GrantTool"
 	elseif itemConfig.Type == "Ammo" then
-		actionText = "Collect " .. itemConfig.ItemName .. " (+" .. itemConfig.AmmoAmount .. ")"
-		objectText = "Ammo"
-		useType = "AddAmmo"
+		actionText 		= "Collect " .. itemConfig.ItemName .. " (+" .. itemConfig.AmmoAmount .. ")"
+		objectText 		= "Ammo"
+		useType 		= "AddAmmo"
 	else
 		warn("[BuyZoneHandler] Unsupported item type for UsePrompt:", itemConfig.Type)
 		return
 	end
-	
+
 	-- Create UsePrompt
 	local usePrompt = Instance.new("ProximityPrompt")
 	usePrompt.Name = "UsePrompt"
 	usePrompt.ActionText = actionText
 	usePrompt.ObjectText = objectText
 	usePrompt.HoldDuration = 0 -- Instant pickup
-	usePrompt.MaxActivationDistance = 8
+	usePrompt.MaxActivationDistance = EconomyConfig.Zones.BuyZone.ProximityRange or 8
 	usePrompt.RequiresLineOfSight = false
 	usePrompt.Style = Enum.ProximityPromptStyle.Default
-	
+
 	-- Set attributes for ItemUseHandler routing
 	usePrompt:SetAttribute("UseType", useType)
 	usePrompt:SetAttribute("ItemName", itemConfig.ItemName)
-	
+
 	if itemConfig.Type == "Tool" then
 		usePrompt:SetAttribute("ToolTemplate", itemConfig.GiveToolName)
 	elseif itemConfig.Type == "Ammo" then
 		usePrompt:SetAttribute("AmmoType", itemConfig.AmmoType)
 		usePrompt:SetAttribute("AmmoAmount", itemConfig.AmmoAmount)
 	end
-	
+
 	-- Find a part to host the prompt (same logic as BuyPrompt)
 	local mainPart
 	if itemModel:IsA("BasePart") then
@@ -68,64 +87,146 @@ local function attachUsePrompt(itemModel, itemConfig)
 			mainPart = itemModel:FindFirstChildOfClass("BasePart")
 		end
 	end
-	
+
 	if mainPart then
 		usePrompt.Parent = mainPart
-		print("[BuyZoneHandler] Attached UsePrompt to", itemConfig.ItemName, "- Type:", itemConfig.Type)
+		if EconomyConfig.Debug and EconomyConfig.Debug.Enabled then
+			print("[BuyZoneHandler] Attached UsePrompt to", itemConfig.ItemName, "- Type:", itemConfig.Type)
+		end
 	else
 		warn("[BuyZoneHandler] Could not find part to attach UsePrompt to!")
 		usePrompt:Destroy()
 	end
 end
 
-local function selectRandomItem()
-	local availableItems = EconomyConfig.BuyableItems
-	if #availableItems == 0 then
+-- Select an item from a filtered list, honoring RandomSpawnChance
+local function selectItem(filteredItems)
+	if #filteredItems == 0 then
 		return nil
 	end
-
-	local totalWeight = 0
-	for _, itemData in pairs(availableItems) do
-		totalWeight = totalWeight + itemData.SpawnWeight
+	local useRandom = true
+	if
+		EconomyConfig.Zones
+		and EconomyConfig.Zones.BuyZone
+		and (typeof(EconomyConfig.Zones.BuyZone.RandomSpawnChance) == "boolean")
+	then
+		useRandom = EconomyConfig.Zones.BuyZone.RandomSpawnChance
 	end
-
+	if not useRandom then
+		return filteredItems[1]
+	end
+	local totalWeight = 0
+	for _, itemData in ipairs(filteredItems) do
+		totalWeight += (itemData.SpawnWeight or 1)
+	end
 	local randomValue = math.random() * totalWeight
-	local selectedItem = nil
 	local currentWeight = 0
-
-	for _, itemData in pairs(availableItems) do
-		currentWeight = currentWeight + itemData.SpawnWeight
+	for _, itemData in ipairs(filteredItems) do
+		currentWeight += (itemData.SpawnWeight or 1)
 		if randomValue <= currentWeight then
-			selectedItem = itemData
-			break
+			return itemData
 		end
 	end
+	return filteredItems[1]
+end
 
-	return selectedItem or availableItems[1]
+local function getItemsFolder()
+	-- Maintain current behavior: look in ReplicatedStorage.Items
+	local itemsFolder = ReplicatedStorage:FindFirstChild("Items")
+	return itemsFolder
+end
+
+-- Find a non-Tool display template for the given item name
+local function findDisplayTemplateForItem(itemName)
+	local itemsFolder = getItemsFolder()
+	if not itemsFolder then return nil end
+
+	-- Prefer exact name that is NOT a Tool
+	local candidate = itemsFolder:FindFirstChild(itemName)
+	if candidate and not candidate:IsA("Tool") then
+		return candidate
+	end
+	-- Try common suffixes
+	local altNames = { itemName .. "_Model", itemName .. "_Display" }
+	for _, alt in ipairs(altNames) do
+		local altChild = itemsFolder:FindFirstChild(alt)
+		if altChild and not altChild:IsA("Tool") then
+			return altChild
+		end
+	end
+	-- Try a Displays subfolder if present
+	local displays = itemsFolder:FindFirstChild("Displays")
+	if displays then
+		local disp = displays:FindFirstChild(itemName) or displays:FindFirstChild(itemName .. "_Model") or displays:FindFirstChild(itemName .. "_Display")
+		if disp and not disp:IsA("Tool") then
+			return disp
+		end
+	end
+	-- Try Food subfolder
+	local foodFolder = itemsFolder:FindFirstChild("Food")
+	if foodFolder then
+		local food = foodFolder:FindFirstChild(itemName)
+			or foodFolder:FindFirstChild(itemName .. "_Model")
+			or foodFolder:FindFirstChild(itemName .. "_Display")
+		if food and not food:IsA("Tool") then
+			return food
+		end
+	end
+	return nil
+end
+
+local function itemCategoryMatches(itemConfig, allowed)
+	if not allowed then
+		return true -- no filter
+	end
+	-- allowed keys are lowercased
+	local category = itemConfig.Category and string.lower(itemConfig.Category) or ""
+	if allowed["all"] then
+		return true
+	end
+	return category ~= "" and allowed[category] == true
+end
+
+local function buildFilteredItemList(buyZone)
+	local allowed = parseAllowedCategories(buyZone)
+	local filtered = {}
+	for _, item in ipairs(EconomyConfig.BuyableItems) do
+		if itemCategoryMatches(item, allowed) then
+			table.insert(filtered, item)
+		end
+	end
+	return filtered
 end
 
 local function spawnItemAtBuyZone(buyZone)
-	local selectedItem = selectRandomItem()
+	local candidates = buildFilteredItemList(buyZone)
+	local selectedItem = selectItem(candidates)
 	if not selectedItem then
-		warn("[BuyZoneHandler] No items available to spawn")
+		warn("[BuyZoneHandler] No items available to spawn for zone:", buyZone.Name)
 		return
 	end
 
-	local itemsFolder = ReplicatedStorage:FindFirstChild("Items")
+	local itemsFolder = getItemsFolder()
 	if not itemsFolder then
 		warn("[BuyZoneHandler] Items folder not found in ReplicatedStorage")
 		return
 	end
 
-	local itemModel = itemsFolder:FindFirstChild(selectedItem.ItemName)
-	if not itemModel then
-		warn("[BuyZoneHandler] Item", selectedItem.ItemName, "not found in Items folder")
+	local template = findDisplayTemplateForItem(selectedItem.ItemName)
+	if not template then
+		warn("[BuyZoneHandler] No display/model template found for item:", selectedItem.ItemName, "(tools are not spawned)")
 		return
 	end
 
-	local clonedItem = itemModel:Clone()
-	clonedItem.Parent = workspace
-	local spawnPosition = buyZone.Position + Vector3.new(0, 1, 0)
+	local clonedItem = template:Clone()
+	clonedItem.Parent = ensureShopFolder()
+
+	local spawnHeight = (
+		EconomyConfig.Zones
+		and EconomyConfig.Zones.BuyZone
+		and EconomyConfig.Zones.BuyZone.SpawnHeight
+	) or 1
+	local spawnPosition = buyZone.Position + Vector3.new(0, spawnHeight, 0)
 
 	-- Position cloned item depending on its type
 	if clonedItem:IsA("Model") then
@@ -161,7 +262,11 @@ local function spawnItemAtBuyZone(buyZone)
 	proximityPrompt.ActionText = "Buy " .. selectedItem.ItemName
 	proximityPrompt.ObjectText = selectedItem.Cost .. " coins"
 	proximityPrompt.HoldDuration = 0.5
-	proximityPrompt.MaxActivationDistance = 8
+	proximityPrompt.MaxActivationDistance = (
+		EconomyConfig.Zones
+		and EconomyConfig.Zones.BuyZone
+		and EconomyConfig.Zones.BuyZone.ProximityRange
+	) or 8
 	proximityPrompt.RequiresLineOfSight = false
 	proximityPrompt.Style = Enum.ProximityPromptStyle.Default
 
@@ -187,6 +292,15 @@ local function spawnItemAtBuyZone(buyZone)
 	end
 
 	buyZoneItems[buyZone] = clonedItem
+
+	-- Cleanup mapping if item is removed from workspace
+	clonedItem.AncestryChanged:Connect(function()
+		if not clonedItem:IsDescendantOf(workspace) then
+			if buyZoneItems[buyZone] == clonedItem then
+				buyZoneItems[buyZone] = nil
+			end
+		end
+	end)
 
 	return clonedItem
 end
@@ -236,6 +350,8 @@ local function onProximityPromptTriggered(promptObject, player)
 	if not promptObject.Enabled then
 		return
 	end
+	-- Debounce to prevent double-spend
+	promptObject.Enabled = false
 
 	local itemName = promptObject:GetAttribute("ItemName")
 	local itemCost = promptObject:GetAttribute("ItemCost")
@@ -250,7 +366,7 @@ local function onProximityPromptTriggered(promptObject, player)
 	-- Determine the root of the spawned item: could be a Model or a BasePart in workspace
 	local spawnedRoot
 	if itemPart and itemPart:IsA("BasePart") then
-		if itemPart.Parent == workspace then
+		if itemPart.Parent == workspace or itemPart.Parent == ensureShopFolder() then
 			spawnedRoot = itemPart -- BasePart item
 		else
 			spawnedRoot = itemPart.Parent -- Likely a Model
@@ -263,6 +379,10 @@ local function onProximityPromptTriggered(promptObject, player)
 
 	local EconomyService = require(script.Parent.Parent.services.EconomyService)
 	if not EconomyService.canAfford(player, itemCost) then
+		-- Re-enable prompt if purchase not completed
+		if promptObject and promptObject.Parent then
+			promptObject.Enabled = true
+		end
 		return
 	end
 
@@ -277,13 +397,30 @@ local function onProximityPromptTriggered(promptObject, player)
 			end
 		end
 
-		-- Attach UsePrompt for Tool/Ammo types based on config
+		-- Attach UsePrompt for Tool/Ammo types based on config, or enable consumption for Food
 		local itemConfig = findItemConfig(itemName)
-		if itemConfig and (itemConfig.Type == "Tool" or itemConfig.Type == "Ammo") then
-			attachUsePrompt(spawnedRoot, itemConfig)
+		if itemConfig then
+			if itemConfig.Type == "Tool" or itemConfig.Type == "Ammo" then
+				attachUsePrompt(spawnedRoot, itemConfig)
+			elseif (itemConfig.Category and string.lower(itemConfig.Category) == "food") then
+				-- Make purchased food consumable now
+				CollectionServiceTags.addTag(spawnedRoot, CollectionServiceTags.CONSUMABLE)
+				-- Ensure expected attributes exist for server logic (non-destructive defaults)
+				if spawnedRoot:GetAttribute("FoodType") == nil then
+					spawnedRoot:SetAttribute("FoodType", itemConfig.ItemName)
+				end
+				if spawnedRoot:GetAttribute("HungerValue") == nil then
+					spawnedRoot:SetAttribute("HungerValue", 10)
+				end
+			end
 		end
 
 		-- Item remains in the world; buy zone stays empty until time-based respawn (future)
+	else
+		-- Failed to remove money; re-enable
+		if promptObject and promptObject.Parent then
+			promptObject.Enabled = true
+		end
 	end
 end
 

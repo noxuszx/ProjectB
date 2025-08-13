@@ -14,12 +14,13 @@ local EconomyConfig = {
 		SELLABLE_HIGH = 50,   -- High-value items (rare materials, gems, advanced components)
 	},
 	
+	-- Normalized categories: "Weapons", "Health", "Food", "Ammo"
 	BuyableItems = {
 		{
 			ItemName = "Spear",
 			Cost = 75,
 			SpawnWeight = 0.3,
-			Category = "Tools",
+			Category = "Weapons",
 			Type = "Tool",
 			GiveToolName = "Spear"
 		},
@@ -51,7 +52,7 @@ local EconomyConfig = {
 			ItemName = "Medkit",
 			Cost = 10,
 			SpawnWeight = 0.4,
-			Category = "Tool",
+			Category = "Health",
 			Type = "Tool",
 			GiveToolName = "Medkit"
 		},
@@ -59,7 +60,7 @@ local EconomyConfig = {
 			ItemName = "Bandage",
 			Cost = 5,
 			SpawnWeight = 0.7,
-			Category = "Tool",
+			Category = "Health",
 			Type = "Tool",
 			GiveToolName = "Bandage"
 		},
@@ -72,6 +73,35 @@ local EconomyConfig = {
 			Type = "Ammo",
 			AmmoType = "CrossbowBolt",
 			AmmoAmount = 5
+		},
+		-- Food (consumable world items that should only be consumable after purchase)
+		{
+			ItemName = "CamelMeat",
+			Cost = 15,
+			SpawnWeight = 0.5,
+			Category = "Food",
+			Type = "Food"
+		},
+		{
+			ItemName = "CoyoteMeat",
+			Cost = 15,
+			SpawnWeight = 0.5,
+			Category = "Food",
+			Type = "Food"
+		},
+		{
+			ItemName = "RabbitMeat",
+			Cost = 15,
+			SpawnWeight = 0.5,
+			Category = "Food",
+			Type = "Food"
+		},
+		{
+			ItemName = "ScorpionMeat",
+			Cost = 15,
+			SpawnWeight = 0.5,
+			Category = "Food",
+			Type = "Food"
 		},
 	},
 	
