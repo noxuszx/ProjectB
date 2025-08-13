@@ -58,11 +58,14 @@ local function storeCurrentObject()
 end
 
 local function retrieveTopObject()
+	print("[BackpackController] retrieveTopObject called")
 	local currentTime = os.clock()
 	if currentTime - lastStoreTime < STORE_COOLDOWN then
+		print("[BackpackController] retrieveTopObject blocked by cooldown")
 		return
 	end
 
+	print("[BackpackController] Firing RequestRetrieve to server")
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestRetrieve")
 end
@@ -76,6 +79,8 @@ function showUIHint(message)
 		_G.BackpackUI.showHint(message)
 	end
 end
+
+-- The retrieveTopObject function is already defined below - removing duplicate
 
 
 BackpackEvent.OnClientEvent:Connect(function(action, ...)

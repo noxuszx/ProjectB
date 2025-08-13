@@ -195,7 +195,7 @@ local function newDefaultButton(actionName, slot)
 	newButton = Instance.new("ImageButton")
 	newButton.Name = actionName.."Button"
 	newButton.BackgroundTransparency = 1
-	newButton.Size = UDim2.new(0.8, 0, 0.8, 0)
+	newButton.Size = UDim2.new(0.55, 0, 0.55, 0)
 	newButton.Image = "rbxassetid://5713982324"
 	newButton.ImageTransparency = 0.5
 	newButton.AnchorPoint = Vector2.new(0.5, 0.5)

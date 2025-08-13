@@ -158,22 +158,8 @@ UIS.InputEnded:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 	end
 end)
 
-UIS.TouchStarted:Connect(function(touchPositions: { any }, gameProcessedEvent: boolean)
-	if gameProcessedEvent then
-		return
-	end
-
-	LeftClick()
-end)
-UIS.TouchEnded:Connect(function(touchPositions: { any }, gameProcessedEvent: boolean)
-	if gameProcessedEvent then
-		return
-	end
-
-	if carrying then
-		LeftUnClick()
-	end
-end)
+-- Touch controls removed - mobile dragging now handled by MobileActionController buttons
+-- UIS.TouchStarted and UIS.TouchEnded connections disabled to prevent direct touch drag
 
 RS.RenderStepped:Connect(function(dT)
 	local ray = Ray.new(camera.CFrame.Position, camera.CFrame.LookVector * range)
@@ -380,8 +366,54 @@ local function IsCarrying()
 	return carrying == true
 end
 
+-- New exported helpers for mobile buttons
+local function TryWeld()
+	if currTargs then
+		local oldWeld = currentWeld
+		currentWeld, _ = WeldSystem.weldObject(currTargs, currentWeld)
+		if currentWeld and not oldWeld then
+			showWeldFeedback("Objects welded together!", 2)
+			if hasAnchoredParts(currTargs) then
+				showWeldFeedback("Welded to anchored object - dropping item", 2)
+				DropItem(false)
+			end
+		elseif not currentWeld and oldWeld then
+			showWeldFeedback("Objects unwelded!", 2)
+		elseif not currentWeld then
+			showWeldFeedback("No weldable objects nearby", 2)
+		end
+	end
+end
+
+local function RotateOnce()
+	if carrying and currTargs then
+		rotationCount[currentRotationAxis] = rotationCount[currentRotationAxis] + 1
+	end
+end
+
+local function CycleAxis()
+	if carrying and currTargs then
+		currentRotationAxis = (currentRotationAxis % 3) + 1
+	end
+end
+
+local function StartDrag()
+	LeftClick()
+end
+
+local function StopDrag()
+	if carrying then
+		LeftUnClick()
+	end
+end
+
 -- Export for other scripts to use
 _G.InteractableHandler = {
 	GetCurrentTarget = GetCurrentTarget,
 	IsCarrying = IsCarrying,
+	TryWeld = TryWeld,
+	RotateOnce = RotateOnce,
+	CycleAxis = CycleAxis,
+	StartDrag = StartDrag,
+	StopDrag = StopDrag,
 }

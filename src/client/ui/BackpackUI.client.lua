@@ -138,34 +138,6 @@ if player.Character then
 end
 player.CharacterAdded:Connect(onCharacterAdded)
 
--- Responsive positioning for different screen sizes
-local function updateResponsiveLayout()
-	local viewportSize = workspace.CurrentCamera.ViewportSize
-
-	if viewportSize.X < 800 then
-		-- Small screen (mobile/tablet)
-		mainFrame.Size = UDim2.new(0, 100, 0, 50)
-		mainFrame.Position = UDim2.new(1, -120, 0.5, -25)
-		counterLabel.TextSize = 28
-
-		if isMobile and mobileFrame then
-			mobileFrame.Position = UDim2.new(1, -140, 0.5, 35)
-		end
-	else
-		-- Large screen (desktop)
-		mainFrame.Size = UDim2.new(0, 120, 0, 60)
-		mainFrame.Position = UDim2.new(1, -140, 0.5, -30)
-		counterLabel.TextSize = 36
-
-		if isMobile and mobileFrame then
-			mobileFrame.Position = UDim2.new(1, -150, 0.5, 40)
-		end
-	end
-end
-
--- Update layout on viewport size change
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateResponsiveLayout)
-updateResponsiveLayout() -- Initial setup
 
 -- Export functions for BackpackController
 _G.BackpackUI = {
