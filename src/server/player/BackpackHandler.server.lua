@@ -6,29 +6,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BackpackService = require(script.Parent.BackpackService)
 
--- Create Remotes folder if it doesn't exist
-local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
-if not remotesFolder then
-    remotesFolder = Instance.new("Folder")
-    remotesFolder.Name = "Remotes"
-    remotesFolder.Parent = ReplicatedStorage
-end
-
--- Create BackpackEvent RemoteEvent
-local BackpackEvent = remotesFolder:FindFirstChild("BackpackEvent")
-if not BackpackEvent then
-    BackpackEvent = Instance.new("RemoteEvent")
-    BackpackEvent.Name = "BackpackEvent"
-    BackpackEvent.Parent = remotesFolder
-end
-
--- Create BackpackChanged RemoteEvent for instant UI updates
-local BackpackChanged = remotesFolder:FindFirstChild("BackpackChanged")
-if not BackpackChanged then
-    BackpackChanged = Instance.new("RemoteEvent")
-    BackpackChanged.Name = "BackpackChanged"
-    BackpackChanged.Parent = remotesFolder
-end
+-- Reference pre-defined remotes (for LIFO backpack system)
+local remotesFolder = ReplicatedStorage.Remotes
+local BackpackEvent = remotesFolder.BackpackEvent
+local BackpackChanged = remotesFolder.BackpackChanged
 
 BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
     local args = {...}

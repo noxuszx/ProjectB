@@ -43,9 +43,6 @@ function FoodConsumption.bindInput()
 		if inputState == Enum.UserInputState.Begin then
 			-- Check if sack is equipped - if so, pass input to BackpackController
 			if FoodConsumption.isSackEquipped() then
-				if EconomyConfig.Debug.Enabled then
-					print("[FoodConsumption] Sack equipped - passing E key to BackpackController")
-				end
 				return Enum.ContextActionResult.Pass -- Let BackpackController handle it
 			end
 
@@ -150,9 +147,6 @@ function FoodConsumption.isSackEquipped()
 			or toolName:find("sack")
 			or toolName:find("backpack")
 
-		if EconomyConfig.Debug.Enabled then
-			print("[FoodConsumption] Tool equipped:", equippedTool.Name, "- Is sack:", isSack)
-		end
 
 		return isSack
 	end
@@ -166,9 +160,6 @@ function FoodConsumption.attemptConsumption()
 	end
 
 	-- Proceed with food consumption (sack check now handled in input handler)
-	if EconomyConfig.Debug.Enabled then
-		print("[FoodConsumption] Firing consume for:", highlightedFood.Name, highlightedFood.ClassName)
-	end
 	consumeFoodRemote:FireServer(highlightedFood)
 	FoodConsumption.clearHighlight()
 end

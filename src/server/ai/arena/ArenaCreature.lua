@@ -18,21 +18,8 @@ ArenaCreature.__index = ArenaCreature
 
 -- RemoteEvent helper for health bar updates (matches Base creature pattern)
 local function getUpdateCreatureHealthRemote()
-	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
-	if not remotesFolder then
-		remotesFolder = Instance.new("Folder")
-		remotesFolder.Name = "Remotes"
-		remotesFolder.Parent = ReplicatedStorage
-	end
-
-	local updateCreatureHealthRemote = remotesFolder:FindFirstChild("UpdateCreatureHealth")
-	if not updateCreatureHealthRemote then
-		updateCreatureHealthRemote = Instance.new("RemoteEvent")
-		updateCreatureHealthRemote.Name = "UpdateCreatureHealth"
-		updateCreatureHealthRemote.Parent = remotesFolder
-	end
-
-	return updateCreatureHealthRemote
+	-- Reference the pre-defined UpdateCreatureHealth remote
+	return ReplicatedStorage.Remotes.UpdateCreatureHealth
 end
 
 -- ============================================
@@ -163,10 +150,8 @@ end
 function ArenaCreature:setupDeathHandling()
 	-- Ensure joints are preserved on death so ragdoll can convert Motor6Ds to constraints
 	self.humanoid.BreakJointsOnDeath = false
-	print("[ArenaCreature] DEBUG: BreakJointsOnDeath set to false for", self.creatureType)
 
 	self.humanoid.Died:Connect(function()
-		print("[ArenaCreature] DEBUG: Humanoid.Died fired for", self.creatureType)
 		self:die()
 	end)
 	
@@ -660,7 +645,6 @@ function ArenaCreature:die()
 		for _, d in ipairs(self.model:GetDescendants()) do
 			if d:IsA("Motor6D") then motorCount += 1 end
 		end
-		print(string.format("[ArenaCreature] DEBUG: %s has %d Motor6D joints at death", self.creatureType, motorCount))
 
 		-- Use shared RagdollModule for permanent NPC ragdoll
 		local ok, res = pcall(function()

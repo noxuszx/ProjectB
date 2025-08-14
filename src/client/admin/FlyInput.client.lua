@@ -10,7 +10,7 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- Wait for RemoteEvent to exist
-local remote = game.ReplicatedStorage:WaitForChild("AdminFlyControl")
+local remote = game.ReplicatedStorage.Remotes:WaitForChild("AdminFlyControl")
 
 -- Input state
 local input = {

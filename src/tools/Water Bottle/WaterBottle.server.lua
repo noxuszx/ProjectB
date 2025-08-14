@@ -14,36 +14,11 @@ if not remotes then
 	remotes.Parent = RP
 end
 
-local drinkWaterRemote = remotes:FindFirstChild("DrinkWater")
-if not drinkWaterRemote then
-	drinkWaterRemote = Instance.new("RemoteEvent")
-	drinkWaterRemote.Name = "DrinkWater"
-	drinkWaterRemote.Parent = remotes
-end
-
--- Remote to update bottle visual state
-local updateBottleStateRemote = remotes:FindFirstChild("UpdateBottleState")
-if not updateBottleStateRemote then
-	updateBottleStateRemote = Instance.new("RemoteEvent")
-	updateBottleStateRemote.Name = "UpdateBottleState"
-	updateBottleStateRemote.Parent = remotes
-end
-
--- Remote to request current bottle uses (for equip state persistence)
-local requestCurrentUsesRemote = remotes:FindFirstChild("RequestCurrentUses")
-if not requestCurrentUsesRemote then
-	requestCurrentUsesRemote = Instance.new("RemoteEvent")
-	requestCurrentUsesRemote.Name = "RequestCurrentUses"
-	requestCurrentUsesRemote.Parent = remotes
-end
-
--- Remote for refill system
-local refillWaterBottleRemote = remotes:FindFirstChild("RefillWaterBottle")
-if not refillWaterBottleRemote then
-	refillWaterBottleRemote = Instance.new("RemoteEvent")
-	refillWaterBottleRemote.Name = "RefillWaterBottle"
-	refillWaterBottleRemote.Parent = remotes
-end
+-- Reference pre-defined remotes
+local drinkWaterRemote = remotes.DrinkWater
+local updateBottleStateRemote = remotes.UpdateBottleState
+local requestCurrentUsesRemote = remotes.RequestCurrentUses
+local refillWaterBottleRemote = remotes.RefillWaterBottle
 
 -- BindableEvent for server-to-server communication
 local refillBindable = RP:FindFirstChild("RefillWaterBottleBindable")

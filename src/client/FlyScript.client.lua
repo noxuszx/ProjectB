@@ -33,8 +33,6 @@ local function toggleFly()
             flyAnimationTrack:Play()
             flyAnimationTrack.Looped = true
         end
-        
-        print("Flying ON")
     else
         if bodyVelocity then
             bodyVelocity:Destroy()
@@ -46,8 +44,6 @@ local function toggleFly()
             flyAnimationTrack:Stop()
             flyAnimationTrack = nil
         end
-        
-        print("Flying OFF")
     end
 end
 

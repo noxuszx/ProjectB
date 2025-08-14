@@ -127,23 +127,19 @@ end
 
 -- Wait for initialization signal from ChunkInit
 local function waitForInitSignal()
-	-- Check if event already exists
-	local existingEvent = ReplicatedStorage:FindFirstChild("InitPedestal")
-	if existingEvent then
-		init()
+	-- Reference the pre-defined InitPedestal event
+	local initPedestalEvent = ReplicatedStorage.Remotes.Events.InitPedestal
+	if not initPedestalEvent then
+		warn("[PedestalController] InitPedestal event not found in Remotes!")
 		return
 	end
 	
-	-- Otherwise wait for it
-	ReplicatedStorage.ChildAdded:Connect(function(child)
-		if child.Name == "InitPedestal" and child:IsA("BindableEvent") then
-			init()
-		end
+	initPedestalEvent.Event:Connect(function()
+		init()
 	end)
 end
 
--- Add small delay to ensure ChunkInit runs first, then check for signal
-task.wait(1)
+-- Set up listener immediately - BindableEvents don't queue, so we need to listen before firing
 waitForInitSignal()
 
 -- Handle cleanup when server shuts down

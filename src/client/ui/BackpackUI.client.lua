@@ -47,7 +47,6 @@ local currentItemCount = 0
 local sackEquipped = false
 
 local function showHint(message)
-	print("[BackpackUI Hint]", message)
 end
 
 local function updateVisibility()

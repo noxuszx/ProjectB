@@ -12,6 +12,7 @@ CollectionServiceTags.NON_DRAGGABLE         = "NON_DRAGGABLE"
 CollectionServiceTags.WELDABLE              = "WELDABLE"
 CollectionServiceTags.NON_WELDABLE          = "NON_WELDABLE"
 CollectionServiceTags.STORABLE              = "STORABLE"
+CollectionServiceTags.TOOL_GRANT            = "TOOL_GRANT"
 
 CollectionServiceTags.WATER_REFILL_SOURCE   = "WATER_SOURCE"
 CollectionServiceTags.COOKING_SURFACE       = "COOKING_SURFACE"

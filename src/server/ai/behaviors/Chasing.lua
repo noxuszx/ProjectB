@@ -5,7 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AIBehavior = require(script.Parent.AIBehavior)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
-local PathNav = require(script.Parent.Parent.PathNav)
+local PathNav = require(script.Parent.Parent.optimization.PathNav)
 
 local ChasingBehavior = setmetatable({}, { __index = AIBehavior })
 ChasingBehavior.__index = ChasingBehavior

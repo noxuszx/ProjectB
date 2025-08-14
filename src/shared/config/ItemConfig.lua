@@ -11,6 +11,13 @@ local ItemConfig = {
 		DebugMode = false,
 	},
 
+	-- Optional mapping from spawned model names to Tool template names.
+	-- If empty, the system will default to using the instance Name, or a ToolName attribute on the template.
+	ToolMappings = {
+		-- ["CrossbowModel"] = "Crossbow",
+		-- ["SpearModel"] = "Spear",
+	},
+
 	SpawnTypes = {
 		["build"] = {
 			MaxRolls = 1,
@@ -40,6 +47,21 @@ local ItemConfig = {
 				["Silver Cup"] = 0.4,
 				["Silver Plate"] = 0.4,
 
+			}
+		},
+
+		["mid-low"] = {
+			MaxRolls = 2,
+			MinRolls = 0,
+			AllowDuplicates = false,
+			PossibleLoot = {
+				["Silver Bar"] = 0.3,
+				["Silver Cup"] = 0.4,
+				["Silver Plate"] = 0.4,
+				["Gold Bar"] = 0.3,
+				["Gold Vase1"] = 0.7,
+				["Gold Vase2"] = 0.6,
+				["Gold Vase3"] = 0.5
 			}
 		},
 
@@ -81,6 +103,31 @@ local ItemConfig = {
 			AllowDuplicates = true,  -- Allow multiple of the same item
 			PossibleLoot = {
 				["Gold Statue"] = 1.0,  -- 100% chance to spawn gold statues
+			}
+		},
+
+		-- New spawn types for heals and weapons
+		["heals"] = {
+			MaxRolls = 2,
+			MinRolls = 0,
+			AllowDuplicates = true,
+			PossibleLoot = {
+				["Bandage"] = 0.7,
+				["Medkit"] = 0.3,
+			}
+		},
+
+		["weapons"] = {
+			MaxRolls = 1,
+			MinRolls = 0,
+			AllowDuplicates = false,
+			PossibleLoot = {
+				["Spear"] = 0.25,
+				["Machete"] = 0.25,
+				["Kopesh"] = 0.15,
+				["Katana"] = 0.10,
+				["Crossbow"] = 0.15,
+				["Bolts"] = 0.10
 			}
 		}
 	}

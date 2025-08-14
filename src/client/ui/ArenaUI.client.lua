@@ -10,14 +10,60 @@ local ArenaConfig = require(ReplicatedStorage.Shared.config.ArenaConfig)
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Reference existing ArenaGui elements
-local arenaGui = playerGui:WaitForChild("ArenaGui")
-local mainText = arenaGui:WaitForChild("MainText")
-local timerText = arenaGui:WaitForChild("TimerText")
+-- References (may be re-bound if GUI is recreated)
+local arenaGui = nil
+local mainText = nil
+local timerText = nil
 
 -- State tracking
 local arenaActive = false
 local endTime = nil
+
+-- Flash state to avoid spawning overlapping tweens
+local flashTweenActive = false
+
+-- Helper to (re)bind ArenaGui and children safely
+local arenaAncestryConn = nil
+local function bindArenaGui()
+	arenaGui = playerGui:WaitForChild("ArenaGui")
+	mainText = arenaGui:WaitForChild("MainText")
+	timerText = arenaGui:WaitForChild("TimerText")
+	if arenaGui:GetAttribute("Active") == nil then
+		arenaGui:SetAttribute("Active", false)
+	end
+	if arenaGui:GetAttribute("EndTime") == nil then
+		arenaGui:SetAttribute("EndTime", 0)
+	end
+	-- If arena is active when GUI gets recreated, ensure it becomes visible again
+	if arenaActive then
+		arenaGui.Enabled = true
+		arenaGui:SetAttribute("Active", true)
+		arenaGui:SetAttribute("EndTime", endTime or 0)
+		-- Update timer text immediately using current endTime
+		local remaining = math.max(0, (endTime or 0) - os.clock())
+		timerText.Text = "SURVIVE FOR " .. string.format("%d:%02d", math.floor(remaining/60), math.floor(remaining % 60))
+	end
+	-- Reconnect a watcher so if ArenaGui is removed again, we re-bind on re-parent
+	if arenaAncestryConn then
+		arenaAncestryConn:Disconnect()
+		arenaAncestryConn = nil
+	end
+	arenaAncestryConn = arenaGui.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			-- Wait a moment for Studio/engine to reinsert PlayerGui children, then rebind
+			task.defer(function()
+				if playerGui and playerGui.Parent then
+					local ok = pcall(function()
+						bindArenaGui()
+					end)
+					if not ok then
+						-- Ignore; will bind next time ArenaGui exists
+					end
+				end
+			end)
+		end
+	end)
+end
 
 -- Helper functions
 local function getArenaRemote(name)
@@ -29,12 +75,23 @@ local function getArenaRemote(name)
 	return arenaFolder:FindFirstChild(name)
 end
 
+-- Rebind ArenaGui initially and on future respawns/recreations
+bindArenaGui()
+
 local function showArenaUI()
 	arenaGui.Enabled = true
+	arenaGui:SetAttribute("Active", true)
+	arenaGui:SetAttribute("EndTime", endTime or 0)
 	
 	-- Set initial text
 	mainText.Text = "AN ANCIENT EVIL HAS AWAKENED"
-	timerText.Text = "SURVIVE FOR 3 MINUTES"
+	-- Use config duration for initial text to avoid mismatch
+	local initialSeconds = tonumber(ArenaConfig.DurationSeconds) or 0
+	if initialSeconds > 0 then
+		timerText.Text = string.format("SURVIVE FOR %d:%02d", math.floor(initialSeconds/60), initialSeconds % 60)
+	else
+		timerText.Text = "SURVIVE"
+	end
 	
 	-- Fade in animation
 	mainText.TextTransparency = 1
@@ -60,6 +117,8 @@ local function hideArenaUI()
 	arenaGui.Enabled = false
 	arenaActive = false
 	endTime = nil
+	arenaGui:SetAttribute("Active", false)
+	arenaGui:SetAttribute("EndTime", 0)
 end
 
 local function formatTime(seconds)
@@ -76,22 +135,34 @@ local function updateTimer()
 	local remaining = math.max(0, endTime - os.clock())
 	timerText.Text = "SURVIVE FOR " .. formatTime(remaining)
 	
-	-- Flash red when under 10 seconds
-	if remaining <= 10 and remaining > 0 then
-		local flash = TweenService:Create(
-			timerText,
-			TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-			{TextColor3 = Color3.fromRGB(255, 0, 0)}
-		)
-		flash:Play()
-		flash.Completed:Connect(function()
-			local flashBack = TweenService:Create(
+	-- Flash red when under 10 seconds (throttled)
+	if remaining > 10 then
+		-- Ensure normal color outside danger zone
+		if timerText.TextColor3 ~= Color3.fromRGB(255, 255, 255) then
+			timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+		end
+		flashTweenActive = false
+	elseif remaining > 0 then
+		if not flashTweenActive then
+			flashTweenActive = true
+			local flash = TweenService:Create(
 				timerText,
-				TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-				{TextColor3 = Color3.fromRGB(255, 255, 255)}
+				TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+				{TextColor3 = Color3.fromRGB(255, 0, 0)}
 			)
-			flashBack:Play()
-		end)
+			flash:Play()
+			flash.Completed:Once(function()
+				local flashBack = TweenService:Create(
+					timerText,
+					TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+					{TextColor3 = Color3.fromRGB(255, 255, 255)}
+				)
+				flashBack:Play()
+				flashBack.Completed:Once(function()
+					flashTweenActive = false
+				end)
+			end)
+		end
 	end
 	
 	if remaining <= 0 then
@@ -108,6 +179,8 @@ local function connectRemotes()
 		startTimerRemote.OnClientEvent:Connect(function(data)
 			arenaActive = true
 			endTime = data.endTime
+			arenaGui:SetAttribute("Active", true)
+			arenaGui:SetAttribute("EndTime", endTime or 0)
 			showArenaUI()
 		end)
 	end
@@ -117,6 +190,7 @@ local function connectRemotes()
 		syncRemote.OnClientEvent:Connect(function(data)
 			if arenaActive then
 				endTime = data.endTime
+				arenaGui:SetAttribute("EndTime", endTime or 0)
 			end
 		end)
 	end
@@ -132,6 +206,7 @@ local function connectRemotes()
 	if resumeRemote then
 		resumeRemote.OnClientEvent:Connect(function(data)
 			endTime = data.endTime
+			arenaGui:SetAttribute("EndTime", endTime or 0)
 		end)
 	end
 	
@@ -154,5 +229,17 @@ end)
 
 -- Initialize
 arenaGui.Enabled = false -- Start hidden
+arenaGui:SetAttribute("Active", false)
+arenaGui:SetAttribute("EndTime", 0)
+
+-- If character respawns and Arena is still active, ensure GUI is restored
+player.CharacterAdded:Connect(function()
+	if arenaActive then
+		-- Re-bind in case GUI was recreated on respawn
+		bindArenaGui()
+		arenaGui.Enabled = true
+	end
+end)
+
 connectRemotes()
 

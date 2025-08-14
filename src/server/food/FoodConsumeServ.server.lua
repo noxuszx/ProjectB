@@ -102,7 +102,6 @@ function FoodConsumptionServer.createConsumptionEffects(player, foodModel, hunge
 	
 	-- You could send this to a GUI system or create floating text
 	-- For now, we'll just print it locally
-	print("[FoodConsumption]", player.Name, "->", message)
 end
 
 

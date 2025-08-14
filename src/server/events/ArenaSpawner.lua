@@ -78,9 +78,7 @@ local function buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
 end
 
 local function spawnOneAtMarker(markerInstance, creatureType)
-	print("[ArenaSpawner] DEBUG: spawnOneAtMarker called with:", creatureType, "at marker:", markerInstance.Name)
 	local pos = markerInstance.Position + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3))
-	print("[ArenaSpawner] DEBUG: Spawn position:", tostring(pos))
 	
 	-- Map old creature types to new Arena variants
 	local arenaCreatureType = creatureType
@@ -94,36 +92,24 @@ local function spawnOneAtMarker(markerInstance, creatureType)
 		-- If Mummy is used, default to ArenaEgyptianSkeleton
 		arenaCreatureType = "ArenaEgyptianSkeleton"
 	end
-	print("[ArenaSpawner] DEBUG: Mapped", creatureType, "to", arenaCreatureType)
 	
 	-- Spawn using the new Arena system
-	print("[ArenaSpawner] DEBUG: Calling ArenaCreatureSpawner.spawnCreature...")
 	local creature = ArenaCreatureSpawner.spawnCreature(arenaCreatureType, pos)
 	if creature and creature.model then
-		print("[ArenaSpawner] DEBUG: Creature spawned successfully, tagging as arena enemy")
 		tagArenaEnemy(creature.model)
 		return true
 	else
-		print("[ArenaSpawner] DEBUG: Failed to spawn creature")
 	end
 	return false
 end
 
 local function spawnPhase(phaseName, phaseWaves, markerOrder)
-	print("[ArenaSpawner] DEBUG: spawnPhase called for:", phaseName)
-	print("[ArenaSpawner] DEBUG: markerOrder:", table.concat(markerOrder, ", "))
 	
 	local markers = getTaggedSpawnMarkers()
-	print("[ArenaSpawner] DEBUG: Found markers:")
-	for name, marker in pairs(markers) do
-		print("  -", name, "at", tostring(marker.Position))
-	end
 	
 	local stagger = (ArenaConfig.SpawnStaggerSeconds and ArenaConfig.SpawnStaggerSeconds[phaseName]) or 0.2
-	print("[ArenaSpawner] DEBUG: Stagger time:", stagger)
 	
 	local plan = buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
-	print("[ArenaSpawner] DEBUG: Spawn plan has", #plan, "entries")
 
 	local spawned = 0
 	for _, item in ipairs(plan) do
@@ -139,24 +125,13 @@ local function spawnPhase(phaseName, phaseWaves, markerOrder)
 end
 
 function ArenaSpawner.spawnSkeletonMummyWave()
-	print("[ArenaSpawner] DEBUG: spawnSkeletonMummyWave called")
 	
 	local aiManager = ArenaAIManager.getInstance()
-	print("[ArenaSpawner] DEBUG: ArenaAIManager isActive:", aiManager.isActive)
 	if not aiManager.isActive then
-		print("[ArenaSpawner] DEBUG: Starting ArenaAIManager...")
 		local success = aiManager:start()
-		print("[ArenaSpawner] DEBUG: ArenaAIManager start result:", success)
 	end
 	
 	local w = ArenaConfig.Waves.Phase1
-	print("[ArenaSpawner] DEBUG: Phase1 wave config:")
-	for spawnerName, spawns in pairs(w) do
-		print("  ", spawnerName, ":", #spawns, "spawn groups")
-		for i, spawn in ipairs(spawns) do
-			print("    ", spawn.Type, "x", spawn.Count)
-		end
-	end
 	
 	return spawnPhase("Phase1", w, { "WideSpawner1", "WideSpawner2" })
 end

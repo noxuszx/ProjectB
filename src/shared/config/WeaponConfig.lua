@@ -138,6 +138,7 @@ WeaponConfig.GlobalSettings = {
         ShowRaycast = false,     -- Visualize raycast in 3D world
         PrintHitInfo = true,     -- Print hit information to console
         ShowCooldownUI = false,  -- Show cooldown indicator (future feature)
+        ShowMeleeRange = false,  -- When true (client), draw a translucent sphere indicating melee range on attack
     }
 }
 

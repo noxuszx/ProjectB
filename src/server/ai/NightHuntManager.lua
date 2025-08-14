@@ -347,7 +347,7 @@ function NightHuntManager.init()
 	Players.PlayerRemoving:Connect(onPlayerLeaving)
 	
 	-- Connect to period changes
-	local periodChangedServer = ReplicatedStorage:WaitForChild("PeriodChangedServer")
+	local periodChangedServer = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("PeriodChangedServer")
 	periodChangedConnection = periodChangedServer.Event:Connect(onPeriodChanged)
 	
 	-- Start immediately if already night

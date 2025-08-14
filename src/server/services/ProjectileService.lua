@@ -15,16 +15,9 @@ local projectileVisualRemote = nil
 local function initializeRemotes()
     local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
     
-    -- Reuse existing WeaponDamage remote for damage
-    weaponDamageRemote = remotesFolder:WaitForChild("WeaponDamage")
-    
-    -- Create ProjectileVisual remote if it doesn't exist
-    projectileVisualRemote = remotesFolder:FindFirstChild("ProjectileVisual")
-    if not projectileVisualRemote then
-        projectileVisualRemote = Instance.new("RemoteEvent")
-        projectileVisualRemote.Name = "ProjectileVisual"
-        projectileVisualRemote.Parent = remotesFolder
-    end
+    -- Reference pre-defined remotes
+    weaponDamageRemote = remotesFolder.WeaponDamage
+    projectileVisualRemote = remotesFolder.ProjectileVisual
 end
 
 -- Create new raycast params for each operation to avoid race conditions

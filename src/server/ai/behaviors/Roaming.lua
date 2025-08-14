@@ -119,7 +119,7 @@ function RoamingBehavior:followUp(creature, deltaTime)
 
 		-- Continue moving towards target
 		if creature.usePathfinding then
-			local PathNav = require(script.Parent.Parent.PathNav)
+			local PathNav = require(script.Parent.Parent.optimization.PathNav)
 			local stillFollowing = PathNav.step(creature, creature.moveSpeed)
 			-- If path ended or could not be followed, pick a new destination instead of standing
 			if not stillFollowing then
@@ -180,6 +180,10 @@ function RoamingBehavior:update(creature, deltaTime)
 			end
 			-- If FleeOnProximity is false, creature won't flee from player proximity
 		elseif creatureConfig and creatureConfig.Type == "Hostile" then
+			-- Signal aggro via attribute so audio remains decoupled from AI
+			pcall(function()
+				creature.model:SetAttribute("AggroTick", os.clock())
+			end)
 			local ChasingBehavior = require(script.Parent.Chasing)
 			creature:setBehavior(ChasingBehavior.new(nearestPlayer))
 			return
@@ -281,7 +285,7 @@ function RoamingBehavior:updateChoosingDestination(creature)
 	local humanoid = creature.model:FindFirstChild("Humanoid")
 	if humanoid then
 		if creature.usePathfinding then
-			local PathNav = require(script.Parent.Parent.PathNav)
+			local PathNav = require(script.Parent.Parent.optimization.PathNav)
 			local waypoints = select(1, PathNav.computePath(creature.model.PrimaryPart.Position, self.targetPosition))
 			if waypoints and #waypoints > 0 then
 				PathNav.setPath(creature, waypoints)

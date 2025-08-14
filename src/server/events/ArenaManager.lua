@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local ArenaConfig = require(ReplicatedStorage.Shared.config.ArenaConfig)
 local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
@@ -18,6 +19,7 @@ local State  = {
 
 local currentState = State.Inactive
 local arenaStarted = false
+local arenaMusic = nil
 local startTime, endTime
 local remainingDuration = ArenaConfig.DurationSeconds
 local waveTriggered = {
@@ -118,6 +120,18 @@ function ArenaManager.start()
 	endTime = startTime + remainingDuration
 	waveTriggered = { Phase2 = false, Phase3 = false }
 
+	-- Play arena sounds
+	local arenaStartSound = SoundService:FindFirstChild("ArenaStart")
+	if arenaStartSound then
+		arenaStartSound:Play()
+	end
+
+	arenaMusic = SoundService:FindFirstChild("ArenaMusic")
+	if arenaMusic then
+		arenaMusic.Looped = true
+		arenaMusic:Play()
+	end
+
 	for _, p in ipairs(Players:GetPlayers()) do
 		inArena[p.UserId] = true
 	end
@@ -205,6 +219,18 @@ function ArenaManager.victory()
 		return false
 	end
 	currentState = State.Victory
+	
+	-- Fade out arena music
+	if arenaMusic and arenaMusic.IsPlaying then
+		local fadeOut = TweenService:Create(arenaMusic, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Volume = 0
+		})
+		fadeOut:Play()
+		fadeOut.Completed:Connect(function()
+			arenaMusic:Stop()
+			arenaMusic.Volume = arenaMusic.Volume > 0 and arenaMusic.Volume or 0.5 -- Reset volume for next time
+		end)
+	end
 	
 	-- Stop the Arena AI Manager and clean up creatures
 	local aiManager = ArenaAIManager.getInstance()

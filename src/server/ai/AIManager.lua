@@ -8,7 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
-local LODPolicy = require(script.Parent.LODPolicy)
+local LODPolicy = require(script.Parent.optimization.LODPolicy)
 local AICreatureRegistry = require(script.Parent.AICreatureRegistry)
 local AIDebugger = require(script.Parent.AIDebugger)
 

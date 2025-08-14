@@ -15,22 +15,8 @@ local BaseCreature = {}
 BaseCreature.__index = BaseCreature
 
 local function getUpdateCreatureHealthRemote()
-	local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
-	if not remotesFolder then
-		remotesFolder = Instance.new("Folder")
-		remotesFolder.Name = "Remotes"
-		remotesFolder.Parent = ReplicatedStorage
-	end
-
-	local updateCreatureHealthRemote =
-		remotesFolder:FindFirstChild("UpdateCreatureHealth")
-	if not updateCreatureHealthRemote then
-		updateCreatureHealthRemote = Instance.new("RemoteEvent")
-		updateCreatureHealthRemote.Name = "UpdateCreatureHealth"
-		updateCreatureHealthRemote.Parent = remotesFolder
-	end
-
-	return updateCreatureHealthRemote
+	-- Reference the pre-defined UpdateCreatureHealth remote
+	return ReplicatedStorage.Remotes.UpdateCreatureHealth
 end
 
 
@@ -101,6 +87,10 @@ function BaseCreature.new(model, creatureType, spawnPosition)
 
 	self.model = model
 	self.creatureType = creatureType
+	-- Expose type to other systems (e.g., audio manager) without coupling
+	pcall(function()
+		model:SetAttribute("CreatureType", creatureType)
+	end)
 	self.spawnPosition = spawnPosition or model.PrimaryPart.Position
 	self.position = model.PrimaryPart.Position
 

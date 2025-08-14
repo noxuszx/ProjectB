@@ -28,14 +28,8 @@ local FLY_SPEED      = 70   -- studs / second
 -- REMOTE EVENT (client input) --------------------------------------
 ---------------------------------------------------------------------
 
-local remote: RemoteEvent
-if ReplicatedStorage:FindFirstChild("AdminFlyControl") then
-    remote = ReplicatedStorage.AdminFlyControl :: RemoteEvent
-else
-    remote = Instance.new("RemoteEvent")
-    remote.Name = "AdminFlyControl"
-    remote.Parent = ReplicatedStorage
-end
+-- Reference the pre-defined AdminFlyControl remote
+local remote: RemoteEvent = ReplicatedStorage.Remotes.AdminFlyControl
 
 ---------------------------------------------------------------------
 -- INTERNAL STATE ---------------------------------------------------

@@ -139,6 +139,24 @@
         },
         "ConsumeFood": {
           "$className": "RemoteEvent"
+        },
+        "AdminFlyControl": {
+          "$className": "RemoteEvent"
+        },
+        "UpdateBottleState": {
+          "$className": "RemoteEvent"
+        },
+        "BackpackChanged": {
+          "$className": "RemoteEvent"
+        },
+        "Events": {
+          "$className": "Folder",
+          "InitPedestal": {
+            "$className": "BindableEvent"
+          },
+          "PeriodChangedServer": {
+            "$className": "BindableEvent"
+          }
         }
       },
       "Tools": {

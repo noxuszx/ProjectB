@@ -5,13 +5,14 @@
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local EgyptDoor = {}
 
 -- Animation settings
-local TWEEN_DURATION = 4.0
+local TWEEN_DURATION = 13.0
 local TWEEN_EASING_STYLE = Enum.EasingStyle.Sine
 local TWEEN_EASING_DIRECTION = Enum.EasingDirection.InOut
 
@@ -21,15 +22,16 @@ local originalPosition = nil
 local openPosition = nil
 local currentTween = nil
 local doorState = "closed" -- "closed", "opening", "open", "closing"
+local doorSound = nil
 
 -- Initialize door references and calculate positions
 local function initializeDoor()
 	local doors = CollectionServiceTags.getLiveTagged(CollectionServiceTags.EGYPT_DOOR)
 
 	if #doors == 0 then
+		warn("[EgyptDoor] No doors found with EGYPT_DOOR tag!")
 		return false
 	end
-
 
 	doorPart = doors[1]
 	originalPosition = doorPart.Position
@@ -37,6 +39,23 @@ local function initializeDoor()
 	-- Calculate open position (door slides down by its height + buffer)
 	local doorHeight = doorPart.Size.Y
 	openPosition = originalPosition - Vector3.new(0, doorHeight + 2, 0)
+
+	-- Get reference sound from SoundService and create a copy in the door
+	local referenceDoorSound = SoundService:FindFirstChild("Large-Stone-Door")
+	if not referenceDoorSound then
+		warn("[EgyptDoor] Large-Stone-Door sound not found in SoundService")
+		return true
+	end
+
+	-- Create a Sound object in the door part for positional audio
+	doorSound = Instance.new("Sound")
+	doorSound.Name = "DoorSound"
+	doorSound.SoundId = referenceDoorSound.SoundId
+	doorSound.Volume = referenceDoorSound.Volume
+	doorSound.Pitch = referenceDoorSound.Pitch
+	doorSound.RollOffMode = Enum.RollOffMode.Linear
+	doorSound.EmitterSize = 10
+	doorSound.Parent = doorPart
 
 	return true
 end
@@ -73,6 +92,11 @@ function EgyptDoor.openDoor()
 
 	doorState = "opening"
 
+	-- Play door sound
+	if doorSound then
+		doorSound:Play()
+	end
+
 	-- Cancel any existing tween
 	cancelCurrentTween()
 
@@ -104,6 +128,11 @@ function EgyptDoor.closeDoor()
 
 	doorState = "closing"
 
+	-- Play door sound
+	if doorSound then
+		doorSound:Play()
+	end
+
 	-- Cancel any existing tween
 	cancelCurrentTween()
 
@@ -133,6 +162,7 @@ end
 
 function EgyptDoor.init()
 	if not initializeDoor() then
+		warn("[EgyptDoor] Door initialization failed!")
 		return false
 	end
 

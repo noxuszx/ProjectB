@@ -58,14 +58,11 @@ local function storeCurrentObject()
 end
 
 local function retrieveTopObject()
-	print("[BackpackController] retrieveTopObject called")
 	local currentTime = os.clock()
 	if currentTime - lastStoreTime < STORE_COOLDOWN then
-		print("[BackpackController] retrieveTopObject blocked by cooldown")
 		return
 	end
 
-	print("[BackpackController] Firing RequestRetrieve to server")
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestRetrieve")
 end
@@ -73,7 +70,6 @@ end
 
 function showUIHint(message)
 	lastUIHint = message
-	print("[Backpack]", message)
 
 	if _G.BackpackUI and _G.BackpackUI.showHint then
 		_G.BackpackUI.showHint(message)

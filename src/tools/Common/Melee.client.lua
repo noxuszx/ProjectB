@@ -1,28 +1,33 @@
 --[[
-    Spear.client.lua (generic melee script)
-    Simplified: magnitude-only selection, no directional/LOS, mobile-friendly
-    You can copy this exact script to other melee tools. It reads stats from WeaponConfig by tool.Name.
+    Melee.client.lua
+    Simple, reusable melee weapon script based on Spear implementation
+    Uses magnitude-only target selection (no directional cone, no LOS) for mobile-friendly input
 ]]--
 
+-- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 
+-- Tool and player references
 local tool = script.Parent
 local player = Players.LocalPlayer
 
+-- Configuration
 local WeaponConfig = require(ReplicatedStorage.Shared.config.WeaponConfig)
 local weaponName = tool.Name
 local config = WeaponConfig.getWeaponConfig(weaponName)
 
+-- State
 local lastAttackTime = 0
 local isEquipped = false
 local character: Model? = nil
 local humanoid: Humanoid? = nil
 local weaponRemote: RemoteEvent? = nil
 
-local ATTACK_ANIMATION_ID = "rbxassetid://81865375741678"
+-- Animation (optional). If unavailable, we fall back to legacy toolanim
+local ATTACK_ANIMATION_ID = "rbxassetid://81865375741678" -- Replace with a real animation ID
 local attackTrack: AnimationTrack? = nil
 
 local function initRemote()
@@ -81,7 +86,7 @@ local function playAttackAnimation()
     ensureLegacyToolAnim()
 end
 
-local function onCooldown()
+local function onCooldown(): boolean
     if not config or not config.Cooldown then return false end
     local now = os.clock()
     return (now - lastAttackTime) < config.Cooldown
@@ -144,18 +149,21 @@ local function executeAttack()
     if not character or not character.PrimaryPart then return false end
 
     lastAttackTime = os.clock()
+
+    -- Play animation
     playAttackAnimation()
 
-    local range = (config and config.Range) or 10
-
     -- Visualize range if enabled in global config
+    local range = (config and config.Range) or 10
     local showRange = WeaponConfig and WeaponConfig.GlobalSettings and WeaponConfig.GlobalSettings.Debug and WeaponConfig.GlobalSettings.Debug.ShowMeleeRange
     if showRange then
         createRangeVisual(character.PrimaryPart.Position, range)
     end
 
+    -- Magnitude-only target selection
     local targetModel = findNearestTargetInRange(character.PrimaryPart.Position, range)
 
+    -- Send to server using existing damage pipeline (server decides creature:takeDamage)
     if targetModel and weaponRemote and config and config.Damage then
         weaponRemote:FireServer(targetModel, config.Damage)
     end
@@ -163,6 +171,7 @@ local function executeAttack()
     return true
 end
 
+-- Hooks
 tool.Equipped:Connect(function()
     isEquipped = true
     character = player.Character
@@ -188,41 +197,3 @@ player.CharacterAdded:Connect(function(c)
         setupAnimation()
     end
 end)
-
--- Tool unequipped handler
-tool.Unequipped:Connect(function()
-    isEquipped = false
-    currentCharacter = nil
-    humanoid = nil
-    
-    -- Clean up animation track
-    if attackAnimationTrack then
-        attackAnimationTrack:Stop()
-        attackAnimationTrack:Destroy()
-        attackAnimationTrack = nil
-    end
-    
-end)
-
--- Tool activated handler (left click)
-tool.Activated:Connect(function()
-    if not isEquipped then return end
-    
-    executeAttack()
-end)
-
--- Character respawn handler
-player.CharacterAdded:Connect(function(character)
-    if isEquipped then
-        currentCharacter = character
-        humanoid = character:FindFirstChildOfClass("Humanoid")
-        
-        -- Reload animation after respawn
-        if humanoid then
-            setupAnimation()
-        end
-    end
-end)
-
--- Initialize
-initializeRemote()

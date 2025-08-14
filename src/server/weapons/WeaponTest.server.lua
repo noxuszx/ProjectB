@@ -2,21 +2,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Create Remotes folder if it doesn't exist
-local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
-if not remotesFolder then
-    remotesFolder = Instance.new("Folder")
-    remotesFolder.Name = "Remotes"
-    remotesFolder.Parent = ReplicatedStorage
-end
-
--- Create WeaponDamage RemoteEvent
-local weaponDamageRemote = remotesFolder:FindFirstChild("WeaponDamage")
-if not weaponDamageRemote then
-    weaponDamageRemote = Instance.new("RemoteEvent")
-    weaponDamageRemote.Name = "WeaponDamage"
-    weaponDamageRemote.Parent = remotesFolder
-end
+-- Reference pre-defined WeaponDamage remote
+local weaponDamageRemote = ReplicatedStorage.Remotes.WeaponDamage
 
 weaponDamageRemote.OnServerEvent:Connect(function(player, targetCharacter, damage)
     -- Basic validation

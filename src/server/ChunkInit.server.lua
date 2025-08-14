@@ -45,10 +45,10 @@ local function mobileOptimizedInit()
 	task.wait(0.5)
 	
 	-- Initialize pedestal system after pyramids are spawned and positioned
-	local initPedestalEvent = Instance.new("BindableEvent")
-	initPedestalEvent.Name = "InitPedestal"
-	initPedestalEvent.Parent = game.ReplicatedStorage
-	initPedestalEvent:Fire()
+	local initPedestalEvent = game.ReplicatedStorage.Remotes.Events.InitPedestal
+	if initPedestalEvent then
+		initPedestalEvent:Fire()
+	end
 	
 	TreasureSpawner.Initialize()
 	SystemLoadMonitor.reportSystemLoaded("TerrainSystem")
@@ -102,11 +102,10 @@ local function desktopOptimizedInit()
 		task.wait(0.5)
 		
 		-- Initialize pedestal system after pyramids are spawned and positioned
-		local initPedestalEvent = Instance.new("BindableEvent")
-		initPedestalEvent.Name = "InitPedestal"
-		initPedestalEvent.Parent = game.ReplicatedStorage
-		print("[ChunkInit] Firing pedestal initialization signal...")
-		initPedestalEvent:Fire()
+		local initPedestalEvent = game.ReplicatedStorage.Remotes.Events.InitPedestal
+		if initPedestalEvent then
+			initPedestalEvent:Fire()
+		end
 		
 		-- Initialize treasure spawning system after pyramid is built
 		print("Initializing treasure spawning system...")

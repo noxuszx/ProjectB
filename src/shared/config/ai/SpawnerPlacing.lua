@@ -1,27 +1,23 @@
 -- src/shared/config/SpawnerPlacementConfig.lua
 -- Configuration file for the Procedural Spawner Placement System
--- This file defines all tunable parameters for intelligent spawner placement
 
 local SpawnerPlacementConfig = {
 
 	Settings = {
-		SpawnerChunkChance = 0.8, -- Increased from 0.6 for more spawners
+		SpawnerChunkChance = 0.8,
 		MaxPlacementAttempts = 10,
 		SpawnerHeight = 2,
 		DebugMode = false,
 
-		UseNoiseBasedSpawning = false, -- Simplified random spawning for better gameplay balance
+		UseNoiseBasedSpawning = false,
 	},
 
 	TerrainValidation = {
-		ClearanceRadius = 7, -- Reduced from 10 for denser spawner placement
+		ClearanceRadius = 7,
 		RaycastDistance = 50,
 	},
 
-	-- Noise-based biome settings removed for simplified random spawning approach
-
 	RandomSpawning = {
-		-- Designer-controlled spawn type ratios for balanced gameplay
 		SpawnTypeProbabilities = {
 			Safe = 0.60,      -- 60% safe areas (passive creatures)
 			Dangerous = 0.40, -- 40% dangerous areas (hostile creatures)
@@ -33,9 +29,8 @@ local SpawnerPlacementConfig = {
 	Performance = {
 		BatchSize = 10,
 		ProcessingDelay = 0.01,
-		MaxSpawnersPerChunk = 5, -- Increased from 3 for denser spawning
+		MaxSpawnersPerChunk = 5,
 		EnableSpatialCaching = true,
-		
 		-- NEW: Frame budgeting - chunks to process per frame
 		PerFrame = 10,
 	},

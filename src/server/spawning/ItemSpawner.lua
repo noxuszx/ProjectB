@@ -19,6 +19,8 @@ local isPopulating = false
 
 local SPAWN_TAG = "ItemSpawnPoint"
 local SPAWN_TYPE_ATTRIBUTE = "SpawnType"
+local EXTRA_SPAWN_TYPE_ATTRIBUTE = "ExtraSpawnType"
+local SPAWN_EXACT_ATTRIBUTE = "SpawnExact"
 
 local itemFolder = Instance.new("Folder")
 itemFolder.Name = "SpawnedItems"
@@ -47,7 +49,7 @@ local function discoverAvailableItems()
 	local function scanFolder(folder, folderName)
 
 		for _, item in ipairs(folder:GetChildren()) do
-			if item:IsA("MeshPart") or item:IsA("Tool") then
+			if item:IsA("MeshPart") or item:IsA("Tool") or item:IsA("Model") then
 				local isValid = true
 				local issues = {}
 
@@ -60,6 +62,14 @@ local function discoverAvailableItems()
 						size = handle.Size
 					else
 						table.insert(issues, "No Handle found in Tool")
+						isValid = false
+					end
+				elseif item:IsA("Model") then
+					local anyPart = item.PrimaryPart or item:FindFirstChildOfClass("BasePart")
+					if anyPart then
+						size = anyPart.Size or Vector3.new(1,1,1)
+					else
+						table.insert(issues, "Model has no BasePart/PrimaryPart")
 						isValid = false
 					end
 				end
@@ -132,6 +142,23 @@ local function getRandomSpawnPosition(spawnerPart, existingPositions)
 	local spawnerPosition = spawnerPart.Position
 	local settings = ItemConfig.Settings
 	existingPositions = existingPositions or {}
+
+	-- If spawner requests exact placement, spawn centered on top of the spawner part
+	local spawnExact = spawnerPart:GetAttribute(SPAWN_EXACT_ATTRIBUTE)
+	if spawnExact == true then
+		local topY = spawnerPosition.Y
+		if spawnerPart:IsA("BasePart") then
+			topY = spawnerPosition.Y + (spawnerPart.Size.Y / 2)
+		end
+		local exactPos = Vector3.new(
+			spawnerPosition.X,
+			topY + (settings.SpawnHeight or 0) + 0.5,
+			spawnerPosition.Z
+		)
+		-- Track this position to reduce overlap if multiple items are spawned
+		table.insert(existingPositions, exactPos)
+		return exactPos
+	end
 
 	local probeHeight = settings.RaycastProbeHeight or 100
 	local downLength = settings.RaycastDownLength or 200
@@ -319,36 +346,60 @@ local function spawnItem(itemName, position)
 		debugPrint("Tagged Model and its parts as draggable: " .. itemName)
 	end
 
+	-- If this spawned object should grant a Tool on pickup, mark it now
+	local toolNameAttr = nil
+	-- Priority: explicit attribute on template, config mapping, fallback to itemName
+	if itemTemplate:GetAttribute("ToolName") then
+		toolNameAttr = itemTemplate:GetAttribute("ToolName")
+	elseif ItemConfig.ToolMappings and ItemConfig.ToolMappings[itemName] then
+		toolNameAttr = ItemConfig.ToolMappings[itemName]
+	end
+	if toolNameAttr then
+		newItem:SetAttribute("ToolName", toolNameAttr)
+		CollectionServiceTags.addTag(newItem, CollectionServiceTags.TOOL_GRANT)
+	end
+
 	spawnedItemsCount += 1
 	debugPrint("Spawned item: " .. itemName .. " (" .. newItem.ClassName .. ") at " .. tostring(position))
 
 	return newItem
 end
 
+local function processForType(spawnerPart, typeName, usedPositions)
+	if not typeName or typeName == "" then return 0 end
+	local spawnerConfig = ItemConfig.SpawnTypes[typeName]
+	if not spawnerConfig then
+		warn("[ItemSpawner] Unknown spawn type:", typeName)
+		return 0
+	end
+	debugPrint("Processing spawner type: " .. typeName .. " at " .. tostring(spawnerPart.Position))
+	local itemsToSpawn = performLootRoll(spawnerConfig)
+	local count = 0
+	for _, itemName in ipairs(itemsToSpawn) do
+		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions)
+		if spawnItem(itemName, spawnPosition) then
+			count += 1
+		end
+	end
+	return count
+end
+
 local function processSpawner(spawnerPart)
-	local spawnType = spawnerPart:GetAttribute(SPAWN_TYPE_ATTRIBUTE)
-	if not spawnType then
+	local primaryType = spawnerPart:GetAttribute(SPAWN_TYPE_ATTRIBUTE)
+	if not primaryType then
 		warn("[ItemSpawner] Spawner missing SpawnType attribute:", spawnerPart:GetFullName())
 		return
 	end
 
-	local spawnerConfig = ItemConfig.SpawnTypes[spawnType]
-	if not spawnerConfig then
-		warn("[ItemSpawner] Unknown spawn type:", spawnType)
-		return
-	end
-
-	debugPrint("Processing spawner: " .. spawnType .. " at " .. tostring(spawnerPart.Position))
-	local itemsToSpawn = performLootRoll(spawnerConfig)
+	local extraType = spawnerPart:GetAttribute(EXTRA_SPAWN_TYPE_ATTRIBUTE)
 	local usedPositions = {}
+	local totalSpawned = 0
 
-	for _, itemName in ipairs(itemsToSpawn) do
-		local spawnPosition = getRandomSpawnPosition(spawnerPart, usedPositions)
-		spawnItem(itemName, spawnPosition)
-	end
+	totalSpawned += processForType(spawnerPart, primaryType, usedPositions)
+	totalSpawned += processForType(spawnerPart, extraType, usedPositions)
 
 	processedSpawnersCount += 1
-	debugPrint("Spawner processed. Items spawned: " .. #itemsToSpawn)
+	debugPrint("Spawner processed. Items spawned: " .. totalSpawned)
 end
 
 -- Clear all spawned items

@@ -23,7 +23,8 @@ local arenaGui = playerGui:WaitForChild("ArenaGui")
 
 local reviveButton = deathFrame:WaitForChild("ReviveBTN")
 local lobbyButton = deathFrame:WaitForChild("LobbyBTN")
-local reviveAllButton = deathFrame:FindFirstChild("RevivAllBTN")
+-- Support either the correct or legacy-misspelled name
+local reviveAllButton = deathFrame:FindFirstChild("ReviveAllBTN") or deathFrame:FindFirstChild("RevivAllBTN")
 
 local isShowingDeathUI = false
 local countdownThread = nil
@@ -115,7 +116,12 @@ local function resolveDeathGui()
 
 	deathGui.DisplayOrder = 100
 
-	deathGui.AncestryChanged:Connect(function(_, parent)
+	-- Avoid stacking multiple ancestry connections
+	if deathGui._ancestryConn then
+		deathGui._ancestryConn:Disconnect()
+		deathGui._ancestryConn = nil
+	end
+	deathGui._ancestryConn = deathGui.AncestryChanged:Connect(function(_, parent)
 		if parent == nil then
 			task.defer(function()
 				if deathGui and not deathGui.Parent then
@@ -179,6 +185,20 @@ local function hideDeathUI()
 	end
 	isShowingDeathUI = false
 	deathGui.Enabled = false
+
+	-- Restore arena UI if arena is still active (use attributes set by ArenaUI)
+	-- Re-acquire ArenaGui in case it was recreated on respawn
+	local latestArenaGui = nil
+	local ok = pcall(function()
+		latestArenaGui = playerGui:FindFirstChild("ArenaGui") or playerGui:WaitForChild("ArenaGui", 2)
+	end)
+	if ok and latestArenaGui then
+		arenaGui = latestArenaGui
+		local isArenaActive = arenaGui:GetAttribute("Active")
+		if isArenaActive == true then
+			arenaGui.Enabled = true
+		end
+	end
 
 	if countdownThread then
 		task.cancel(countdownThread)
