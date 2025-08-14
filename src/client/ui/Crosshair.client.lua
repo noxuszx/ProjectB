@@ -95,4 +95,6 @@ if player.Character then
     updateCrosshair()
 end
 
-print("✅ Crosshair system initialized")
+if _G.SystemLoadMonitor then
+	_G.SystemLoadMonitor.reportSystemLoaded("Crosshair")
+end

@@ -131,15 +131,10 @@ local function tagFolder(folder, tag, recursive)
 end
 
 function CollectionServiceTags.initializeDefaultTags()
-    print("Initializing CollectionService tags...")
     
     -- Debug: Check what's in workspace when this runs
     local creatureFolder = workspace:FindFirstChild("SpawnedCreatures")
     if creatureFolder then
-        print("Found SpawnedCreatures folder with", #creatureFolder:GetChildren(), "children")
-        for _, child in pairs(creatureFolder:GetChildren()) do
-            print("  Creature folder child:", child.Name, child.ClassName)
-        end
     end
 
     -- Tag terrain and environment objects (excluding creature folders since they're tagged individually when spawned)
@@ -149,7 +144,6 @@ function CollectionServiceTags.initializeDefaultTags()
         if folder then
             local count = tagFolder(folder, CollectionServiceTags.NON_DRAGGABLE, true)
             tagFolder(folder, CollectionServiceTags.WELDABLE, true)
-            print("Tagged", count, folderName, "objects as non-draggable but weldable")
         end
     end
 
@@ -172,7 +166,6 @@ function CollectionServiceTags.initializeDefaultTags()
         end
     end
 
-    print("Tag initialization complete!")
 end
 
 function CollectionServiceTags.tagItemsFolder()
@@ -191,7 +184,6 @@ function CollectionServiceTags.tagItemsFolder()
         end
     end
 
-    print("Tagged", count, "items as draggable and storable")
     return count
 end
 

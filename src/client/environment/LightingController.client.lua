@@ -139,7 +139,9 @@ function LightingController.init()
 	-- Start client-side time updates
 	RunService.Heartbeat:Connect(updateClientTime)
 	
-	print("Client-side lighting controller initialized")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("LightingController")
+	end
 end
 
 -- Auto-initialize when script loads

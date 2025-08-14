@@ -387,8 +387,6 @@ end
 
 -- Clear all spawned objects
 function CustomModelSpawner.clearObjects()
-	print("Clearing spawned objects...")
-	
 	for _, folder in pairs(objectFolders) do
 		for _, child in ipairs(folder:GetChildren()) do
 			child:Destroy()
@@ -396,12 +394,9 @@ function CustomModelSpawner.clearObjects()
 	end
 	
 	spawnedObjects = {}
-	print("Objects cleared!")
 end
 
 function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
-	print("[CustomModelSpawner] Initializing custom model spawner...")
-	
 	scanAvailableModels()
 	
 	-- Initialize overlap parameters ONCE after all other spawners have run
@@ -413,7 +408,9 @@ function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
 	end
 	
 	if totalModels == 0 then
-		print("[CustomModelSpawner] No models found in ReplicatedStorage.Models folders. Skipping object spawning.")
+		if ModelSpawnerConfig.DEBUG then
+			print("[CustomModelSpawner] No models found in ReplicatedStorage.Models folders. Skipping object spawning.")
+		end
 		return
 	end
 	
@@ -439,7 +436,9 @@ function CustomModelSpawner.init(renderDistance, chunkSize, subdivisions)
 		CustomModelSpawner.spawnInChunk(job.cx, job.cz, job.chunkSize, job.subdivisions)
 	end)
 	
-	print("[CustomModelSpawner] Custom model spawning complete!")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("CustomModelSpawner")
+	end
 end
 
 -- Debug functions for testing and monitoring

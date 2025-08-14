@@ -6,12 +6,15 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local ZonePlus = require(ReplicatedStorage.Shared.modules.zoneplus)
+local ZonePlus = require(ReplicatedStorage.Shared.modules.Zone)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local AIManager = require(script.Parent.AIManager)
 
 local ZoneSpawnerController = {}
+
+-- Debug configuration
+local DEBUG_ENABLED = false
 
 -- Tower state tracking
 local towers 		 = {}
@@ -24,8 +27,6 @@ local lastCleanupTime = 0
 local cleanupInterval = 30
 
 function ZoneSpawnerController.init()
-	print("[ZoneSpawnerController] Initializing tower spawning system...")
-
 	ZoneSpawnerController.discoverTowers()
 
 	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.TOWER):Connect(function(towerModel)
@@ -45,14 +46,13 @@ function ZoneSpawnerController.init()
 	if aiManager.RegisterSpawnSource then
 		aiManager:RegisterSpawnSource("TowerSpawning", ZoneSpawnerController.handleSpawnRequest)
 	else
-		warn("[ZoneSpawnerController] AIManager does not support RegisterSpawnSource - using fallback")
+		if DEBUG_ENABLED then warn("[ZoneSpawnerController] AIManager does not support RegisterSpawnSource - using fallback") end
 	end
 
 	updateConnection = RunService.Heartbeat:Connect(function()
 		ZoneSpawnerController.periodicUpdate()
 	end)
 
-	print("[ZoneSpawnerController] Tower spawning system initialized successfully!")
 end
 
 function ZoneSpawnerController.discoverTowers()
@@ -95,7 +95,7 @@ function ZoneSpawnerController.setupFloor(towerId, floorIndex, floorModel)
 
 	local triggerPart = floorModel:FindFirstChild("Trigger")
 	if not triggerPart or not triggerPart:IsA("BasePart") then
-		warn("[ZoneSpawnerController] Floor", floorIndex, "missing Trigger part")
+		if DEBUG_ENABLED then warn("[ZoneSpawnerController] Floor", floorIndex, "missing Trigger part") end
 		return
 	end
 
@@ -108,7 +108,7 @@ function ZoneSpawnerController.setupFloor(towerId, floorIndex, floorModel)
 	end
 
 	if not spawner then
-		warn("[ZoneSpawnerController] Floor", floorIndex, "missing MobSpawner")
+		if DEBUG_ENABLED then warn("[ZoneSpawnerController] Floor", floorIndex, "missing MobSpawner") end
 		return
 	end
 
@@ -193,7 +193,7 @@ function ZoneSpawnerController.activateFloor(towerId, floorIndex)
 	local floorData = tower.floors[floorIndex]
 
 	if not floorData then
-		warn("[ZoneSpawnerController] Floor", floorIndex, "not found in tower")
+		if DEBUG_ENABLED then warn("[ZoneSpawnerController] Floor", floorIndex, "not found in tower") end
 		return
 	end
 

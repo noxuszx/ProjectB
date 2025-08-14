@@ -20,14 +20,11 @@ local function applyLightingPreset(preset)
 end
 
 function Lighting.init()
-	print("Initializing server-side lighting...")
-	
 	-- Set initial lighting preset only - client handles updates
 	local initialPreset = DayNightCycle.getCurrentLightingPreset()
 	applyLightingPreset(initialPreset)
 	
 	-- No per-frame updates needed - clients handle visual transitions
-	print("Server lighting initialization complete - clients handle visual updates")
 end
 
 return Lighting

@@ -31,12 +31,12 @@ FrameBudgetConfig.DEFAULT_BATCH_SIZES = {
 
 -- Mobile device multipliers (applied to reduce batch sizes on low-end devices)
 FrameBudgetConfig.MOBILE_MULTIPLIERS = {
-	VILLAGES = 0.5,      -- 1 structure per frame on mobile
-	VEGETATION = 0.5,    -- 5 vegetation per frame on mobile
-	ROCKS = 0.6,         -- 3 rocks per frame on mobile
-	STRUCTURES = 1.0,    -- Keep 1 structure per frame (already minimal)
-	SPAWNER_CHUNKS = 0.5, -- 5 chunks per frame on mobile
-	CREATURES = 0.7,     -- 2 creatures per frame on mobile
+	VILLAGES = 0.5,      	-- 1 structure per frame on mobile
+	VEGETATION = 0.5,    	-- 5 vegetation per frame on mobile
+	ROCKS = 0.6,         	-- 3 rocks per frame on mobile
+	STRUCTURES = 1.0,    	-- Keep 1 structure per frame (already minimal)
+	SPAWNER_CHUNKS = 0.5, 	-- 5 chunks per frame on mobile
+	CREATURES = 0.7,     	-- 2 creatures per frame on mobile
 	CHUNK_PROCESSING = 0.6, -- 3 chunks per frame on mobile for model spawning
 	DEFAULT = 0.6
 }

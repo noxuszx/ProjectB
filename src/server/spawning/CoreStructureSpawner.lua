@@ -19,6 +19,9 @@ local random = Random.new()
 local CoreStructureSpawner = {}
 local occupiedCircles 	   = {}
 
+-- Debug configuration
+local DEBUG_ENABLED = false
+
 local coreStructureFolder = Instance.new("Folder")
 coreStructureFolder.Name = "CoreStructures"
 coreStructureFolder.Parent = Workspace
@@ -144,15 +147,17 @@ local function tryPlaceStructure(structureName, structureProps, models)
 		CollectionServiceTags.tagDescendants(clone, CollectionServiceTags.PROTECTED_CORE)
 		table.insert(occupiedCircles, proposedCircle)
 
-		print(
-			"[CoreStructureSpawner]",
-			structureName,
-			"placed after",
-			attempt,
-			"attempts at",
-			worldPosition,
-			"- Tagged as protected"
-		)
+		if DEBUG_ENABLED then
+			print(
+				"[CoreStructureSpawner]",
+				structureName,
+				"placed after",
+				attempt,
+				"attempts at",
+				worldPosition,
+				"- Tagged as protected"
+			)
+		end
 		return true
 	end
 
@@ -171,7 +176,7 @@ end
 
 
 function CoreStructureSpawner.spawnLandmarks()
-	print("[CoreStructureSpawner] Spawning core structures...")
+	if DEBUG_ENABLED then print("[CoreStructureSpawner] Spawning core structures...") end
 
 	occupiedCircles = {}
 	for _, child in ipairs(coreStructureFolder:GetChildren()) do
@@ -211,9 +216,11 @@ function CoreStructureSpawner.spawnLandmarks()
 		end
 	end)
 
-	print("[CoreStructureSpawner] Core structure spawning complete!")
-	print("  - Structures placed:", successfulPlacements, "out of", #placementJobs)
-	print("  - Occupied circles:", #occupiedCircles)
+	if DEBUG_ENABLED then
+		print("[CoreStructureSpawner] Core structure spawning complete!")
+		print("  - Structures placed:", successfulPlacements, "out of", #placementJobs)
+		print("  - Occupied circles:", #occupiedCircles)
+	end
 end
 
 

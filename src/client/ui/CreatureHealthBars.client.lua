@@ -12,6 +12,9 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local CreatureHealthBars = {}
 
+-- Debug configuration
+local DEBUG_ENABLED = false
+
 -- UI elements
 local healthBarsGui = nil
 local activeHealthBars = {}
@@ -34,7 +37,7 @@ local HEALTH_BAR_CONFIG = {
 }
 
 function CreatureHealthBars.init()
-	print("[CreatureHealthBars] Initializing creature health bars...")
+	if DEBUG_ENABLED then print("[CreatureHealthBars] Initializing creature health bars...") end
 	
 	local updateCreatureHealthRemote = ReplicatedStorage.Remotes:WaitForChild("UpdateCreatureHealth", 10)
 	if not updateCreatureHealthRemote then
@@ -46,7 +49,7 @@ function CreatureHealthBars.init()
 	updateCreatureHealthRemote.OnClientEvent:Connect(CreatureHealthBars.onCreatureHealthUpdate)
 	RunService.Heartbeat:Connect(CreatureHealthBars.updateHealthBarPositions)
 	
-	print("[CreatureHealthBars] Creature health bars initialized!")
+	if DEBUG_ENABLED then print("[CreatureHealthBars] Creature health bars initialized!") end
 	return true
 end
 
@@ -56,7 +59,7 @@ function CreatureHealthBars.createUI()
 	healthBarsGui.ResetOnSpawn = false
 	healthBarsGui.Parent = playerGui
 	
-	print("[CreatureHealthBars] UI container created")
+	if DEBUG_ENABLED then print("[CreatureHealthBars] UI container created") end
 end
 
 function CreatureHealthBars.createHealthBar(creatureModel, health, maxHealth)
@@ -255,7 +258,7 @@ function CreatureHealthBars.cleanup()
 		healthBarsGui = nil
 	end
 	
-	print("[CreatureHealthBars] UI cleaned up")
+	if DEBUG_ENABLED then print("[CreatureHealthBars] UI cleaned up") end
 end
 
 -- Initialize when script loads

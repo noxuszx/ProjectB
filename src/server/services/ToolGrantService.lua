@@ -4,6 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local SystemLoadMonitor = _G.SystemLoadMonitor or require(script.Parent.Parent.SystemLoadMonitor)
 
 local ToolGrantService = {}
 
@@ -70,7 +71,6 @@ function ToolGrantService.getAvailableTools()
 	return tools
 end
 
-print("[ToolGrantService] Initialized")
-print("==================================================")
+SystemLoadMonitor.reportSystemLoaded("ToolSystem")
 
 return ToolGrantService

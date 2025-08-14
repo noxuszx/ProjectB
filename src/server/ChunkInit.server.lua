@@ -3,8 +3,8 @@
 	Mobile-optimized terrain generation with proper sequencing
 ]]--
 
-print("Chunk-based terrain system starting...")
 
+local SystemLoadMonitor     = _G.SystemLoadMonitor or require(script.Parent.SystemLoadMonitor)
 local ChunkManager          = require(script.Parent.terrain.ChunkManager)
 local CustomModelSpawner    = require(script.Parent.spawning.CustomModelSpawner) 
 local DayNightCycle         = require(script.Parent.environment.DayNightCycle)
@@ -21,24 +21,24 @@ local RunService = game:GetService("RunService")
 local isMobile = game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled
 
 local function mobileOptimizedInit()
-	print("Initializing terrain system...")
 	ChunkManager.init()
 	
-	print("Initializing environment...")
 	DayNightCycle.init()
 	LightingManager.init()
+	SystemLoadMonitor.reportSystemLoaded("Environment")
 	
 	CollectionServiceTags.initializeDefaultTags()
 	CollectionServiceTags.tagItemsFolder()
+	SystemLoadMonitor.reportSystemLoaded("CollectionService")
 	
 
-	print("Setting up player systems...")
 	local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
 	PlayerStatsManager.init()
 	local WaterRefillManager = require(script.Parent.food.WaterRefillManager)
 	WaterRefillManager.init()
+	SystemLoadMonitor.reportSystemLoaded("PlayerStats")
+	SystemLoadMonitor.reportSystemLoaded("FoodSystem")
 	
-	print("Spawning world content (terrain-dependent)...")
 	CoreStructureSpawner.spawnLandmarks()
 	
 	-- Add delay to ensure pyramids are fully positioned before pedestal init
@@ -48,12 +48,10 @@ local function mobileOptimizedInit()
 	local initPedestalEvent = Instance.new("BindableEvent")
 	initPedestalEvent.Name = "InitPedestal"
 	initPedestalEvent.Parent = game.ReplicatedStorage
-	print("[ChunkInit] Firing pedestal initialization signal...")
 	initPedestalEvent:Fire()
 	
-	-- Initialize treasure spawning system after pyramid is built
-	print("Initializing treasure spawning system...")
 	TreasureSpawner.Initialize()
+	SystemLoadMonitor.reportSystemLoaded("TerrainSystem")
 	
 	VillageSpawner.spawnVillages()
 	
@@ -64,10 +62,9 @@ local function mobileOptimizedInit()
 
 	ItemSpawner.Initialize()
 	
-	print("Spawning event items on pedestals...")
 	EventItemSpawner.initialize()
 
-	print("Initializing AI systems...")
+	-- Initialize AI systems
 	local AIManager = require(script.Parent.ai.AIManager)
 	local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
 	local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
@@ -84,6 +81,7 @@ local function mobileOptimizedInit()
 	
 	CreatureSpawner.populateWorld()
 	CreaturePoolManager.startRespawnLoop()
+	SystemLoadMonitor.reportSystemLoaded("AIManager")
 	
 	-- Brief pause before enabling AI to ensure all systems are ready
 	task.wait(0.1)
@@ -122,32 +120,27 @@ local function desktopOptimizedInit()
 		-- Finally scatter environmental props
 		CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
 		terrainReady = true
-		print("Terrain system ready")
 	end)
 	
 	task.spawn(function()
-		print("Initializing environment...")
 		DayNightCycle.init()
 		LightingManager.init()
 		environmentReady = true
-		print("Environment ready")
 	end)
 	
 	task.spawn(function()
-		print("Initializing tags...")
 		CollectionServiceTags.initializeDefaultTags()
 		CollectionServiceTags.tagItemsFolder()
 		tagsReady = true
-		print("Tags ready")
 	end)
 	
 	task.spawn(function()
-		print("Initializing player systems...")
 		local PlayerStatsManager = require(script.Parent.player.PlayerStatsManager)
 		PlayerStatsManager.init()
 		local WaterRefillManager = require(script.Parent.food.WaterRefillManager)
 		WaterRefillManager.init()
-		print("Player systems ready")
+		SystemLoadMonitor.reportSystemLoaded("PlayerStats")
+		SystemLoadMonitor.reportSystemLoaded("FoodSystem")
 	end)
 	
 	-- Wait for all parallel systems to complete
@@ -155,13 +148,12 @@ local function desktopOptimizedInit()
 		task.wait(0.1)
 	until terrainReady and environmentReady and tagsReady
 	
-	print("Initializing items...")
+	SystemLoadMonitor.reportSystemLoaded("TerrainSystem")
+	SystemLoadMonitor.reportSystemLoaded("Environment")
+	SystemLoadMonitor.reportSystemLoaded("CollectionService")
+	
 	ItemSpawner.Initialize()
-	
-	print("Spawning event items on pedestals...")
 	EventItemSpawner.initialize()
-	
-	print("Initializing AI systems...")
 	local AIManager = require(script.Parent.ai.AIManager)
 	local FoodDropSystem = require(script.Parent.loot.FoodDropSystem)
 	local CreatureSpawner = require(script.Parent.ai.CreatureSpawner)
@@ -178,15 +170,13 @@ local function desktopOptimizedInit()
 	
 	CreatureSpawner.populateWorld()
 	CreaturePoolManager.startRespawnLoop()
+	SystemLoadMonitor.reportSystemLoaded("AIManager")
 end
 
 if isMobile then
-	print("Mobile device detected - using sequential initialization")
 	mobileOptimizedInit()
 else
-	print("Desktop device detected - using parallel initialization")
 	desktopOptimizedInit()
 end
 
 task.wait(0.5)
-print("All systems initialized. Player stats, day/night cycle, world populated with items, procedural spawners, creatures, and weapons.")

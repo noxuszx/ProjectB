@@ -31,22 +31,14 @@ local humanoid = nil
 -- Animation configuration
 local ATTACK_ANIMATION_ID = "rbxassetid://81865375741678" -- Replace with actual animation ID
 
--- Debug function
-local function debugPrint(...)
-    if config.DebugEnabled then
-        print("[" .. weaponName .. "]", ...)
-    end
-end
 
 -- Initialize weapon remote
 local function initializeRemote()
     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
     if remotes then
         weaponRemote = remotes:FindFirstChild("WeaponDamage")
-        if weaponRemote then
-            debugPrint("✅ WeaponDamage remote found")
-        else
-            warn("[" .. weaponName .. "] WeaponDamage remote not found!")
+        if not weaponRemote then
+            return
         end
     end
 end
@@ -54,7 +46,6 @@ end
 -- Load and setup attack animation
 local function setupAnimation()
     if not currentCharacter or not humanoid then
-        debugPrint("❌ Cannot setup animation - no character or humanoid")
         return false
     end
     
@@ -77,10 +68,8 @@ local function setupAnimation()
     if success and result then
         attackAnimationTrack = result
         attackAnimationTrack.Priority = Enum.AnimationPriority.Action
-        debugPrint("✅ Attack animation loaded successfully")
         return true
     else
-        warn("[" .. weaponName .. "] Failed to load attack animation:", result)
         -- Fallback to R6 string signal
         createLegacyAnimationSignal()
         return false
@@ -98,8 +87,6 @@ local function createLegacyAnimationSignal()
     animSignal.Name = "toolanim"
     animSignal.Value = config.Animation
     animSignal.Parent = tool
-    
-    debugPrint("Legacy animation signal created:", config.Animation)
 end
 
 -- Play attack animation
@@ -112,7 +99,6 @@ local function playAttackAnimation()
         
         -- Play the attack animation
         attackAnimationTrack:Play()
-        debugPrint("🎬 Playing attack animation")
         
         -- Optional: Adjust animation speed based on weapon cooldown
         local animationSpeed = config.SwingDuration > 0 and (attackAnimationTrack.Length / config.SwingDuration) or 1
@@ -122,7 +108,6 @@ local function playAttackAnimation()
     else
         -- Fallback to legacy animation signal
         createLegacyAnimationSignal()
-        debugPrint("🎬 Using legacy animation signal")
         return false
     end
 end
@@ -141,52 +126,81 @@ local function getCooldownRemaining()
     return math.max(0, config.Cooldown - timeSinceLastAttack)
 end
 
--- Perform raycast to find hit target
-local function performRaycast()
+-- Perform magnitude-based hit detection
+local function performMagnitudeHitCheck()
     if not currentCharacter or not currentCharacter.PrimaryPart then
-        debugPrint("❌ No character or primary part")
-        return nil
+        return {}
     end
     
     local rootPart = currentCharacter.PrimaryPart
-    local startPosition = rootPart.Position
-    local direction = rootPart.CFrame.LookVector * config.Range
+    local playerPos = rootPart.Position
+    local playerLookVector = rootPart.CFrame.LookVector
+    local validTargets = {}
     
-    -- Create raycast params
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {currentCharacter}
-    
-    -- Perform raycast
-    local raycastResult = workspace:Raycast(startPosition, direction, raycastParams)
-    
-    if raycastResult then
-        debugPrint("🎯 Raycast hit:", raycastResult.Instance.Name)
-        debugPrint("   Position:", raycastResult.Position)
-        debugPrint("   Distance:", (raycastResult.Position - startPosition).Magnitude)
-        
-        return raycastResult.Instance, raycastResult.Position
-    else
-        debugPrint("❌ Raycast missed (range:", config.Range, "studs)")
-        return nil
+    -- Find all potential targets in workspace
+    for _, model in pairs(workspace:GetChildren()) do
+        if model:IsA("Model") and model ~= currentCharacter and model.PrimaryPart then
+            local targetPos = model.PrimaryPart.Position
+            local distance = (targetPos - playerPos).Magnitude
+            
+            -- Check if within range
+            if distance <= config.Range then
+                -- Directional check (if configured)
+                local inDirectionalRange = true
+                if config.DirectionalAngle and config.DirectionalAngle < 360 then
+                    local directionToTarget = (targetPos - playerPos).Unit
+                    local dotProduct = playerLookVector:Dot(directionToTarget)
+                    local angleThreshold = math.cos(math.rad(config.DirectionalAngle / 2))
+                    
+                    inDirectionalRange = dotProduct >= angleThreshold
+                end
+                
+                if inDirectionalRange then
+                    -- Line of sight check (if configured)
+                    local hasLineOfSight = true
+                    if config.RequireLineOfSight then
+                        local directionToTarget = (targetPos - playerPos).Unit
+                        local rayParams = RaycastParams.new()
+                        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+                        rayParams.FilterDescendantsInstances = {currentCharacter}
+                        
+                        local rayResult = workspace:Raycast(playerPos, directionToTarget * distance, rayParams)
+                        
+                        -- Check if raycast hits the target or nothing (clear path)
+                        if rayResult then
+                            hasLineOfSight = rayResult.Instance:IsDescendantOf(model)
+                        end
+                    end
+                    
+                    if hasLineOfSight then
+                        table.insert(validTargets, {
+                            model = model,
+                            distance = distance,
+                            position = targetPos
+                        })
+                    end
+                end
+            end
+        end
     end
+    
+    -- Sort by distance (closest first)
+    table.sort(validTargets, function(a, b)
+        return a.distance < b.distance
+    end)
+    
+    return validTargets
 end
 
 -- Find target model from hit part
 local function findTargetModel(hitPart)
     if not hitPart then return nil end
     
-    debugPrint("🔍 Hit part:", hitPart.Name, "(" .. hitPart.ClassName .. ")")
-    debugPrint("   Part parent:", tostring(hitPart.Parent and hitPart.Parent.Name))
-    
     -- Find the model this part belongs to
     local targetModel = hitPart:FindFirstAncestorOfClass("Model")
     if targetModel then
-        debugPrint("✅ Found target model:", targetModel.Name)
-        debugPrint("   Model parent:", tostring(targetModel.Parent))
         return targetModel
     else
-        debugPrint("❌ No model found for hit part")
         return nil
     end
 end
@@ -195,8 +209,6 @@ end
 local function executeAttack()
     -- Check cooldown
     if isOnCooldown() then
-        local remaining = getCooldownRemaining()
-        debugPrint("⏳ Attack on cooldown, remaining:", string.format("%.1f", remaining), "seconds")
         return false
     end
     
@@ -206,26 +218,18 @@ local function executeAttack()
     -- Play attack animation
     playAttackAnimation()
     
-    -- Perform raycast
-    local hitPart, hitPosition = performRaycast()
-    if not hitPart then
-        debugPrint("💨 Attack missed")
+    -- Perform hit detection using magnitude
+    local validTargets = performMagnitudeHitCheck()
+    if #validTargets == 0 then
         return true  -- Attack executed but missed
     end
     
-    -- Find target model
-    local targetModel = findTargetModel(hitPart)
-    if not targetModel then
-        debugPrint("❌ No valid target found")
-        return true  -- Attack executed but no valid target
-    end
+    -- Get the closest target
+    local targetModel = validTargets[1].model
     
     -- Send damage to server
     if weaponRemote then
-        debugPrint("⚔️ Dealing", config.Damage, "damage to", targetModel.Name)
         weaponRemote:FireServer(targetModel, config.Damage)
-    else
-        warn("[" .. weaponName .. "] Cannot deal damage - no remote found!")
     end
     
     return true
@@ -241,10 +245,6 @@ tool.Equipped:Connect(function()
         humanoid = currentCharacter:FindFirstChildOfClass("Humanoid")
     end
     
-    debugPrint("🗡️ Weapon equipped")
-    debugPrint("   Damage:", config.Damage)
-    debugPrint("   Range:", config.Range, "studs")
-    debugPrint("   Cooldown:", config.Cooldown, "seconds")
     
     -- Initialize remote if not already done
     if not weaponRemote then
@@ -255,7 +255,6 @@ tool.Equipped:Connect(function()
     if humanoid then
         setupAnimation()
     else
-        warn("[" .. weaponName .. "] No humanoid found - using legacy animation")
         createLegacyAnimationSignal()
     end
 end)
@@ -273,14 +272,12 @@ tool.Unequipped:Connect(function()
         attackAnimationTrack = nil
     end
     
-    debugPrint("📤 Weapon unequipped")
 end)
 
 -- Tool activated handler (left click)
 tool.Activated:Connect(function()
     if not isEquipped then return end
     
-    debugPrint("🖱️ Tool activated")
     executeAttack()
 end)
 
@@ -289,7 +286,6 @@ player.CharacterAdded:Connect(function(character)
     if isEquipped then
         currentCharacter = character
         humanoid = character:FindFirstChildOfClass("Humanoid")
-        debugPrint("👤 Character respawned while weapon equipped")
         
         -- Reload animation after respawn
         if humanoid then
@@ -300,4 +296,3 @@ end)
 
 -- Initialize
 initializeRemote()
-debugPrint("🚀 Weapon system initialized for", weaponName)

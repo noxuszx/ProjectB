@@ -19,6 +19,12 @@ local NightHuntConfig = {
 	MaxPlacementAttempts = 4,			-- Number of attempts to find valid spawn location per tick
 	MinPlayerClearance = 10,			-- Minimum distance from player when placing (studs)
 	
+	-- Creature spawning
+	CreatureTypes = {					-- Night Hunt creatures with spawn weights
+		Mummy = 0.6,					-- 60% chance
+		Scorpion = 0.4,					-- 40% chance
+	},
+	
 	-- Night Hunt behavior overrides
 	DetectionRangeOverride = 100,		-- Override detection range for immediate aggro from spawn ring
 	

@@ -219,19 +219,52 @@ local function getRandomSpawnPosition(spawnerPart, usedPositions, creatureModel)
 	return spawnerPosition + Vector3.new(0, 2, 0)
 end
 
-
 local function performCreatureRoll(spawnConfig)
-	if math.random() > spawnConfig.SpawnChance then
+	-- Respect overall spawn chance first
+	local rng = Random.new()
+	if rng:NextNumber(0, 1) > spawnConfig.SpawnChance then
 		return {}
 	end
+	
+	-- Build a weighted list from PossibleCreatures (values are treated as weights)
+	local weighted = {}
+	local totalWeight = 0
+	for creatureType, weight in pairs(spawnConfig.PossibleCreatures) do
+		local w = tonumber(weight) or 0
+		if w > 0 then
+			table.insert(weighted, { type = creatureType, weight = w })
+			totalWeight += w
+		end
+	end
+	if totalWeight <= 0 or #weighted == 0 then
+		return {}
+	end
+	
 	local creaturesToSpawn = {}
 	local numRolls = math.random(spawnConfig.MinSpawns, spawnConfig.MaxSpawns)
 	for _ = 1, numRolls do
-		for creatureType, chance in pairs(spawnConfig.PossibleCreatures) do
-			if math.random() <= chance then
-				table.insert(creaturesToSpawn, creatureType)
+		-- Weighted pick
+		local pick = rng:NextNumber(0, totalWeight)
+		local acc = 0
+		local chosen = nil
+		for i = 1, #weighted do
+			acc += weighted[i].weight
+			if pick <= acc then
+				chosen = weighted[i].type
 				break
 			end
+		end
+		if chosen then
+			table.insert(creaturesToSpawn, chosen)
+			-- Optional: encourage variety by slightly reducing chosen weight for subsequent rolls
+			-- for i = 1, #weighted do
+			-- 	if weighted[i].type == chosen then
+			-- 		local newW = math.max(0.1, weighted[i].weight * 0.8)
+			-- 		totalWeight += (newW - weighted[i].weight)
+			-- 		weighted[i].weight = newW
+			-- 		break
+			-- 	end
+			-- end
 		end
 	end
 	return creaturesToSpawn
@@ -239,6 +272,24 @@ end
 
 
 local function processSpawner(spawnerPart)
+	-- Make the spawner invisible and non-interactive
+	local function hidePart(p)
+		if p:IsA("BasePart") then
+			p.Transparency = 1
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+		end
+	end
+	if spawnerPart:IsA("BasePart") then
+		hidePart(spawnerPart)
+	elseif spawnerPart:IsA("Model") then
+		for _, d in ipairs(spawnerPart:GetDescendants()) do
+			hidePart(d)
+		end
+	end
+
 	local spawnType = spawnerPart:GetAttribute(CreatureSpawnConfig.Settings.SpawnTypeAttribute)
 	if not spawnType then
 		warn("[CreatureSpawner] Spawner missing SpawnType attribute:", spawnerPart:GetFullName())

@@ -245,12 +245,25 @@ function AIManager:updateAllCreatures()
         end
     end
 
-    -- Lightweight per-frame movement follow-up for **all** active creatures (runs regardless of LOD)
-    for _, creature in ipairs(activeCreatures) do
-        if creature.isActive and creature.currentBehavior and creature.currentBehavior.followUp then
-            creature.currentBehavior:followUp(creature, deltaTime)
-        end
-    end
+	-- LOD-gated lightweight movement follow-up
+	for _, creature in ipairs(activeCreatures) do
+		if creature.isActive and creature.currentBehavior and creature.currentBehavior.followUp then
+			local lod = creature.lodLevel
+			if lod == "Close" then
+				-- Full-rate follow-up for nearby creatures
+				creature.currentBehavior:followUp(creature, deltaTime)
+			elseif lod == "Medium" then
+				-- Reduced-rate follow-up for medium distance creatures (approx 4 Hz)
+				local nextFU = creature._nextFollowUp or 0
+				if currentTime >= nextFU then
+					creature.currentBehavior:followUp(creature, deltaTime)
+					creature._nextFollowUp = currentTime + 0.25
+				end
+			else
+				-- Far and Culled: skip followUp to save CPU and replication
+			end
+		end
+	end
 	
 	-- Batch cleanup using the new registry system
 	AICreatureRegistry.collectInactiveCreatures(activeCreatures, toRemoveIndices)
@@ -308,7 +321,6 @@ function AIManager:RegisterSpawnSource(sourceId, callback)
 	end
 	
 	registeredSpawnSources[sourceId] = callback
-	print("[AIManager] Registered spawn source:", sourceId)
 	return true
 end
 

@@ -1,8 +1,7 @@
-  {
+{
   "name": "ProjectB",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
@@ -13,10 +12,10 @@
           "$path": "src/shared/utilities"
         },
         "modules": {
-          "$path": "src/shared/modules",
-          "zoneplus": {
-            "$path": "Packages/_Index/mattschrubb_zoneplus@3.2.0/zoneplus"
-          }
+          "$path": "src/shared/modules"
+        },
+        "tutorial": {
+          "$path": "src/shared/tutorial"
         }
       },
       "Items": {
@@ -119,12 +118,24 @@
         },
         "Arena": {
           "$className": "Folder",
-          "StartTimer": { "$className": "RemoteEvent" },
-          "Pause": { "$className": "RemoteEvent" },
-          "Resume": { "$className": "RemoteEvent" },
-          "Sync": { "$className": "RemoteEvent" },
-          "Victory": { "$className": "RemoteEvent" },
-          "PostGameChoice": { "$className": "RemoteEvent" }
+          "StartTimer": {
+            "$className": "RemoteEvent"
+          },
+          "Pause": {
+            "$className": "RemoteEvent"
+          },
+          "Resume": {
+            "$className": "RemoteEvent"
+          },
+          "Sync": {
+            "$className": "RemoteEvent"
+          },
+          "Victory": {
+            "$className": "RemoteEvent"
+          },
+          "PostGameChoice": {
+            "$className": "RemoteEvent"
+          }
         },
         "ConsumeFood": {
           "$className": "RemoteEvent"
@@ -132,26 +143,23 @@
       },
       "Tools": {
         "$className": "Folder"
-      },
-      "Packages": {
-        "$path": "Packages"
       }
     },
-
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
       }
     },
-
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
           "$path": "src/client"
+        },
+        "tutorial": {
+          "$path": "src/client/tutorial"
         }
       }
     },
-
     "Workspace": {
       "$properties": {
         "FilteringEnabled": true

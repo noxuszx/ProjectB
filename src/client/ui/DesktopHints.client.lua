@@ -13,12 +13,17 @@ local GuiService = game:GetService("GuiService")
 local IS_MOBILE = UserInputService.TouchEnabled
 local IS_DESKTOP = not IS_MOBILE
 
+-- Debug configuration
+local DEBUG_ENABLED = false
+
 -- Debug output
-print("=== DesktopHints Debug ===")
-print("TouchEnabled:", UserInputService.TouchEnabled)
-print("MouseEnabled:", UserInputService.MouseEnabled) 
-print("KeyboardEnabled:", UserInputService.KeyboardEnabled)
-print("IS_MOBILE:", IS_MOBILE)
+if DEBUG_ENABLED then
+	print("=== DesktopHints Debug ===")
+	print("TouchEnabled:", UserInputService.TouchEnabled)
+	print("MouseEnabled:", UserInputService.MouseEnabled) 
+	print("KeyboardEnabled:", UserInputService.KeyboardEnabled)
+	print("IS_MOBILE:", IS_MOBILE)
+end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -59,14 +64,14 @@ local function bindGuiElements()
 
     desktopGui = playerGui:FindFirstChild("DesktopGui")
     if not desktopGui then
-        print("DesktopGui not found in PlayerGui!")
+        if DEBUG_ENABLED then print("DesktopGui not found in PlayerGui!") end
         return false
     end
 
     -- Enable GUI only on desktop devices
-    print("Setting desktopGui.Enabled to:", IS_DESKTOP)
+    if DEBUG_ENABLED then print("Setting desktopGui.Enabled to:", IS_DESKTOP) end
     desktopGui.Enabled = IS_DESKTOP
-    print("desktopGui.Enabled is now:", desktopGui.Enabled)
+    if DEBUG_ENABLED then print("desktopGui.Enabled is now:", desktopGui.Enabled) end
 
     hintFrame = desktopGui:FindFirstChild("HintFrame")
     if not hintFrame then

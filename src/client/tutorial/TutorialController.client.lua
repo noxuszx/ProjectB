@@ -1,0 +1,292 @@
+-- src/client/tutorial/TutorialController.client.lua
+-- Client-side tutorial orchestrator
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local CollectionService = game:GetService("CollectionService")
+local StarterGui = game:GetService("StarterGui")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+local TutorialSteps = require(ReplicatedStorage.Shared.tutorial.TutorialSteps)
+local TutorialConfig = require(ReplicatedStorage.Shared.tutorial.Config)
+local HighlightManager = require(script.Parent.HighlightManager)
+
+-- Layout helper: positions and sizes the tutorial bar responsively
+local layoutWired = false
+local function layoutTutorialBar()
+	local pg = player:FindFirstChild("PlayerGui")
+	if not pg then
+		return
+	end
+	local gui = pg:FindFirstChild("TutorialGui")
+	if not gui then
+		return
+	end
+	local frame = gui:FindFirstChild("TutorialFrame")
+	local label = frame and frame:FindFirstChild("TutorialText")
+	if not frame or not label then
+		return
+	end
+
+	local cam = workspace.CurrentCamera
+	local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
+	local isPhone = UserInputService.TouchEnabled and vp.X < 1000
+
+	-- Compute a top offset: prefer GuiService inset if non-zero, otherwise a fixed margin to avoid top buttons
+	local ok, topLeftInset = pcall(function()
+		local tl, _ = GuiService:GetGuiInset()
+		return tl
+	end)
+	local insetY = (ok and topLeftInset and topLeftInset.Y) or 0
+	local marginY = 12
+	local fallbackTop = 36 -- when Topbar is disabled, give some breathing room
+	local topOffset = (insetY > 0 and (insetY + marginY)) or (fallbackTop + marginY)
+
+	-- Smaller on phones to avoid covering too much of the screen
+	local barHeight = isPhone and 44 or 60
+	local fontSize = isPhone and 16 or 20
+
+	-- We control exact pixel placement regardless of core insets to keep it simple and stable
+	frame.Position = UDim2.new(0, 0, 0, topOffset)
+	frame.Size = UDim2.new(1, 0, 0, barHeight)
+
+	local horizontalPadding = (isPhone and 8) or 10
+	label.Size = UDim2.new(1, -(horizontalPadding * 2), 1, 0)
+	label.Position = UDim2.new(0, horizontalPadding, 0, 0)
+	label.TextSize = fontSize
+	label.TextWrapped = true
+end
+
+-- Simple UI binding: assumes there is a ScreenGui named TutorialGui with Frame:TutorialFrame and TextLabel:TutorialText
+local function getTutorialUI()
+	local pg = player:WaitForChild("PlayerGui")
+	local gui = pg:FindFirstChild("TutorialGui")
+	if not gui then
+		-- Create minimal fallback UI if not present
+		gui = Instance.new("ScreenGui")
+		gui.Name = "TutorialGui"
+		gui.ResetOnSpawn = false
+		-- We will manually offset from the top to avoid overlap
+		gui.IgnoreGuiInset = true
+		gui.Parent = pg
+		local frame = Instance.new("Frame")
+		frame.Name = "TutorialFrame"
+		frame.Size = UDim2.new(1, 0, 0, 60)
+		frame.Position = UDim2.new(0, 0, 0, 48)
+		frame.BackgroundTransparency = 0.5
+		frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		frame.Parent = gui
+		local label = Instance.new("TextLabel")
+		label.Name = "TutorialText"
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.new(1, -20, 1, 0)
+		label.Position = UDim2.new(0, 10, 0, 0)
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextYAlignment = Enum.TextYAlignment.Center
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 20
+		label.TextWrapped = true
+		label.Parent = frame
+	else
+		-- Ensure we control exact placement
+		gui.IgnoreGuiInset = true
+	end
+
+	-- Apply responsive layout and wire updates once
+	layoutTutorialBar()
+	if not layoutWired then
+		layoutWired = true
+		local cam = workspace.CurrentCamera
+		if cam then
+			cam:GetPropertyChangedSignal("ViewportSize"):Connect(layoutTutorialBar)
+		end
+		UserInputService.LastInputTypeChanged:Connect(function()
+			task.defer(layoutTutorialBar)
+		end)
+	end
+
+	local frame = gui:FindFirstChild("TutorialFrame")
+	local label = frame and frame:FindFirstChild("TutorialText")
+	return gui, frame, label
+end
+
+local function setTutorialText(text)
+	local _, frame, label = getTutorialUI()
+	if label then
+		label.Text = text or ""
+	end
+	if frame then
+		frame.Visible = text ~= nil and text ~= ""
+	end
+end
+
+local currentStepIndex = 0
+local currentTarget = nil
+local connections = {}
+
+local function cleanupCurrent()
+	for _, conn in ipairs(connections) do
+		if conn and conn.Disconnect then
+			pcall(function()
+				conn:Disconnect()
+			end)
+		end
+	end
+	connections = {}
+	if currentTarget then
+		HighlightManager.detachHighlight(currentTarget)
+		currentTarget = nil
+	end
+end
+
+local function findTargetForStep(step)
+	local ok, result = pcall(function()
+		return step.targetSelector and step.targetSelector(player)
+	end)
+	if ok then
+		return result
+	end
+	return nil
+end
+
+local function startStep(step)
+	setTutorialText(step.text)
+	currentTarget = findTargetForStep(step)
+	if currentTarget then
+		HighlightManager.attachHighlight(currentTarget)
+	end
+end
+
+local function advance()
+	cleanupCurrent()
+	currentStepIndex += 1
+	local step = TutorialSteps.Steps[currentStepIndex]
+	if not step then
+		setTutorialText("")
+		return
+	end
+	startStep(step)
+	-- Wire completion conditions per step id
+	if step.id == "drag_basics" then
+		-- Heuristic: watch for any ProximityPrompt triggers that we know are drag-result actions, or the drag/drop client can fire a BindableEvent. As a lightweight fallback, consider first click/drag on DRAGGABLE.
+		local dragEndedEvent = ReplicatedStorage:FindFirstChild("DragDrop")
+			and ReplicatedStorage.DragDrop:FindFirstChild("DragEnded")
+		if dragEndedEvent and dragEndedEvent:IsA("RemoteEvent") then
+			table.insert(
+				connections,
+				dragEndedEvent.OnClientEvent:Connect(function()
+					advance()
+				end)
+			)
+		else
+			-- Fallback: if a DRAGGABLE gets its Parent changed by the player locally (proxy), weak heuristic with timeout.
+			local conn = CollectionService:GetInstanceAddedSignal("DRAGGABLE"):Connect(function() end)
+			table.insert(connections, conn)
+			task.delay(5, function()
+				-- Auto-advance to avoid stalls in absence of events
+				advance()
+			end)
+		end
+	elseif step.id == "cook_food" then
+		-- Listen for a cooked item appearing (tag CONSUMABLE near a COOKING_SURFACE) or a dedicated remote if available
+		local cookedEvent = ReplicatedStorage:FindFirstChild("Food") and ReplicatedStorage.Food:FindFirstChild("Cooked")
+		if cookedEvent and cookedEvent:IsA("RemoteEvent") then
+			table.insert(
+				connections,
+				cookedEvent.OnClientEvent:Connect(function()
+					advance()
+				end)
+			)
+		else
+			-- Poll lightly for a short time
+			task.spawn(function()
+				for i = 1, 40 do
+					task.wait(0.25)
+					local char = player.Character
+					local hrp = char and char:FindFirstChild("HumanoidRootPart")
+					local origin = hrp and hrp.Position or Vector3.new()
+					local candidate = nil
+					for _, inst in ipairs(CollectionService:GetTagged("CONSUMABLE")) do
+						if inst:IsDescendantOf(workspace) then
+							candidate = inst
+							break
+						end
+					end
+					if candidate then
+						advance()
+						return
+					end
+				end
+				-- timeout advance
+				advance()
+			end)
+		end
+	elseif step.id == "eat_food" then
+		-- Detect hunger increase via PlayerStats Update remote if exposed on client
+		local updateStats = ReplicatedStorage:FindFirstChild("UpdatePlayerStats")
+		if updateStats and updateStats:IsA("RemoteEvent") then
+			table.insert(
+				connections,
+				updateStats.OnClientEvent:Connect(function(stats)
+					if stats and stats.Hunger and stats.Hunger > 0 then
+						advance()
+					end
+				end)
+			)
+		else
+			-- Fallback: if any CONSUMABLE disappears nearby
+			task.delay(4, function()
+				advance()
+			end)
+		end
+	elseif step.id == "sell_item" then
+		-- Money update indicates sell or other gain; accept first increase
+		local econRemotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Economy")
+		local updateMoney = econRemotes:WaitForChild("UpdateMoney")
+		local lastMoney = 0
+		table.insert(
+			connections,
+			updateMoney.OnClientEvent:Connect(function(newAmount)
+				if newAmount and newAmount > lastMoney then
+					advance()
+				end
+				lastMoney = newAmount or lastMoney
+			end)
+		)
+	elseif step.id == "buy_item" then
+		-- Complete on first BuyPrompt trigger or money decrease
+		local econRemotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Economy")
+		local updateMoney = econRemotes:WaitForChild("UpdateMoney")
+		local lastMoney = math.huge
+		table.insert(
+			connections,
+			updateMoney.OnClientEvent:Connect(function(newAmount)
+				if lastMoney ~= math.huge and newAmount and newAmount < lastMoney then
+					-- Completed tutorial
+					setTutorialText("")
+					cleanupCurrent()
+				end
+				lastMoney = newAmount or lastMoney
+			end)
+		)
+	end
+end
+
+-- Public start
+if TutorialConfig.Enabled then
+    advance()
+else
+    -- Hide UI if present
+    local _, frame = (function()
+        local pg = player:FindFirstChild("PlayerGui")
+        local gui = pg and pg:FindFirstChild("TutorialGui")
+        local frame = gui and gui:FindFirstChild("TutorialFrame")
+        return gui, frame
+    end)()
+    if frame then frame.Visible = false end
+end

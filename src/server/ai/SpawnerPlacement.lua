@@ -220,10 +220,9 @@ function SpawnerPlacement.run()
 		SpawnerPlacement.placeSpawnersForChunk(coord.x, coord.z)
 	end)
 
-	print("[SpawnerPlacement] Procedural spawner placement complete!")
-	print("  - Chunks processed:", chunksProcessed)
-	print("  - Spawners placed:", spawnersPlaced)
-	print("  - Placement rate:", string.format("%.1f%%", (spawnersPlaced / math.max(chunksProcessed, 1)) * 100))
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("SpawnerPlacement")
+	end
 end
 
 function SpawnerPlacement.getDebugInfo()

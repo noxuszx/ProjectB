@@ -31,13 +31,10 @@ local highlight = nil
 --=====================================================================
 
 function FoodConsumption.init()
-	if EconomyConfig.Debug.Enabled then
-		print("[FoodConsumption] Initialized.")
-	end
 	FoodConsumption.bindInput()
 	FoodConsumption.setupFoodHighlighting()
-	if EconomyConfig.Debug.Enabled then
-		print("[FoodConsumption] Ready.")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("FoodConsumption")
 	end
 end
 

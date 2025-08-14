@@ -1,28 +1,27 @@
 --[[
     BackpackUI.client.lua
-    Simple responsive counter UI for backpack that only shows when Sack is equipped
+    Simple responsive counter UI for backpack that only shows when Backpack is equipped
 ]]
 --
 
-local Players = game:GetService("Players")
+local Players		   = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local TweenService     = game:GetService("TweenService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local player       = Players.LocalPlayer
+local playerGui    = player:WaitForChild("PlayerGui")
 
 -- Mobile detection
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isMobile 	   = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
--- Reference manually created UI elements
-local screenGui = playerGui:WaitForChild("BackpackGui")
-local mainFrame = screenGui:WaitForChild("BackpackFrame")
+local screenGui    = playerGui:WaitForChild("SackGui")
+local mainFrame	   = screenGui:WaitForChild("SackFrame")
 local counterLabel = mainFrame:WaitForChild("Counter")
 
--- Mobile buttons references
-local mobileFrame = nil
-local storeButton = nil
-local retrieveButton = nil
+counterLabel.TextSize = 12
+local mobileFrame 	  = nil
+local storeButton 	  = nil
+local retrieveButton  = nil
 
 if isMobile then
 	mobileFrame = screenGui:WaitForChild("MobileButtons")
@@ -31,7 +30,7 @@ if isMobile then
 
 	task.spawn(function()
 		repeat
-			wait(0.1)
+			task.wait(0.1)
 		until _G.BackpackController
 
 		storeButton.MouseButton1Click:Connect(function()
@@ -44,16 +43,13 @@ if isMobile then
 	end)
 end
 
--- State tracking
 local currentItemCount = 0
 local sackEquipped = false
 
--- Show hint message (console only since no HintLabel)
 local function showHint(message)
 	print("[BackpackUI Hint]", message)
 end
 
--- Update UI visibility based on Sack equipped status
 local function updateVisibility()
 	local shouldShow = sackEquipped
 	mainFrame.Visible = shouldShow
@@ -63,16 +59,13 @@ local function updateVisibility()
 	end
 end
 
--- Update backpack counter display
 local function updateContents(contents)
 	currentItemCount = #contents
 	counterLabel.Text = currentItemCount .. "/10"
-
-	-- Update visibility based on Sack equipped status
 	updateVisibility()
 end
 
--- Check if Sack tool is equipped
+-- Check if Backpack tool is equipped
 local function checkSackEquipped()
 	local character = player.Character
 	if not character then
@@ -81,13 +74,13 @@ local function checkSackEquipped()
 		return
 	end
 
-	-- Check if Sack is equipped in character
-	local sackTool = character:FindFirstChild("Sack")
+	-- Check if Backpack is equipped in character
+	local sackTool = character:FindFirstChild("Backpack")
 	sackEquipped = (sackTool ~= nil)
 	updateVisibility()
 end
 
--- Monitor for Sack tool equipped/unequipped
+-- Monitor for Backpack tool equipped/unequipped
 local function onCharacterAdded(character)
 	-- Monitor for tools being equipped (added to character)
 	character.ChildAdded:Connect(function(child)
@@ -109,9 +102,8 @@ local function onCharacterAdded(character)
 	checkSackEquipped()
 end
 
--- Monitor player's backpack for when Sack tool is added/removed
 local function onBackpackAdded(child)
-	if child.Name == "Sack" and child:IsA("Tool") then
+	if child.Name == "Backpack" and child:IsA("Tool") then
 		-- Tool was added to backpack, monitor for equipping
 		child.Equipped:Connect(function()
 			sackEquipped = true
@@ -127,19 +119,16 @@ end
 
 player.Backpack.ChildAdded:Connect(onBackpackAdded)
 for _, tool in pairs(player.Backpack:GetChildren()) do
-	if tool.Name == "Sack" and tool:IsA("Tool") then
+	if tool.Name == "Backpack" and tool:IsA("Tool") then
 		onBackpackAdded(tool)
 	end
 end
 
--- Handle character spawning
 if player.Character then
 	onCharacterAdded(player.Character)
 end
 player.CharacterAdded:Connect(onCharacterAdded)
 
-
--- Export functions for BackpackController
 _G.BackpackUI = {
 	updateContents = updateContents,
 	showHint = showHint,

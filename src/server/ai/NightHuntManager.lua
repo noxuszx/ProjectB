@@ -24,6 +24,31 @@ local periodChangedConnection = nil
 -- Cache frequently used values
 local NIGHT_HUNT_TAG = "NIGHT_HUNT"
 
+-- Select a random creature type based on weights
+local function selectRandomCreatureType()
+	local totalWeight = 0
+	for _, weight in pairs(NightHuntConfig.CreatureTypes) do
+		totalWeight = totalWeight + weight
+	end
+	
+	local random = math.random() * totalWeight
+	local currentWeight = 0
+	
+	for creatureType, weight in pairs(NightHuntConfig.CreatureTypes) do
+		currentWeight = currentWeight + weight
+		if random <= currentWeight then
+			return creatureType
+		end
+	end
+	
+	-- Fallback to first creature type
+	for creatureType, _ in pairs(NightHuntConfig.CreatureTypes) do
+		return creatureType
+	end
+	
+	return "Mummy" -- Ultimate fallback
+end
+
 -- Get total active Night Hunt creatures across all players
 local function getTotalActiveNightHunt()
 	local total = 0
@@ -145,8 +170,8 @@ local function onCreatureRemoved(aiController, player)
 	end
 end
 
--- Spawn a single Night Hunt Mummy for a player
-local function spawnNightHuntMummy(player)
+-- Spawn a single Night Hunt creature for a player
+local function spawnNightHuntCreature(player)
 	local canSpawnResult, reason = canSpawn(player)
 	if not canSpawnResult then
 		if NightHuntConfig.Debug.LogSpawns then
@@ -165,12 +190,13 @@ local function spawnNightHuntMummy(player)
 		return
 	end
 	
-	-- Spawn the Mummy
-	local aiController = CreatureSpawner.spawnCreature("Mummy", spawnPosition, { activationMode = "Event" })
+	-- Select and spawn random creature type
+	local creatureType = selectRandomCreatureType()
+	local aiController = CreatureSpawner.spawnCreature(creatureType, spawnPosition, { activationMode = "Event" })
 	
 	if not aiController then
 		if NightHuntConfig.Debug.LogSpawns then
-			print("[NightHuntManager] Failed to spawn Mummy for " .. player.Name)
+			print("[NightHuntManager] Failed to spawn " .. creatureType .. " for " .. player.Name)
 		end
 		return
 	end
@@ -230,7 +256,7 @@ local function spawnNightHuntMummy(player)
 	
 	if NightHuntConfig.Debug.LogSpawns then
 		local playerData = perPlayer[player.UserId]
-		print("[NightHuntManager] Spawned Night Hunt Mummy for " .. player.Name .. " at distance " .. 
+		print("[NightHuntManager] Spawned Night Hunt " .. creatureType .. " for " .. player.Name .. " at distance " .. 
 			string.format("%.1f", (spawnPosition - playerPosition).Magnitude) .. 
 			" (Active: " .. #playerData.spawned .. "/" .. NightHuntConfig.PerPlayerCap .. 
 			", Night total: " .. playerData.nightSpawnCount .. "/" .. NightHuntConfig.PerPlayerNightLimit .. ")")
@@ -241,7 +267,7 @@ end
 local function createPlayerSpawnLoop(player)
 	local connection = task.spawn(function()
 		while active and player.Parent do
-			spawnNightHuntMummy(player)
+			spawnNightHuntCreature(player)
 			task.wait(NightHuntConfig.IntervalSeconds)
 		end
 	end)
@@ -266,7 +292,7 @@ local function cleanupNightHuntCreatures(targetPlayer)
 			if aiController.model and aiController.model.Parent then
 				if NightHuntConfig.DespawnOnSunrise == "Pool" and NightHuntConfig.UsePooling then
 					-- Phase 2: Use pooling when implemented
-					-- CreaturePoolManager.poolCreature(aiController.model, "Mummy")
+					-- CreaturePoolManager.poolCreature(aiController.model, aiController.creatureType)
 					aiController.model:Destroy() -- Fallback to destroy for Phase 1
 				else
 					aiController.model:Destroy()

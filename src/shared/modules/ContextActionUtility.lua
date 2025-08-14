@@ -369,7 +369,6 @@ function ContextActionUtility:SetPressedColor(actionName, color)
 	if not data then return end
 	local button = data.Button
 	if not button then return end
-	print("Setting Pressed Color")
 	button.BorderColor3 = color
 end
 

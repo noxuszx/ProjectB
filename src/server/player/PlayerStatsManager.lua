@@ -16,7 +16,6 @@ local lastDecayTime = 0
 local decayConnection = nil
 
 function PlayerStatsManager.init()
-	print("[PlayerStatsManager] Initializing player stats system...")
 	
 	updatePlayerStatsRemote = ReplicatedStorage.Remotes:WaitForChild("UpdatePlayerStats", 10)
 	if not updatePlayerStatsRemote then
@@ -34,7 +33,6 @@ function PlayerStatsManager.init()
 	PlayerStatsManager.startDecayLoop()
 	PlayerStatsManager.setupRagdollIntegration()
 
-	print("[PlayerStatsManager] Player stats system initialized!")
 	return true
 end
 
@@ -51,7 +49,6 @@ function PlayerStatsManager.onPlayerAdded(player)
 	PlayerStatsManager.updateClientStats(player)
 	
 	if PlayerStatsConfig.DEBUG_MODE then
-		print("[PlayerStatsManager] Initialized stats for", player.Name, "(" .. userId .. ")")
 	end
 end
 
@@ -63,7 +60,6 @@ function PlayerStatsManager.onPlayerRemoving(player)
 	ragdolledPlayers[userId] = nil
 	
 	if PlayerStatsConfig.DEBUG_MODE then
-		print("[PlayerStatsManager] Cleaned up stats for", player.Name, "(" .. userId .. ")")
 	end
 end
 
@@ -81,7 +77,6 @@ function PlayerStatsManager.startDecayLoop()
 		end
 	end)
 	
-	print("[PlayerStatsManager] Stat decay loop started (interval:", PlayerStatsConfig.TICK_INTERVAL .. "s)")
 end
 
 -- Process stat decay for all players

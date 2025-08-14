@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Import dependencies
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-local ZonePlus = require(ReplicatedStorage.Packages.zoneplus)
+local ZonePlus = require(ReplicatedStorage.Shared.modules.Zone)
 local EgyptDoor = require(script.Parent.EgyptDoor)
 
 -- System state

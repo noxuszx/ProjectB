@@ -148,7 +148,6 @@ function DayNightCycle.init()
 		syncTimeRemote:FireClient(player, currentTime)
 	end)
 	
-	print("Day/Night cycle initialized...")
 end
 
 function DayNightCycle.getDebugInfo()

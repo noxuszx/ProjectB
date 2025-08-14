@@ -83,8 +83,9 @@ local function init()
 		onPlayerAdded(player)
 	end
 
-	print("[AmmoService] Initialized - Memory-based ammo tracking active")
-	print("==================================================")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("AmmoService")
+	end
 end
 
 init()

@@ -77,9 +77,6 @@ local function createItemHighlight(item, canAfford)
 
 	hoveredItemHighlight = highlight
 
-	if EconomyConfig.Debug.Enabled then
-		print("[ItemHoverHighlighting] Highlighted", item.Name, "- Can afford:", canAfford)
-	end
 end
 
 -- Remove highlight
@@ -139,7 +136,9 @@ local function init()
 	-- Run hover detection continuously for visual feedback
 	RunService.Heartbeat:Connect(checkMouseHover)
 
-	print("[ItemHoverHighlighting] Initialized successfully (click purchasing disabled)")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("ItemHoverHighlighting")
+	end
 end
 
 -- Start the system

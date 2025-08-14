@@ -42,8 +42,6 @@ local respawnQueue = {}
 
 -- Initialize the pooling system
 function CreaturePoolManager.init()
-	print("[CreaturePoolManager] Initializing creature pooling system...")
-	
 	-- Create pool folders in ReplicatedStorage
 	for _, creatureType in pairs(PoolConfig.PooledCreatures) do
 		local folderName = "Dead" .. creatureType .. "s"
@@ -54,11 +52,11 @@ function CreaturePoolManager.init()
 		poolFolders[creatureType] = poolFolder
 		activeCreatureCounts[creatureType] = 0
 		respawnQueue[creatureType] = {}
-		
-		print("[CreaturePoolManager] Created pool folder:", folderName)
 	end
 	
-	print("[CreaturePoolManager] Creature pooling system ready!")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("CreaturePoolManager")
+	end
 	return true
 end
 

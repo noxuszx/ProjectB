@@ -199,7 +199,9 @@ function EconomyService.init()
 		onPlayerAdded(player)
 	end
 	
-	print("[EconomyService] Initialized successfully")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("EconomyService")
+	end
 end
 
 return EconomyService

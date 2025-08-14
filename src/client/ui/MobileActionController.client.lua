@@ -10,44 +10,49 @@ local CollectionService = game:GetService("CollectionService")
 local player = Players.LocalPlayer
 local IS_MOBILE = UserInputService.TouchEnabled
 
-print("[MobileActionController] === DEBUG START ===")
-print("[MobileActionController] TouchEnabled:", UserInputService.TouchEnabled)
-print("[MobileActionController] MouseEnabled:", UserInputService.MouseEnabled)
-print("[MobileActionController] KeyboardEnabled:", UserInputService.KeyboardEnabled)
-print("[MobileActionController] IS_MOBILE:", IS_MOBILE)
+-- Debug configuration
+local DEBUG_ENABLED = false
+
+if DEBUG_ENABLED then
+	print("[MobileActionController] === DEBUG START ===")
+	print("[MobileActionController] TouchEnabled:", UserInputService.TouchEnabled)
+	print("[MobileActionController] MouseEnabled:", UserInputService.MouseEnabled)
+	print("[MobileActionController] KeyboardEnabled:", UserInputService.KeyboardEnabled)
+	print("[MobileActionController] IS_MOBILE:", IS_MOBILE)
+end
 
 if not IS_MOBILE then 
-    print("[MobileActionController] Not mobile device - exiting")
+    if DEBUG_ENABLED then print("[MobileActionController] Not mobile device - exiting") end
     return 
 end
 
-print("[MobileActionController] Loading dependencies...")
+if DEBUG_ENABLED then print("[MobileActionController] Loading dependencies...") end
 
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-print("[MobileActionController] CollectionServiceTags loaded")
+if DEBUG_ENABLED then print("[MobileActionController] CollectionServiceTags loaded") end
 
 local ContextActionUtility = require(ReplicatedStorage.Shared.modules.ContextActionUtility)
-print("[MobileActionController] ContextActionUtility loaded")
+if DEBUG_ENABLED then print("[MobileActionController] ContextActionUtility loaded") end
 
 -- Wait for globals provided by other controllers
-print("[MobileActionController] Waiting for _G.InteractableHandler...")
+if DEBUG_ENABLED then print("[MobileActionController] Waiting for _G.InteractableHandler...") end
 repeat task.wait(0.05) until _G.InteractableHandler
-print("[MobileActionController] _G.InteractableHandler found!")
+if DEBUG_ENABLED then print("[MobileActionController] _G.InteractableHandler found!") end
 
-print("[MobileActionController] Waiting for _G.BackpackController...")
+if DEBUG_ENABLED then print("[MobileActionController] Waiting for _G.BackpackController...") end
 repeat task.wait(0.05) until _G.BackpackController
-print("[MobileActionController] _G.BackpackController found!")
+if DEBUG_ENABLED then print("[MobileActionController] _G.BackpackController found!") end
 
 local IA = _G.InteractableHandler
 local Backpack = _G.BackpackController
 
 -- Get ConsumeFood RemoteEvent (same as FoodConsumption does)
-print("[MobileActionController] Getting ConsumeFood RemoteEvent...")
+if DEBUG_ENABLED then print("[MobileActionController] Getting ConsumeFood RemoteEvent...") end
 local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local consumeFoodRemote = remotesFolder:WaitForChild("ConsumeFood")
-print("[MobileActionController] ConsumeFood RemoteEvent found")
+if DEBUG_ENABLED then print("[MobileActionController] ConsumeFood RemoteEvent found") end
 
-print("[MobileActionController] Initialized on mobile device")
+if DEBUG_ENABLED then print("[MobileActionController] Initialized on mobile device") end
 
 -- Condition checking functions (copied from DesktopHints)
 local function isSackEquipped()
@@ -119,7 +124,7 @@ local function canRetrieve()
 end
 
 local function attemptFoodConsumption()
-    print("[MobileActionController] attemptFoodConsumption called")
+    if DEBUG_ENABLED then print("[MobileActionController] attemptFoodConsumption called") end
     if not player.Character or not player.Character.PrimaryPart then return end
     
     local playerPos = player.Character.PrimaryPart.Position
@@ -145,10 +150,10 @@ local function attemptFoodConsumption()
     end
     
     if nearestFood then
-        print("[MobileActionController] Found food to consume:", nearestFood.Name)
+        if DEBUG_ENABLED then print("[MobileActionController] Found food to consume:", nearestFood.Name) end
         consumeFoodRemote:FireServer(nearestFood)
     else
-        print("[MobileActionController] No food found within range")
+        if DEBUG_ENABLED then print("[MobileActionController] No food found within range") end
     end
 end
 
@@ -194,7 +199,7 @@ local ACTIONS = {
         canShow = canRetrieve,
         onAction = function(_, inputState)
             if inputState == Enum.UserInputState.Begin then 
-                print("[MobileActionController] Retrieve button pressed - calling Backpack.retrieveTopObject()")
+                if DEBUG_ENABLED then print("[MobileActionController] Retrieve button pressed - calling Backpack.retrieveTopObject()") end
                 Backpack.retrieveTopObject() 
             end
         end,
@@ -242,8 +247,8 @@ local cache = {}
 -- Custom positions for each action button (relative to jump button)
 local BUTTON_POSITIONS = {
     Drag     = UDim2.new(0.728, 0, -0.545, 0),      -- drag moved down from -0.745 to -0.545
-    Store    = UDim2.new(-1.472, 0, 0.488, 0),       -- store (unchanged)
-    Retrieve = UDim2.new(-1.522, 0, -0.3, 0),       -- unstore (unchanged)
+    Store    = UDim2.new(-1.472, 0, -0.312, 0),      -- store moved higher from 0.088 to -0.312 for more clearance
+    Retrieve = UDim2.new(-1.522, 0, -0.8, 0),       -- retrieve moved higher from -0.5 to -0.8 for more clearance
     Weld     = UDim2.new(-0.522, 0, -0.062, 0),      -- weld moved down from -0.262 to -0.062
     Eat      = UDim2.new(-0.522, 0, 0.688, 0),       -- eat moved down from 0.488 to 0.688
     Rotate   = UDim2.new(-0.005, 0, -0.545, 0),      -- rotate moved down from -0.745 to -0.545
@@ -263,13 +268,13 @@ local function ensureBound(action)
             local button = ContextActionUtility:GetButton(action.actionName)
             if button and BUTTON_POSITIONS[action.key] then
                 button.Position = BUTTON_POSITIONS[action.key]
-                print("[MobileActionController] Set position for", action.key, "to", tostring(BUTTON_POSITIONS[action.key]))
+                if DEBUG_ENABLED then print("[MobileActionController] Set position for", action.key, "to", tostring(BUTTON_POSITIONS[action.key])) end
             end
         end)
     end)
     
     if not success then
-        print("[MobileActionController] ERROR binding", action.key, ":", err)
+        if DEBUG_ENABLED then print("[MobileActionController] ERROR binding", action.key, ":", err) end
     end
 end
 
@@ -281,7 +286,7 @@ local updateCount = 0
 local function update()
     updateCount = updateCount + 1
     if updateCount % 100 == 1 then -- Print every 100 updates (~5 seconds)
-        print("[MobileActionController] Update cycle", updateCount)
+        if DEBUG_ENABLED then print("[MobileActionController] Update cycle", updateCount) end
     end
     
     -- Rebind in priority order each tick based on availability
@@ -291,11 +296,11 @@ local function update()
         if ok then 
             shouldShow = result == true 
         else
-            print("[MobileActionController] ERROR in", action.key, "canShow:", result)
+            if DEBUG_ENABLED then print("[MobileActionController] ERROR in", action.key, "canShow:", result) end
         end
 
         if updateCount % 100 == 1 then -- Debug every 100 updates
-            print("[MobileActionController]", action.key, "shouldShow:", shouldShow, "cached:", cache[action.key] ~= nil)
+            if DEBUG_ENABLED then print("[MobileActionController]", action.key, "shouldShow:", shouldShow, "cached:", cache[action.key] ~= nil) end
         end
 
         if shouldShow then
@@ -345,6 +350,6 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
-print("[MobileActionController] Update loop started")
+if DEBUG_ENABLED then print("[MobileActionController] Update loop started") end
 
 -- Mobile action buttons system is now active and ready

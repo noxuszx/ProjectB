@@ -7,6 +7,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
 
 -- Services
+local SystemLoadMonitor = _G.SystemLoadMonitor or require(script.Parent.Parent.SystemLoadMonitor)
 local EconomyService = require(script.Parent.Parent.services.EconomyService)
 local CashPoolManager = require(script.Parent.CashPoolManager)
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
@@ -129,8 +130,91 @@ local function monitorWorkspaceChildAdded()
 	end)
 end
 
+-- Goldpile support: detection and prompt creation
+local function isInSpawnedTreasure(inst)
+	if not inst or not inst.Parent then return false end
+	local current = inst
+	while current and current ~= workspace do
+		if current:IsA("Folder") and current.Name == "SpawnedTreasure" then
+			return true
+		end
+		current = current.Parent
+	end
+	return false
+end
+
+local function isGoldpile(part)
+	if not part or not part:IsA("MeshPart") then return false end
+	if not isInSpawnedTreasure(part) then return false end
+	local isAttr = part:GetAttribute("IsGoldpile")
+	if isAttr ~= nil then
+		return isAttr == true
+	end
+	local name = string.lower(part.Name or "")
+	return string.sub(name, 1, 8) == "goldpile"
+end
+
+local function getGoldValue(part)
+	local v = part:GetAttribute("GoldValue")
+	if typeof(v) == "number" and v > 0 then return v end
+	return 100
+end
+
+local function createGoldpilePrompt(goldpile)
+	local existing = goldpile:FindFirstChild("GoldpilePrompt")
+	if existing then return existing end
+	local value = getGoldValue(goldpile)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "GoldpilePrompt"
+	prompt.ActionText = "Collect Gold (+" .. tostring(value) .. ")"
+	prompt.ObjectText = "Gold Pile"
+	prompt.MaxActivationDistance = 8
+	prompt.HoldDuration = 1.0
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = goldpile
+	return prompt
+end
+
+local goldpilesSetup = 0
+
+local function setupGoldpileChild(child)
+	if child:IsA("MeshPart") and isGoldpile(child) then
+		createGoldpilePrompt(child)
+		goldpilesSetup = goldpilesSetup + 1
+		child.AncestryChanged:Connect(function()
+			if not child.Parent then
+				-- nothing to clean, weak refs
+			end
+		end)
+	end
+end
+
+local function onGoldpilePromptTriggered(promptObject, player)
+	if promptObject.Name ~= "GoldpilePrompt" then return end
+	if not promptObject.Enabled then return end
+	promptObject.Enabled = false
+	local goldpile = promptObject.Parent
+	if not goldpile or not goldpile:IsA("MeshPart") or not isGoldpile(goldpile) then
+		return
+	end
+	local value = getGoldValue(goldpile)
+	if value <= 0 then value = 100 end
+	if EconomyService.addMoney(player, value) then
+		goldpile:Destroy()
+		if EconomyConfig.Debug.Enabled then
+			print("[CashCollectionHandler]", player.Name, "collected goldpile for", value)
+		end
+	else
+		if promptObject and promptObject.Parent then
+			promptObject.Enabled = true
+		end
+		warn("[CashCollectionHandler] Failed to add money from goldpile for", player.Name)
+	end
+end
+
 local function init()
 	ProximityPromptService.PromptTriggered:Connect(onCashCollected)
+	ProximityPromptService.PromptTriggered:Connect(onGoldpilePromptTriggered)
 	monitorWorkspaceChildAdded()
 
 	for _, child in pairs(workspace:GetChildren()) do
@@ -150,7 +234,29 @@ local function init()
 		end
 	end
 
+	-- Goldpiles: scan existing and watch for new ones under SpawnedTreasure
+	local spawnedTreasure = workspace:FindFirstChild("SpawnedTreasure")
+	if spawnedTreasure then
+		for _, gp in ipairs(spawnedTreasure:GetChildren()) do
+			setupGoldpileChild(gp)
+		end
+		spawnedTreasure.ChildAdded:Connect(setupGoldpileChild)
+	end
+	workspace.ChildAdded:Connect(function(child)
+		if child:IsA("Folder") and child.Name == "SpawnedTreasure" then
+			child.ChildAdded:Connect(setupGoldpileChild)
+			for _, gp in ipairs(child:GetChildren()) do
+				setupGoldpileChild(gp)
+			end
+		end
+	end)
+
 	CashPoolManager.prewarmPools()
-	print("[CashCollectionHandler] Initialized successfully")
+	
+	if EconomyConfig.Debug.Enabled and goldpilesSetup > 0 then
+		print("[CashCollectionHandler] Setup " .. goldpilesSetup .. " goldpile prompts")
+	end
+	
+	SystemLoadMonitor.reportSystemLoaded("EconomySystem")
 end
 init()

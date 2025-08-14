@@ -74,11 +74,15 @@ WeaponConfig.MeleeWeapons = {
         Cooldown = 0.4,      -- Seconds between attacks
         SwingDuration = 0.5, -- How long the swing animation lasts
         Animation = "Slash",  -- R6 animation name
+        HitDetection = "Magnitude", -- "Magnitude" or "Raycast"
+        MaxTargets = 1,      -- How many targets to hit (1 for single, -1 for all in range)
+        RequireLineOfSight = true, -- Use raycast to check for walls/obstacles
+        DirectionalAngle = 180, -- Degrees of arc in front of player (360 for all around)
         HitEffect = {
             Sound = nil,      -- Optional hit sound ID
             Particle = nil,   -- Optional particle effect
         },
-        DebugEnabled = false   -- Enable debug prints for this weapon
+        DebugEnabled = true   -- Enable debug prints for this weapon
     },
     
     Katana = {

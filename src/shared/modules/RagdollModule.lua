@@ -5,6 +5,24 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
+-- Tiny physics nudge to tip over perfectly still ragdolls
+local function nudgeIfStatic(char: Model)
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp or not hrp:IsA("BasePart") then return end
+	if hrp.Anchored then return end
+	-- Skip if already moving/spinning a bit
+	local lin = hrp.AssemblyLinearVelocity
+	local ang = hrp.AssemblyAngularVelocity
+	if (lin and lin.Magnitude > 0.5) or (ang and ang.Magnitude > 0.5) then return end
+	local m = hrp:GetMass()
+	-- Small random horizontal push and a slight up component to unstick
+	local r = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5)
+	local dir = (r.Magnitude > 0) and r.Unit or Vector3.new(1, 0, 0)
+	-- Impulses tuned to be gentle and scale with mass
+	hrp:ApplyImpulse(dir * m * 25 + Vector3.new(0, 1, 0) * m * 5)
+	hrp:ApplyAngularImpulse(Vector3.new(0, m * 10, 0))
+end
+
 function module.Ragdoll(char : CharacterMesh)
 	local humanoid : Humanoid = char:WaitForChild("Humanoid")
 	if humanoid:GetState() == Enum.HumanoidStateType.Physics then return true end
@@ -63,6 +81,14 @@ function module.Ragdoll(char : CharacterMesh)
 		CollectionServiceTags.addTag(char, CollectionServiceTags.DRAGGABLE)
 		CollectionServiceTags.tagDescendants(char, CollectionServiceTags.WELDABLE)
 		print("[RagdollModule] Player ragdolled and tagged for dragging:", char.Name)
+		-- Give a tiny nudge shortly after ragdolling to tip over perfectly still bodies
+		task.delay(0.1, function()
+			nudgeIfStatic(char)
+			-- Optional second check a bit later
+			task.delay(0.25, function()
+				nudgeIfStatic(char)
+			end)
+		end)
 	end
 	
 	return ragdollSuccess
@@ -198,6 +224,14 @@ function module.PermanentNpcRagdoll(char : Model) -- Permanent ragdoll for creat
 		CollectionServiceTags.addTag(char, CollectionServiceTags.DRAGGABLE)
 		CollectionServiceTags.tagDescendants(char, CollectionServiceTags.WELDABLE)
 		print("[RagdollModule] Successfully ragdolled and tagged for dragging:", char.Name)
+		-- Nudge NPCs that die standing still so they tip over naturally
+		task.delay(0.1, function()
+			nudgeIfStatic(char)
+			-- Optional second check
+			task.delay(0.25, function()
+				nudgeIfStatic(char)
+			end)
+		end)
 		return true
 	else
 		warn("[RagdollModule] Failed to ragdoll character:", char.Name)

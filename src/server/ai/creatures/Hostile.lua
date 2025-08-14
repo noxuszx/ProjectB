@@ -28,6 +28,13 @@ function HostileCreature.new(model, creatureType, spawnPosition)
 	self.touchConnections = {}
 
 	self:setupTouchDamage()
+	-- Ensure touch damage stops immediately on death/ragdoll
+	local humanoid = model:FindFirstChild("Humanoid")
+	if humanoid then
+		humanoid.Died:Connect(function()
+			self:disconnectTouchDamage()
+		end)
+	end
 	self:setBehavior(RoamingBehavior.new())
 
 	return self
@@ -49,30 +56,41 @@ function HostileCreature:setupTouchDamage()
 end
 
 function HostileCreature:onTouch(hit)
+	-- Do not deal damage if this creature is dead or ragdolled
+	if self.isDead or (self.model and self.model:GetAttribute("Ragdolled")) then return end
+	local myHumanoid = self.model and self.model:FindFirstChild("Humanoid")
+	if not myHumanoid or myHumanoid.Health <= 0 then return end
+
 	local character = hit.Parent
+	if not character then return end
 	local humanoid = character:FindFirstChild("Humanoid")
 	local player = Players:GetPlayerFromCharacter(character)
 
-	if not player or not humanoid then return end
+	if not player or not humanoid or humanoid.Health <= 0 then return end
 
 	local currentTime = os.clock()
 	if self.lastDamageTime[player.UserId] and currentTime - self.lastDamageTime[player.UserId] < self.damageCooldown then return end
 
-	humanoid:TakeDamage(self.touchDamage)
-	self.lastDamageTime[player.UserId] = currentTime
+	if self.touchDamage and self.touchDamage > 0 then
+		humanoid:TakeDamage(self.touchDamage)
+		self.lastDamageTime[player.UserId] = currentTime
+		if AIConfig.Debug.LogBehaviorChanges then
+			print("[HostileCreature] " .. self.creatureType .. " dealt " .. self.touchDamage .. " damage to " .. player.Name)
+		end
+	end
+end
 
-	if AIConfig.Debug.LogBehaviorChanges then
-		print(
-			"[HostileCreature] " .. self.creatureType .. " dealt " .. self.touchDamage .. " damage to " .. player.Name
-		)
+function HostileCreature:disconnectTouchDamage()
+	if self.touchConnections then
+		for _, connection in pairs(self.touchConnections) do
+			connection:Disconnect()
+		end
+		self.touchConnections = {}
 	end
 end
 
 function HostileCreature:destroy()
-	for _, connection in pairs(self.touchConnections) do
-		connection:Disconnect()
-	end
-	self.touchConnections = {}
+	self:disconnectTouchDamage()
 	BaseCreature.destroy(self)
 end
 

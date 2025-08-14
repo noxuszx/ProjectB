@@ -21,9 +21,10 @@ local Config = {
 }
 
 function FoodConsumptionServer.init()
-	if EconomyConfig.Debug.Enabled then print("[FoodConsumptionServer] Initializing server-side food consumption...") end
 	consumeFoodRemote.OnServerEvent:Connect(FoodConsumptionServer.onConsumeFoodRequest)
-	if EconomyConfig.Debug.Enabled then print("[FoodConsumptionServer] Server-side food consumption ready!") end
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("FoodConsumptionServer")
+	end
 end
 
 function FoodConsumptionServer.onConsumeFoodRequest(player, foodInstance)
@@ -39,9 +40,6 @@ function FoodConsumptionServer.onConsumeFoodRequest(player, foodInstance)
 	local isCooked = foodInstance:GetAttribute("IsCooked") or false
 	FoodConsumptionServer.consumeFood(player, foodInstance, hungerValue, isCooked)
 	
-	if EconomyConfig.Debug.Enabled then
-		print("[FoodConsumptionServer]", player.Name, "consumed", foodType, "(+" .. hungerValue, "hunger)")
-	end
 end
 
 function FoodConsumptionServer.validateConsumptionRequest(player, foodInstance)
@@ -90,9 +88,6 @@ function FoodConsumptionServer.consumeFood(player, foodInstance, hungerValue, is
 	FoodConsumptionServer.createConsumptionEffects(player, foodInstance, hungerValue, isCooked)
 	foodInstance:Destroy()
 	
-	if EconomyConfig.Debug.Enabled then
-		print("[FoodConsumptionServer]", player.Name, "consumed", foodInstance:GetAttribute("FoodType"), "(+" .. hungerValue .. " hunger)")
-	end
 end
 
 function FoodConsumptionServer.createConsumptionEffects(player, foodModel, hungerValue, isCooked)

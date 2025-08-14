@@ -27,8 +27,6 @@ local currentStats = {
 }
 
 function StatsDisplay.init()
-	print("[StatsDisplay] Initializing client-side stats display...")
-
 	local updatePlayerStatsRemote = ReplicatedStorage.Remotes:WaitForChild("UpdatePlayerStats", 10)
 	if not updatePlayerStatsRemote then
 		warn("[StatsDisplay] UpdatePlayerStats RemoteEvent not found!")
@@ -42,7 +40,9 @@ function StatsDisplay.init()
 
 	updatePlayerStatsRemote.OnClientEvent:Connect(StatsDisplay.onStatsUpdate)
 
-	print("[StatsDisplay] Stats display initialized!")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("StatsDisplay")
+	end
 	return true
 end
 
@@ -76,7 +76,6 @@ function StatsDisplay.getUIReferences()
 		return false
 	end
 
-	print("[StatsDisplay] Successfully referenced manual UI elements")
 	return true
 end
 

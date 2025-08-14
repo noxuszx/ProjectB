@@ -79,7 +79,9 @@ local function init()
 	end
 	player.CharacterAdded:Connect(onCharacterAdded)
 	
-	print("[EconomyUI] Initialized successfully")
+	if _G.SystemLoadMonitor then
+		_G.SystemLoadMonitor.reportSystemLoaded("EconomyUI")
+	end
 end
 
 -- Start the UI
