@@ -19,13 +19,18 @@ local expectedSystems = {
 	{name = "FoodSystem", critical = false, description = "Food consumption and water refill"},
 	{name = "EconomySystem", critical = false, description = "Cash and trading systems"},
 	{name = "ToolSystem", critical = false, description = "Tool granting service"},
+	{name = "AmmoService", critical = false, description = "Ammunition management system"},
+	{name = "FoodConsumptionServer", critical = false, description = "Server-side food consumption handling"},
+	{name = "PedestalController", critical = false, description = "Pedestal detection and interaction system"},
+	{name = "SpawnerPlacement", critical = false, description = "Strategic spawner positioning system"},
+	{name = "CustomModelSpawner", critical = false, description = "Custom model spawning and management"},
+	{name = "CreaturePoolManager", critical = false, description = "Memory pooling system for creature reuse"},
 }
 
 -- Tracking state
 local loadedSystems = {}
 local initStartTime = os.clock()
 
--- Report when a system has successfully initialized
 function SystemLoadMonitor.reportSystemLoaded(systemName, additionalInfo)
 	if loadedSystems[systemName] then
 		warn("[SystemLoadMonitor] System already reported as loaded:", systemName)
@@ -37,7 +42,6 @@ function SystemLoadMonitor.reportSystemLoaded(systemName, additionalInfo)
 		info = additionalInfo
 	}
 	
-	-- Find system configuration
 	local systemConfig = nil
 	for _, sys in pairs(expectedSystems) do
 		if sys.name == systemName then
@@ -49,7 +53,7 @@ function SystemLoadMonitor.reportSystemLoaded(systemName, additionalInfo)
 	if systemConfig then
 		print("[" .. systemName .. "] Initialization successful")
 		if systemConfig.critical then
-			print("===============================================")
+			print("<--------------------------------------------->")
 		else
 			print("-----------------------------------------------")
 		end
@@ -60,11 +64,9 @@ function SystemLoadMonitor.reportSystemLoaded(systemName, additionalInfo)
 		print("-----------------------------------------------")
 	end
 	
-	-- Check if all expected systems have loaded
 	SystemLoadMonitor.checkAllSystemsLoaded()
 end
 
--- Check if all expected systems have reported successful initialization
 function SystemLoadMonitor.checkAllSystemsLoaded()
 	local allLoaded = true
 	local criticalLoaded = true

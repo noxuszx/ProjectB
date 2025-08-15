@@ -478,10 +478,7 @@ end
 -------------------------------------------------------------------------------------------------
 
 function VillageSpawner.spawnVillages()
-	print("Spawning villages...")
 	local models = loadVillageModels()
-	
-	-- Check if we have any models to spawn
 	if next(models) == nil then
 		warn("No village models found in", villageConfig.VILLAGE_MODEL_FOLDER)
 		return
