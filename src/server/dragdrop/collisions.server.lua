@@ -1,8 +1,9 @@
 local PhysicsService = game:GetService("PhysicsService")
 
-PhysicsService:RegisterCollisionGroup("Item")
-PhysicsService:RegisterCollisionGroup("player")
-PhysicsService:RegisterCollisionGroup("Creature")
+-- Ensure groups exist
+pcall(function() PhysicsService:RegisterCollisionGroup("Item") end)
+pcall(function() PhysicsService:RegisterCollisionGroup("player") end)
+pcall(function() PhysicsService:RegisterCollisionGroup("Creature") end)
 
 -- Set collision rules
 PhysicsService:CollisionGroupSetCollidable("Item", "player", false)
@@ -11,12 +12,28 @@ PhysicsService:CollisionGroupSetCollidable("Creature", "Item", true)   -- Creatu
 
 local Players = game.Players
 
-Players.PlayerAdded:Connect(function(p)
-	p.CharacterAdded:Connect(function(c)
-		for _, d in ipairs(c:GetDescendants()) do
-			if d:IsA("MeshPart") or d:IsA("Part") then
-				d.CollisionGroup = "player"
-			end
+local function setCharacterCollisionGroup(char: Model)
+	for _, d in ipairs(char:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.CollisionGroup = "player"
+		end
+	end
+	-- Keep it consistent for any future parts (e.g., accessories)
+	char.DescendantAdded:Connect(function(d)
+		if d:IsA("BasePart") then
+			d.CollisionGroup = "player"
 		end
 	end)
+end
+
+-- Apply for existing players (in case this script starts after some have joined)
+for _, p in ipairs(Players:GetPlayers()) do
+	if p.Character then
+		setCharacterCollisionGroup(p.Character)
+	end
+	p.CharacterAdded:Connect(setCharacterCollisionGroup)
+end
+
+Players.PlayerAdded:Connect(function(p)
+	p.CharacterAdded:Connect(setCharacterCollisionGroup)
 end)

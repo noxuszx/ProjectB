@@ -123,6 +123,54 @@ local function canRetrieve()
     return hasContents
 end
 
+-- Heal (Bandage/Medkit) helpers
+local function getEquippedTool()
+    local char = player.Character
+    if not char then return nil end
+    return char:FindFirstChildOfClass("Tool")
+end
+
+local function getEquippedHealType()
+    local tool = getEquippedTool()
+    if not tool then return nil end
+    local name = string.lower(tool.Name)
+    if name == "bandage" or name == "medkit" then
+        return name -- "bandage" or "medkit"
+    end
+    return nil
+end
+
+local function canUseHeal()
+    local healType = getEquippedHealType()
+    if not healType then return false end
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    return hum.Health > 0 and hum.Health < hum.MaxHealth
+end
+
+local function activateHeal()
+    local tool = getEquippedTool()
+    if tool and tool.Activate then
+        tool:Activate()
+    end
+end
+
+local function getHealVisuals()
+    local healType = getEquippedHealType()
+    if healType == "medkit" then
+        return "Medkit", {
+            released = Color3.fromRGB(120, 255, 120), -- green
+            pressed  = Color3.fromRGB(90, 200, 90),   -- darker green
+        }
+    else -- default to bandage visuals
+        return "Bandage", {
+            released = Color3.fromRGB(100, 200, 255), -- light blue
+            pressed  = Color3.fromRGB(70, 150, 200),  -- darker blue
+        }
+    end
+end
+
 local function attemptFoodConsumption()
     if DEBUG_ENABLED then print("[MobileActionController] attemptFoodConsumption called") end
     if not player.Character or not player.Character.PrimaryPart then return end
@@ -183,6 +231,19 @@ local ACTIONS = {
             end
         end,
         visuals = function() return getDragVisual() end,
+    },
+{
+        key = "Heal",
+        actionName = "MobileHealUse",
+        canShow = canUseHeal,
+        onAction = function(_, inputState)
+            if inputState == Enum.UserInputState.Begin then
+                activateHeal()
+            end
+        end,
+        visuals = function()
+            return getHealVisuals()
+        end,
     },
     {
         key = "Store",
@@ -247,12 +308,13 @@ local cache = {}
 -- Custom positions for each action button (relative to jump button)
 local BUTTON_POSITIONS = {
     Drag     = UDim2.new(0.728, 0, -0.545, 0),      -- drag moved down from -0.745 to -0.545
-    Store    = UDim2.new(-1.472, 0, -0.312, 0),      -- store moved higher from 0.088 to -0.312 for more clearance
+    Store    = UDim2.new(-1.472, 0, -0.312, 0),     -- store moved higher from 0.088 to -0.312 for more clearance
     Retrieve = UDim2.new(-1.522, 0, -0.8, 0),       -- retrieve moved higher from -0.5 to -0.8 for more clearance
-    Weld     = UDim2.new(-0.522, 0, -0.062, 0),      -- weld moved down from -0.262 to -0.062
-    Eat      = UDim2.new(-0.522, 0, 0.688, 0),       -- eat moved down from 0.488 to 0.688
-    Rotate   = UDim2.new(-0.005, 0, -0.545, 0),      -- rotate moved down from -0.745 to -0.545
-    Axis     = UDim2.new(0.728, 0, -1.2, 0),         -- axis moved down from -1.4 to -1.2
+    Weld     = UDim2.new(-0.522, 0, -0.062, 0),     -- weld moved down from -0.262 to -0.062
+    Eat      = UDim2.new(-0.522, 0, 0.688, 0),      -- eat moved down from 0.488 to 0.688
+    Rotate   = UDim2.new(-0.005, 0, -0.545, 0),     -- rotate moved down from -0.745 to -0.545
+    Axis     = UDim2.new(0.728, 0, -1.2, 0),        -- axis moved down from -1.4 to -1.2
+    Heal     = UDim2.new(-0.005, 0, 0.188, 0),      -- near rotate
 }
 
 local function ensureBound(action)

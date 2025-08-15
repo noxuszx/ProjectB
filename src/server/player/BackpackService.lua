@@ -118,13 +118,26 @@ local function storeObjectInPool(object)
 	}
 end
 
--- Restore object from hidden state to world
-local function restoreObjectFromPool(poolData, position)
+-- Restore object from hidden state to world and set up physics/network ownership
+local function restoreObjectFromPool(poolData, position, ownerPlayer)
 	if not poolData or not poolData.object or not poolData.object.Parent then
 		return nil
 	end
 
 	local object = poolData.object
+
+	local function setOwnerAndKick(part)
+		if not part then return end
+		-- Ensure physics starts immediately
+		local ok1 = pcall(function()
+			part.AssemblyLinearVelocity = Vector3.new(0, -5, 0)
+		end)
+		-- Assign network ownership to the player who dropped it (entire assembly follows)
+		local ok2 = pcall(function()
+			part:SetNetworkOwner(ownerPlayer)
+		end)
+		return ok1 and ok2
+	end
 
 	-- Restore object visibility and position (already in workspace)
 	if object:IsA("BasePart") then
@@ -133,6 +146,7 @@ local function restoreObjectFromPool(poolData, position)
 		object.CanCollide = true
 		object.CanTouch = true
 		object.Anchored = false -- Unanchor for normal physics
+		setOwnerAndKick(object)
 	elseif object:IsA("Model") and object.PrimaryPart then
 		object:SetPrimaryPartCFrame(CFrame.new(position))
 
@@ -145,6 +159,7 @@ local function restoreObjectFromPool(poolData, position)
 				part.Anchored = false -- Unanchor for normal physics
 			end
 		end
+		setOwnerAndKick(object.PrimaryPart)
 	elseif object:IsA("Tool") then
 		-- Restore tool visibility
 		if object.Handle then
@@ -152,11 +167,12 @@ local function restoreObjectFromPool(poolData, position)
 			object.Handle.Transparency = 0
 			object.Handle.CanCollide = true
 			object.Handle.CanTouch = true
+			object.Handle.Anchored = false
+			setOwnerAndKick(object.Handle)
 		end
 	end
 
 	-- Object was never moved from workspace, just made visible again
-
 	return object
 end
 
@@ -253,7 +269,7 @@ function BackpackService.retrieveObject(player)
 
 	-- Restore object from pool to world
 	local dropPosition = getDropPosition(player)
-	local restoredObject = restoreObjectFromPool(poolData, dropPosition)
+	local restoredObject = restoreObjectFromPool(poolData, dropPosition, player)
 
 	if restoredObject then
 		return true, "Retrieved " .. poolData.name, backpack, restoredObject

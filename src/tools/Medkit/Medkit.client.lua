@@ -1,7 +1,7 @@
--- Bandage.client.lua
--- Shows a simple progress bar while using the Bandage tool and adds a mobile Use button.
+-- Medkit.client.lua
+-- Optional progress UI for Medkit, similar to Bandage.
 -- UI assumed in StarterGui:
---   ScreenGui "BandageProgressGui" (Enabled=false)
+--   ScreenGui "MedkitProgressGui" (Enabled=false)
 --     Frame "ProgressFrame"
 --       Frame "ProgressBar" (Size starts at UDim2.new(0,0,1,0))
 
@@ -12,7 +12,7 @@ local Tool = script.Parent
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local progressGui = playerGui:WaitForChild("BandageProgressGui", 5)
+local progressGui = playerGui:WaitForChild("MedkitProgressGui", 5)
 local progressFrame = progressGui and progressGui:WaitForChild("ProgressFrame", 5)
 local progressBar = progressFrame and progressFrame:WaitForChild("ProgressBar", 5)
 
@@ -37,14 +37,10 @@ local function hideProgress()
 end
 
 local function showProgress()
-	if not (progressGui and progressFrame and progressBar) then
-		return
-	end
+	if not (progressGui and progressFrame and progressBar) then return end
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not hum or hum.Health >= hum.MaxHealth or hum.Health <= 0 then
-		return
-	end
+	if not hum or hum.Health >= hum.MaxHealth or hum.Health <= 0 then return end
 
 	progressGui.Enabled = true
 	resetBar()
@@ -58,6 +54,7 @@ local function showProgress()
 			hideProgress()
 		end)
 		currentTween:Play()
+		-- Failsafe hide after duration
 		task.delay(USE_TIME + 0.2, function()
 			hideProgress()
 		end)
@@ -66,6 +63,7 @@ local function showProgress()
 	end
 end
 
+-- Keep client UseTime synced with Tool attribute
 Tool.Equipped:Connect(function()
 	local t = Tool:GetAttribute("UseTime")
 	if typeof(t) == "number" then
@@ -89,6 +87,7 @@ Tool.Unequipped:Connect(function()
 	hideProgress()
 end)
 
+-- Also hide when server marks use as complete or tool is being destroyed
 Tool:GetAttributeChangedSignal("UseComplete"):Connect(function()
 	hideProgress()
 end)

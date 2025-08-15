@@ -159,9 +159,6 @@
           }
         }
       },
-      "Tools": {
-        "$className": "Folder"
-      }
     },
     "ServerScriptService": {
       "Server": {

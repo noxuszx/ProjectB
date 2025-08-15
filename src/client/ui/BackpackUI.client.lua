@@ -1,27 +1,31 @@
 --[[
     BackpackUI.client.lua
-    Simple responsive counter UI for backpack that only shows when Backpack is equipped
+    Simple responsive counter UI for backpack that only shows when Backpack/Sack is equipped
 ]]
---
-
-local Players		   = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService     = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BackpackChanged = ReplicatedStorage.Remotes:WaitForChild("BackpackChanged")
 
-local player       = Players.LocalPlayer
-local playerGui    = player:WaitForChild("PlayerGui")
+-- Player References
+local player 	= Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Mobile detection
-local isMobile 	   = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+-- UI Elements
+local screenGui = playerGui:WaitForChild("SackGui")
+local mainFrame = screenGui:WaitForChild("SackFrame")
+local counterLabel 	 = mainFrame:WaitForChild("Counter")
+local mobileFrame 	 = nil
+local storeButton 	 = nil
+local retrieveButton = nil
 
-local screenGui    = playerGui:WaitForChild("SackGui")
-local mainFrame	   = screenGui:WaitForChild("SackFrame")
-local counterLabel = mainFrame:WaitForChild("Counter")
+local isMobile = UserInputService.TouchEnabled
+local currentItemCount = 0
+local sackEquipped = false
 
 counterLabel.TextSize = 12
-local mobileFrame 	  = nil
-local storeButton 	  = nil
-local retrieveButton  = nil
+
+---------------------------------------------------------------------------------------
 
 if isMobile then
 	mobileFrame = screenGui:WaitForChild("MobileButtons")
@@ -32,27 +36,18 @@ if isMobile then
 		repeat
 			task.wait(0.1)
 		until _G.BackpackController
-
 		storeButton.MouseButton1Click:Connect(function()
 			_G.BackpackController.storeCurrentObject()
 		end)
-
 		retrieveButton.MouseButton1Click:Connect(function()
 			_G.BackpackController.retrieveTopObject()
 		end)
 	end)
 end
 
-local currentItemCount = 0
-local sackEquipped = false
-
-local function showHint(message)
-end
-
 local function updateVisibility()
 	local shouldShow = sackEquipped
 	mainFrame.Visible = shouldShow
-
 	if isMobile and mobileFrame then
 		mobileFrame.Visible = shouldShow
 	end
@@ -60,11 +55,14 @@ end
 
 local function updateContents(contents)
 	currentItemCount = #contents
-	counterLabel.Text = currentItemCount .. "/10"
+	counterLabel.Text = string.format("%d/10", currentItemCount)
 	updateVisibility()
 end
 
--- Check if Backpack tool is equipped
+local function findSackTool(container)
+	return container:FindFirstChild("Backpack") or container:FindFirstChild("Sack")
+end
+
 local function checkSackEquipped()
 	local character = player.Character
 	if not character then
@@ -72,22 +70,16 @@ local function checkSackEquipped()
 		updateVisibility()
 		return
 	end
-
-	-- Check if Backpack is equipped in character
-	local sackTool = character:FindFirstChild("Backpack")
+	local sackTool = findSackTool(character)
 	sackEquipped = (sackTool ~= nil)
 	updateVisibility()
 end
 
--- Monitor for Backpack tool equipped/unequipped
 local function onCharacterAdded(character)
-	-- Monitor for tools being equipped (added to character)
 	character.ChildAdded:Connect(function(child)
-		if child.Name == "Backpack" and child:IsA("Tool") then
+		if (child.Name == "Backpack" or child.Name == "Sack") and child:IsA("Tool") then
 			sackEquipped = true
 			updateVisibility()
-
-			-- Monitor for when this specific tool is unequipped
 			child.AncestryChanged:Connect(function()
 				if child.Parent ~= character then
 					sackEquipped = false
@@ -96,19 +88,15 @@ local function onCharacterAdded(character)
 			end)
 		end
 	end)
-
-	-- Initial check
 	checkSackEquipped()
 end
 
 local function onBackpackAdded(child)
-	if child.Name == "Backpack" and child:IsA("Tool") then
-		-- Tool was added to backpack, monitor for equipping
+	if (child.Name == "Backpack" or child.Name == "Sack") and child:IsA("Tool") then
 		child.Equipped:Connect(function()
 			sackEquipped = true
 			updateVisibility()
 		end)
-
 		child.Unequipped:Connect(function()
 			sackEquipped = false
 			updateVisibility()
@@ -118,7 +106,7 @@ end
 
 player.Backpack.ChildAdded:Connect(onBackpackAdded)
 for _, tool in pairs(player.Backpack:GetChildren()) do
-	if tool.Name == "Backpack" and tool:IsA("Tool") then
+	if (tool.Name == "Backpack" or tool.Name == "Sack") and tool:IsA("Tool") then
 		onBackpackAdded(tool)
 	end
 end
@@ -127,6 +115,23 @@ if player.Character then
 	onCharacterAdded(player.Character)
 end
 player.CharacterAdded:Connect(onCharacterAdded)
+
+BackpackChanged.OnClientEvent:Connect(function(contents)
+	updateContents(contents or {})
+end)
+
+task.spawn(function()
+	repeat
+		task.wait(0.1)
+	until _G.BackpackController
+	local get = _G.BackpackController.getBackpackContents
+	if typeof(get) == "function" then
+		local ok, contents = pcall(get)
+		if ok and contents then
+			updateContents(contents)
+		end
+	end
+end)
 
 _G.BackpackUI = {
 	updateContents = updateContents,

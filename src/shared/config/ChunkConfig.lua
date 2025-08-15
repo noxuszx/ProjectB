@@ -20,7 +20,7 @@ ChunkConfig.NOISE_OCTAVES = 4  			-- Number of noise layers
 ChunkConfig.NOISE_PERSISTENCE = 0.5 	-- How much each octave contributes
 
 -- Visual parameters
-ChunkConfig.TERRAIN_MATERIAL = Enum.Material.Plastic
+ChunkConfig.TERRAIN_MATERIAL = Enum.Material.Sand
 ChunkConfig.TERRAIN_COLOR = Color3.fromRGB(235, 225, 169)
 
 -- Performance parameters

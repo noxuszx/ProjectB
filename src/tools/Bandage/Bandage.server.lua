@@ -1,26 +1,62 @@
 -- Bandage.server.lua
--- Minimal, reliable bandage: single file, optional short use time, no UI.
+-- Minimal, reliable bandage: optional short use time, no UI. Mobile-friendly.
 -- Place this script inside the Bandage Tool.
 
 local Players = game:GetService("Players")
 local Tool = script.Parent
 
--- Tweakables
-local HEAL_AMOUNT = 20           -- How much health to restore
-local DEFAULT_USE_TIME = 1.0     -- Fallback if Tool:GetAttribute("UseTime") is not set (set to 0 for instant)
-local COOLDOWN = 0.5             -- Prevent spam clicking
+pcall(function()
+	Tool.RequiresHandle = false
+end)
 
-local isUsing = false
-local lastUse = 0
+local DEFAULTS = {
+	HealAmount = 20, 
+	UseTime    = 1.0,
+	Cooldown   = 0.5,
+}
 
--- Heal the player by modifying the default Humanoid health only
-local function applyHeal(player, amount)
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
+local function getNumberAttribute(instance, name, fallback)
+	local v = instance:GetAttribute(name)
+	return typeof(v) == "number" and v or fallback
+end
+
+local function readConfig()
+	return {
+		HealAmount = getNumberAttribute(Tool, "HealAmount", DEFAULTS.HealAmount),
+		UseTime = getNumberAttribute(Tool, "UseTime", DEFAULTS.UseTime),
+		Cooldown = getNumberAttribute(Tool, "Cooldown", DEFAULTS.Cooldown),
+	}
+end
+
+local Controller = {
+	isUsing = false,
+	lastUse = 0,
+}
+
+local function getHumanoid(player)
+	local char = player and player.Character
+	return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+local function canUse(player)
+	local hum = getHumanoid(player)
 	if not hum then
 		return false
 	end
-	local before = hum.Health
+	if hum.Health <= 0 then
+		return false
+	end
+	if hum.Health >= hum.MaxHealth then
+		return false
+	end
+	return true
+end
+
+local function applyHeal(player, amount)
+	local hum = getHumanoid(player)
+	if not hum then
+		return false
+	end
 	local missing = math.max(0, hum.MaxHealth - hum.Health)
 	local toApply = math.min(amount, missing)
 	if toApply <= 0 then
@@ -30,72 +66,70 @@ local function applyHeal(player, amount)
 	return true
 end
 
-local function canUse(player)
-	if not player or not player.Character then return false end
-	local hum = player.Character:FindFirstChildOfClass("Humanoid")
-	if not hum then return false end
-	if hum.Health <= 0 then return false end
-	if hum.Health >= hum.MaxHealth then return false end
-	return true
+local function markUseComplete()
+	Tool:SetAttribute("UseComplete", os.clock())
 end
 
-local function onActivated(player)
-	if isUsing then
-		Tool:SetAttribute("UseComplete", os.clock())
-		return
+local function performUse(player)
+	local cfg = readConfig()
+
+	if Controller.isUsing then
+		return markUseComplete()
 	end
-	if os.clock() - lastUse < COOLDOWN then
-		Tool:SetAttribute("UseComplete", os.clock())
-		return
+	if os.clock() - Controller.lastUse < cfg.Cooldown then
+		return markUseComplete()
 	end
 	if not canUse(player) then
-		Tool:SetAttribute("UseComplete", os.clock())
-		return
+		return markUseComplete()
 	end
 
-	isUsing = true
-	lastUse = os.clock()
+	Controller.isUsing = true
+	Controller.lastUse = os.clock()
 
-	-- Optional short use time; cancel if tool is deactivated/unequipped
-	local useTime = Tool:GetAttribute("UseTime")
-	if typeof(useTime) ~= "number" then
-		useTime = DEFAULT_USE_TIME
-	end
 	local startTime = os.clock()
+	local useTime = cfg.UseTime
 	while useTime > 0 and (os.clock() - startTime) < useTime do
-		-- If tool got unequipped or player became invalid, cancel
-		if Tool.Parent == nil then isUsing = false break end
-		if not canUse(player) then isUsing = false break end
+		if Tool.Parent == nil then
+			Controller.isUsing = false
+			break
+		end
+		if not canUse(player) then
+			Controller.isUsing = false
+			break
+		end
 		task.wait(0.05)
 	end
 
-	if isUsing and canUse(player) then
-		local ok = applyHeal(player, HEAL_AMOUNT)
-		Tool:SetAttribute("UseComplete", os.clock())
+	if Controller.isUsing and canUse(player) then
+		local ok = applyHeal(player, cfg.HealAmount)
+		markUseComplete()
 		if ok then
 			task.defer(function()
 				Tool:Destroy()
 			end)
 		end
 	else
-		Tool:SetAttribute("UseComplete", os.clock())
+		markUseComplete()
 	end
 
-	isUsing = false
+	Controller.isUsing = false
 end
 
 Tool.Activated:Connect(function()
 	local player = Players:GetPlayerFromCharacter(Tool.Parent)
 	if player then
-		onActivated(player)
+		performUse(player)
 	end
 end)
 
--- Cancel use if player releases or unequips during the short use time
 Tool.Deactivated:Connect(function()
-	if isUsing then isUsing = false end
+	if Controller.isUsing then
+		Controller.isUsing = false
+	end
 end)
 
 Tool.Unequipped:Connect(function()
-	if isUsing then isUsing = false end
+	if Controller.isUsing then
+		Controller.isUsing = false
+	end
 end)
