@@ -15,7 +15,15 @@ local AMBIANCE_CONFIG = {
     },
     
     OVERLAP_CHANCE = 0.4,
-    MAX_SIMULTANEOUS = 3
+    MAX_SIMULTANEOUS = 3,
+    
+    -- Volume settings (0.0 to 1.0)
+    VOLUME = {
+        SAND_SLIDE = 0.2,
+        ANCIENT_MUSIC = 0.1,
+        SMALL_ROCKS = 0.1,
+        DEFAULT = 0.1
+    }
 }
 
 local activeSounds = {}
@@ -75,6 +83,10 @@ function DesertAmbiance:playSound(soundName)
     
     if sound and sound:IsA("Sound") then
         if not sound.IsPlaying then
+            -- Set volume based on config
+            local volume = self:getVolumeForSound(soundName)
+            sound.Volume = volume
+            
             sound:Play()
             
             activeSounds[soundName] = sound
@@ -87,6 +99,25 @@ function DesertAmbiance:playSound(soundName)
     else
         warn("Desert Ambiance: Sound '" .. soundName .. "' not found in SoundService")
     end
+end
+
+function DesertAmbiance:getVolumeForSound(soundName)
+    -- Check specific sound volumes
+    if soundName == AMBIANCE_CONFIG.SOUNDS.SAND_SLIDE then
+        return AMBIANCE_CONFIG.VOLUME.SAND_SLIDE
+    elseif soundName == AMBIANCE_CONFIG.SOUNDS.ANCIENT_MUSIC then
+        return AMBIANCE_CONFIG.VOLUME.ANCIENT_MUSIC
+    else
+        -- Check if it's a small rocks sound
+        for _, rockSound in ipairs(AMBIANCE_CONFIG.SOUNDS.SMALL_ROCKS) do
+            if soundName == rockSound then
+                return AMBIANCE_CONFIG.VOLUME.SMALL_ROCKS
+            end
+        end
+    end
+    
+    -- Default volume
+    return AMBIANCE_CONFIG.VOLUME.DEFAULT
 end
 
 function DesertAmbiance:getActiveSounds()

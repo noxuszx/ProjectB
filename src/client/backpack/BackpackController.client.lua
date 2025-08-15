@@ -9,6 +9,15 @@ local UserInputService      = game:GetService("UserInputService")
 local ContextActionService  = game:GetService("ContextActionService")
 local ReplicatedStorage     = game:GetService("ReplicatedStorage")
 local Players               = game:GetService("Players")
+local SoundService          = game:GetService("SoundService")
+local ContentProvider       = game:GetService("ContentProvider")
+
+-- Sound configuration
+local BACKPACK_SOUNDS = {
+	STORE_SOUND_ID = "rbxassetid://99564490958733",
+	UNSTORE_SOUND_ID = "rbxassetid://9113819353", 
+	VOLUME = 0.5
+}
 
 local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local player  = Players.LocalPlayer
@@ -33,6 +42,29 @@ local lastStoreTime  = 0
 local currentBackpackContents = {}
 local lastUIHint     = ""
 
+-- Track last locally played sound to suppress duplicate server-triggered sound
+local lastSoundType  = nil
+local lastSoundTime  = 0
+
+-- Define sound helper before any calls to it
+local function playBackpackSound(soundType)
+	local soundId = BACKPACK_SOUNDS[soundType]
+	if soundId and soundId ~= "" then
+		lastSoundType = soundType
+		lastSoundTime = os.clock()
+
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = BACKPACK_SOUNDS.VOLUME
+		sound.Parent = SoundService
+		sound:Play()
+		
+		sound.Ended:Connect(function()
+			sound:Destroy()
+		end)
+	end
+end
+
 -- Mobile detection
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
@@ -53,6 +85,9 @@ local function storeCurrentObject()
 		return
 	end
 
+	-- Play sound immediately client-side to avoid roundtrip latency
+	playBackpackSound("STORE_SOUND_ID")
+
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestStore", target)
 end
@@ -62,6 +97,9 @@ local function retrieveTopObject()
 	if currentTime - lastStoreTime < STORE_COOLDOWN then
 		return
 	end
+
+	-- Play sound immediately client-side to avoid roundtrip latency
+	playBackpackSound("UNSTORE_SOUND_ID")
 
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestRetrieve")
@@ -96,6 +134,12 @@ BackpackEvent.OnClientEvent:Connect(function(action, ...)
 	elseif action == "Error" then
 		local errorMessage = args[1] or "Unknown error"
 		showUIHint(errorMessage)
+elseif action == "PlaySound" then
+		local soundType = args[1]
+		-- Suppress duplicate if we just played this locally very recently
+		if not (soundType == lastSoundType and os.clock() - lastSoundTime < 0.3) then
+			playBackpackSound(soundType)
+		end
 	end
 end)
 
@@ -155,6 +199,22 @@ end
 
 -- Initialize
 setupMobileButtons()
+
+-- Preload backpack sounds to avoid decode/stream delay on first play
+task.spawn(function()
+	local toPreload = {}
+	if BACKPACK_SOUNDS.STORE_SOUND_ID and BACKPACK_SOUNDS.STORE_SOUND_ID ~= "" then
+		table.insert(toPreload, BACKPACK_SOUNDS.STORE_SOUND_ID)
+	end
+	if BACKPACK_SOUNDS.UNSTORE_SOUND_ID and BACKPACK_SOUNDS.UNSTORE_SOUND_ID ~= "" then
+		table.insert(toPreload, BACKPACK_SOUNDS.UNSTORE_SOUND_ID)
+	end
+	if #toPreload > 0 then
+		pcall(function()
+			ContentProvider:PreloadAsync(toPreload)
+		end)
+	end
+end)
 
 BackpackEvent:FireServer("RequestSync")
 

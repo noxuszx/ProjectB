@@ -193,6 +193,12 @@ RS.RenderStepped:Connect(function(dT)
 	end
 
 	if carrying and currTargs ~= nil then
+		-- If the carried target was removed from the world (e.g., sold or destroyed), force-drop locally
+		if not currTargs.Parent then
+			DropItem(false)
+			highlight.Parent = nil
+			return
+		end
 		if hasAnchoredParts(currTargs) then
 			showWeldFeedback("Can't move - attached to anchored object", 1)
 			DropItem(false)

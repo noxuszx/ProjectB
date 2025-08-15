@@ -23,6 +23,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
             BackpackEvent:FireClient(player, "Sync", contents, message)
             -- Fire instant update event
             BackpackChanged:FireClient(player, contents)
+            -- Play store sound
+            BackpackEvent:FireClient(player, "PlaySound", "STORE_SOUND_ID")
         else
             BackpackEvent:FireClient(player, "Error", message)
         end
@@ -35,6 +37,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
             BackpackEvent:FireClient(player, "Sync", contents, message)
             -- Fire instant update event
             BackpackChanged:FireClient(player, contents)
+            -- Play unstore sound
+            BackpackEvent:FireClient(player, "PlaySound", "UNSTORE_SOUND_ID")
         else
             BackpackEvent:FireClient(player, "Error", message)
         end

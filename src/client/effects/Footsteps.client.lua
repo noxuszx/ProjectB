@@ -16,14 +16,12 @@ local function getCharacter()
 end
 
 local character, humanoid, root = getCharacter()
-
--- Require FootstepModule from ReplicatedStorage.Shared.modules
 local FootstepModule = require(game:GetService("ReplicatedStorage").Shared.modules.FootstepModule)
 
 -- Single reusable sound instance
 local footstep = Instance.new("Sound")
 footstep.Name = "Footstep"
-footstep.Volume = 0.6
+footstep.Volume = 0.2
 footstep.RollOffMaxDistance = 50
 footstep.Parent = root
 
@@ -31,46 +29,91 @@ footstep.Parent = root
 local grounded = true
 local currentMaterial: Enum.Material? = humanoid.FloorMaterial
 
-humanoid:GetPropertyChangedSignal("FloorMaterial"):Connect(function()
-	currentMaterial = humanoid.FloorMaterial
-end)
+-- Connection handles to rebind on respawn
+local floorConn: RBXScriptConnection? = nil
+local stateConn: RBXScriptConnection? = nil
+local rootConn: RBXScriptConnection? = nil
 
-humanoid.StateChanged:Connect(function(_, newState)
-	if newState == Enum.HumanoidStateType.Freefall
-		or newState == Enum.HumanoidStateType.Jumping
-		or newState == Enum.HumanoidStateType.FallingDown
-		or newState == Enum.HumanoidStateType.Swimming
-		or newState == Enum.HumanoidStateType.Seated then
-		grounded = false
-	elseif newState == Enum.HumanoidStateType.Running
-		or newState == Enum.HumanoidStateType.RunningNoPhysics
-		or newState == Enum.HumanoidStateType.Landed
-		or newState == Enum.HumanoidStateType.GettingUp then
-		grounded = true
+local function bindHumanoid(h: Humanoid)
+	-- cleanup old
+	if floorConn then
+		floorConn:Disconnect()
+		floorConn = nil
 	end
-end)
+	if stateConn then
+		stateConn:Disconnect()
+		stateConn = nil
+	end
+	if rootConn then
+		rootConn:Disconnect()
+		rootConn = nil
+	end
 
--- Re-attach sound if character respawns
+	currentMaterial = h.FloorMaterial
+	grounded = true
+
+	floorConn = h:GetPropertyChangedSignal("FloorMaterial"):Connect(function()
+		currentMaterial = h.FloorMaterial
+	end)
+
+	stateConn = h.StateChanged:Connect(function(_, newState)
+		if
+			newState == Enum.HumanoidStateType.Freefall
+			or newState == Enum.HumanoidStateType.Jumping
+			or newState == Enum.HumanoidStateType.FallingDown
+			or newState == Enum.HumanoidStateType.Swimming
+			or newState == Enum.HumanoidStateType.Seated
+		then
+			grounded = false
+		elseif
+			newState == Enum.HumanoidStateType.Running
+			or newState == Enum.HumanoidStateType.RunningNoPhysics
+			or newState == Enum.HumanoidStateType.Landed
+			or newState == Enum.HumanoidStateType.GettingUp
+		then
+			grounded = true
+		end
+	end)
+
+	-- Ensure we follow root replacement too
+	rootConn = h:GetPropertyChangedSignal("RootPart"):Connect(function()
+		if h.RootPart then
+			root = h.RootPart
+			footstep.Parent = root
+		end
+	end)
+end
+
+bindHumanoid(humanoid)
+
+-- Re-attach sound and listeners if character respawns
 player.CharacterAdded:Connect(function()
 	character, humanoid, root = getCharacter()
-	currentMaterial = humanoid.FloorMaterial
 	footstep.Parent = root
-	grounded = true
+	bindHumanoid(humanoid)
 end)
 
 -- Simple step timing based on speed
 local lastStep = 0
 RunService.Heartbeat:Connect(function(dt)
-	if not grounded then return end
-	if not currentMaterial or currentMaterial == Enum.Material.Air then return end
+	if not grounded then
+		return
+	end
+	if not currentMaterial or currentMaterial == Enum.Material.Air then
+		return
+	end
 
 	local speed = root.AssemblyLinearVelocity.Magnitude
-	if speed < 1.0 then return end
+	if speed < 1.0 then
+		return
+	end
 
 	-- Interval scales with speed (clamped)
 	local interval = math.clamp(6.0 / math.max(speed, 1), 0.18, 0.5)
 	lastStep += dt
-	if lastStep < interval then return end
+	if lastStep < interval then
+		return
+	end
 	lastStep = 0
 
 	local tableForMat = FootstepModule:GetTableFromMaterial(currentMaterial)
@@ -80,7 +123,9 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 
 	local id = FootstepModule:GetRandomSound(tableForMat)
-	if not id or id == "" then return end
+	if not id or id == "" then
+		return
+	end
 
 	footstep.SoundId = id
 	footstep.PlaybackSpeed = 0.95 + math.random() * 0.1

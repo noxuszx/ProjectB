@@ -129,28 +129,43 @@ local function restoreObjectFromPool(poolData, position, ownerPlayer)
 	local function setOwnerAndKick(part)
 		if not part then return end
 		-- Ensure physics starts immediately
-		local ok1 = pcall(function()
-			part.AssemblyLinearVelocity = Vector3.new(0, -5, 0)
+		pcall(function()
+			-- tiny nudge downward to wake physics
+			part.AssemblyLinearVelocity = (part.AssemblyLinearVelocity or Vector3.zero) + Vector3.new(0, -5, 0)
 		end)
-		-- Assign network ownership to the player who dropped it (entire assembly follows)
-		local ok2 = pcall(function()
+		-- Assign temporary network ownership to the player for smoothness
+		pcall(function()
 			part:SetNetworkOwner(ownerPlayer)
 		end)
-		return ok1 and ok2
+	end
+
+	local function clearOwnershipLater(part)
+		if not part then return end
+		task.delay(0.35, function()
+			pcall(function()
+				if part.Parent then
+					part:SetNetworkOwner(nil)
+				end
+			end)
+		end)
 	end
 
 	-- Restore object visibility and position (already in workspace)
+	local rootPartForClear = nil
 	if object:IsA("BasePart") then
+		-- Place and unanchor the single part
 		object.CFrame = CFrame.new(position)
 		object.Transparency = poolData.originalTransparency or 0
 		object.CanCollide = true
 		object.CanTouch = true
 		object.Anchored = false -- Unanchor for normal physics
 		setOwnerAndKick(object)
+		rootPartForClear = object
 	elseif object:IsA("Model") and object.PrimaryPart then
-		object:SetPrimaryPartCFrame(CFrame.new(position))
+		-- Place entire model using PivotTo
+		object:PivotTo(CFrame.new(position))
 
-		-- Restore transparency for all parts in model
+		-- Restore transparency and unanchor for all parts in model
 		for _, part in pairs(object:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Transparency = poolData.originalTransparencies and poolData.originalTransparencies[part] or 0
@@ -160,6 +175,7 @@ local function restoreObjectFromPool(poolData, position, ownerPlayer)
 			end
 		end
 		setOwnerAndKick(object.PrimaryPart)
+		rootPartForClear = object.PrimaryPart
 	elseif object:IsA("Tool") then
 		-- Restore tool visibility
 		if object.Handle then
@@ -169,7 +185,13 @@ local function restoreObjectFromPool(poolData, position, ownerPlayer)
 			object.Handle.CanTouch = true
 			object.Handle.Anchored = false
 			setOwnerAndKick(object.Handle)
+			rootPartForClear = object.Handle
 		end
+	end
+
+	-- Return ownership to server after a short grace period so zones are authoritative
+	if rootPartForClear then
+		clearOwnershipLater(rootPartForClear)
 	end
 
 	-- Object was never moved from workspace, just made visible again

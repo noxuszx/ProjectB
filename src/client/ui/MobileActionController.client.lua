@@ -34,6 +34,9 @@ if DEBUG_ENABLED then print("[MobileActionController] CollectionServiceTags load
 local ContextActionUtility = require(ReplicatedStorage.Shared.modules.ContextActionUtility)
 if DEBUG_ENABLED then print("[MobileActionController] ContextActionUtility loaded") end
 
+local WeaponConfig = require(ReplicatedStorage.Shared.config.WeaponConfig)
+if DEBUG_ENABLED then print("[MobileActionController] WeaponConfig loaded") end
+
 -- Wait for globals provided by other controllers
 if DEBUG_ENABLED then print("[MobileActionController] Waiting for _G.InteractableHandler...") end
 repeat task.wait(0.05) until _G.InteractableHandler
@@ -118,9 +121,11 @@ local function isCarrying()
 end
 
 local function canRetrieve()
-    local contents = Backpack.getBackpackContents()
-    local hasContents = contents and #contents > 0
-    return hasContents
+	-- Only allow retrieve (Unstore) when the backpack/sack is actually equipped
+	if not backpackEquipped() then return false end
+	local contents = Backpack.getBackpackContents()
+	local hasContents = contents and #contents > 0
+	return hasContents
 end
 
 -- Heal (Bandage/Medkit) helpers
@@ -128,6 +133,14 @@ local function getEquippedTool()
     local char = player.Character
     if not char then return nil end
     return char:FindFirstChildOfClass("Tool")
+end
+
+local function isMeleeEquipped()
+    local tool = getEquippedTool()
+    if not tool then return false end
+    -- Avoid noisy warnings for non-weapon tools by checking tables directly
+    local meleeCfg = WeaponConfig.MeleeWeapons and WeaponConfig.MeleeWeapons[tool.Name]
+    return meleeCfg ~= nil
 end
 
 local function getEquippedHealType()
@@ -222,6 +235,18 @@ end
 -- ACTIONS registry in priority order (1=highest priority for slot assignment)
 local ACTIONS = {
     {
+        key = "Melee",
+        actionName = "MobileMelee",
+        canShow = isMeleeEquipped,
+        onAction = function(_, inputState)
+            if inputState == Enum.UserInputState.Begin then
+                local tool = getEquippedTool()
+                if tool and tool.Activate then tool:Activate() end
+            end
+        end,
+        visuals = function() return "", {released=Color3.fromRGB(255,255,255), pressed=Color3.fromRGB(200,80,80)} end,
+    },
+    {
         key = "Drag",
         actionName = "MobileDrag",
         canShow = function() return canDrag() or isCarrying() end,
@@ -309,21 +334,35 @@ local cache = {}
 local BUTTON_POSITIONS = {
     Drag     = UDim2.new(0.728, 0, -0.545, 0),      -- drag moved down from -0.745 to -0.545
     Store    = UDim2.new(-1.472, 0, -0.312, 0),     -- store moved higher from 0.088 to -0.312 for more clearance
-    Retrieve = UDim2.new(-1.522, 0, -0.8, 0),       -- retrieve moved higher from -0.5 to -0.8 for more clearance
+    Retrieve = UDim2.new(-1.472, 0, -1, 0),       -- retrieve moved higher from -0.5 to -0.8 for more clearance
     Weld     = UDim2.new(-0.522, 0, -0.062, 0),     -- weld moved down from -0.262 to -0.062
     Eat      = UDim2.new(-0.522, 0, 0.688, 0),      -- eat moved down from 0.488 to 0.688
     Rotate   = UDim2.new(-0.005, 0, -0.545, 0),     -- rotate moved down from -0.745 to -0.545
     Axis     = UDim2.new(0.728, 0, -1.2, 0),        -- axis moved down from -1.4 to -1.2
     Heal     = UDim2.new(-0.005, 0, 0.188, 0),      -- near rotate
+    Melee    = UDim2.new(-1.472, 0, -0.312, 0),     -- same spot as Store for reachability
 }
 
 local function ensureBound(action)
     local success, err = pcall(function()
         ContextActionUtility:BindAction(action.actionName, action.onAction, true)
         local title, colors = action.visuals()
-        ContextActionUtility:SetTitle(action.actionName, title)
+        if title and title ~= "" then
+            ContextActionUtility:SetTitle(action.actionName, title)
+        else
+            local btn = ContextActionUtility:GetButton(action.actionName)
+            if btn then
+                local t = btn:FindFirstChild("title")
+                if t then t.Visible = false end
+            end
+        end
         ContextActionUtility:SetReleasedColor(action.actionName, colors.released)
         ContextActionUtility:SetPressedColor(action.actionName, colors.pressed)
+        
+        -- Set icon for actions that have one
+        if action.key == "Melee" then
+            ContextActionUtility:SetImage(action.actionName, "rbxassetid://5754154247")
+        end
         
         -- Override position with our custom position
         task.defer(function()
@@ -374,9 +413,17 @@ local function update()
             
             -- Update visuals only if changed (performance optimization)
             local title, colors = action.visuals()
-            if cache[action.key..":title"] ~= title then
-                ContextActionUtility:SetTitle(action.actionName, title)
-                cache[action.key..":title"] = title
+            if cache[action.key..":title"] ~= (title or "") then
+                if title and title ~= "" then
+                    ContextActionUtility:SetTitle(action.actionName, title)
+                else
+                    local btn = ContextActionUtility:GetButton(action.actionName)
+                    if btn then
+                        local t = btn:FindFirstChild("title")
+                        if t then t.Visible = false end
+                    end
+                end
+                cache[action.key..":title"] = title or ""
             end
             
             local rKey, pKey = action.key..":rc", action.key..":pc"

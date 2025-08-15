@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
+local ContextActionUtility = require(ReplicatedStorage.Shared.modules.ContextActionUtility)
 
 -- Tool and player references
 local tool = script.Parent
@@ -29,6 +30,10 @@ local weaponRemote: RemoteEvent? = nil
 -- Animation (optional). If unavailable, we fall back to legacy toolanim
 local ATTACK_ANIMATION_ID = "rbxassetid://81865375741678" -- Replace with a real animation ID
 local attackTrack: AnimationTrack? = nil
+
+-- Swing sound (placeholder SoundId - replace with your own)
+local SWING_SOUND_ID = "rbxassetid://0000000000"
+local swingSound: Sound? = nil
 
 local function initRemote()
     local remotes = ReplicatedStorage:FindFirstChild("Remotes")
@@ -144,11 +149,27 @@ local function createRangeVisual(originPos: Vector3, range: number)
     Debris:AddItem(sphere, 0.25)
 end
 
+local function getOrCreateSwingSound()
+    if not swingSound then
+        swingSound = Instance.new("Sound")
+        swingSound.Name = "SwingSound"
+        swingSound.SoundId = SWING_SOUND_ID
+        swingSound.Volume = 0.6
+        swingSound.RollOffMode = Enum.RollOffMode.InverseTapered
+        swingSound.Parent = tool
+    end
+    return swingSound
+end
+
 local function executeAttack()
     if onCooldown() then return false end
     if not character or not character.PrimaryPart then return false end
 
     lastAttackTime = os.clock()
+
+    -- Play swing SFX
+    local s = getOrCreateSwingSound()
+    if s then s:Play() end
 
     -- Play animation
     playAttackAnimation()
@@ -179,11 +200,24 @@ tool.Equipped:Connect(function()
         initRemote()
     end
     setupAnimation()
+
+    -- Bind mobile action button via ContextActionUtility
+ContextActionUtility:BindAction("MeleeAttack", function(actionName, inputState)
+        if inputState == Enum.UserInputState.Begin then
+            executeAttack()
+        end
+    end, true)
+    ContextActionUtility:SetTitle("MeleeAttack", "Hit")
+    ContextActionUtility:SetImage("MeleeAttack", "rbxassetid://5754154247") -- Sword icon
 end)
 
 tool.Unequipped:Connect(function()
     isEquipped = false
     character = nil
+    -- Unbind mobile action button
+    pcall(function()
+        ContextActionUtility:UnbindAction("MeleeAttack")
+    end)
 end)
 
 tool.Activated:Connect(function()

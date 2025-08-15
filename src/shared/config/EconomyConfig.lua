@@ -144,12 +144,12 @@ local EconomyConfig = {
 	},
 	
 	-- Performance settings
-	Performance = {
+		Performance = {
 		BatchUpdatesEnabled = true, -- Batch money updates to reduce network calls
 		UpdateBatchSize = 5, -- Max operations per batch
-		TouchDebounceTime = 0.1,
+		TouchDebounceTime = 0.3,
 		HighlightUpdateRate = 0.5,
-	},
+		},
 	
 	-- Debug settings
 	Debug = {

@@ -8,16 +8,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BackpackChanged = ReplicatedStorage.Remotes:WaitForChild("BackpackChanged")
 
 -- Player References
-local player 	= Players.LocalPlayer
+local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- UI Elements
 local screenGui = playerGui:WaitForChild("SackGui")
 local mainFrame = screenGui:WaitForChild("SackFrame")
-local counterLabel 	 = mainFrame:WaitForChild("Counter")
-local mobileFrame 	 = nil
-local storeButton 	 = nil
-local retrieveButton = nil
+local counterLabel = mainFrame:WaitForChild("Counter")
 
 local isMobile = UserInputService.TouchEnabled
 local currentItemCount = 0
@@ -27,31 +24,12 @@ counterLabel.TextSize = 12
 
 ---------------------------------------------------------------------------------------
 
-if isMobile then
-	mobileFrame = screenGui:WaitForChild("MobileButtons")
-	storeButton = mobileFrame:WaitForChild("StoreButton")
-	retrieveButton = mobileFrame:WaitForChild("RetrieveButton")
-
-	task.spawn(function()
-		repeat
-			task.wait(0.1)
-		until _G.BackpackController
-		storeButton.MouseButton1Click:Connect(function()
-			_G.BackpackController.storeCurrentObject()
-		end)
-		retrieveButton.MouseButton1Click:Connect(function()
-			_G.BackpackController.retrieveTopObject()
-		end)
-	end)
-end
-
 local function updateVisibility()
 	local shouldShow = sackEquipped
 	mainFrame.Visible = shouldShow
-	if isMobile and mobileFrame then
-		mobileFrame.Visible = shouldShow
-	end
+	-- Mobile action buttons are handled by MobileActionController (no binding here)
 end
+
 
 local function updateContents(contents)
 	currentItemCount = #contents

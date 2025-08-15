@@ -11,8 +11,10 @@ local PlayerStatsConfig = {
 
 	TICK_INTERVAL = 1,
 
-	HUNGER_DECAY_PER_TICK = 0.5,
-	THIRST_DECAY_PER_TICK = 0.75,
+	-- Hunger lasts 3 minutes (180 seconds): 100 / 180 = ~0.556 per second
+	HUNGER_DECAY_PER_TICK = 0.556,
+	-- Thirst lasts 2.5 minutes (150 seconds): 100 / 150 = ~0.667 per second  
+	THIRST_DECAY_PER_TICK = 0.667,
 
 	STARVATION_DAMAGE_PER_TICK = 2,
 	DEHYDRATION_DAMAGE_PER_TICK = 3,

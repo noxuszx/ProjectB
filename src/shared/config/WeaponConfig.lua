@@ -128,7 +128,7 @@ WeaponConfig.MeleeWeapons = {
 	Machete = {
 		Damage = 40,
 		Range = 10,
-		Cooldown = 0.4, -- Slow but powerful
+		Cooldown = 0.6, -- Slow but powerful
 		SwingDuration = 0.4,
 		Animation = "Slash",
 		HitEffect = {
@@ -149,10 +149,10 @@ WeaponConfig.GlobalSettings = {
 		FilterDescendantsInstances = {},
 	},
 	Debug = {
-		ShowRaycast = true,
-		PrintHitInfo = true,
+		ShowRaycast = false,
+		PrintHitInfo = false,
 		ShowCooldownUI = false,
-		ShowMeleeRange = true,
+		ShowMeleeRange = false,
 	},
 }
 
