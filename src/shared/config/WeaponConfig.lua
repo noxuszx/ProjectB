@@ -132,13 +132,13 @@ WeaponConfig.GlobalSettings = {
     DefaultDamage = 20,      -- Fallback damage if weapon not configured
     RaycastParams = {
         FilterType = Enum.RaycastFilterType.Blacklist,
-        FilterDescendantsInstances = {}, -- Will be populated with player characters
+        FilterDescendantsInstances = {},
     },
     Debug = {
-        ShowRaycast = false,     -- Visualize raycast in 3D world
-        PrintHitInfo = true,     -- Print hit information to console
-        ShowCooldownUI = false,  -- Show cooldown indicator (future feature)
-        ShowMeleeRange = false,  -- When true (client), draw a translucent sphere indicating melee range on attack
+        ShowRaycast = true,
+        PrintHitInfo = true,
+        ShowCooldownUI = false,
+        ShowMeleeRange = true,
     }
 }
 

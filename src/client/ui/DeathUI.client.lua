@@ -30,6 +30,7 @@ local isShowingDeathUI = false
 local countdownThread = nil
 
 local reviveConn, lobbyConn, reviveAllConn = nil, nil, nil
+local deathGuiAncestryConn = nil
 
 local function bindGuiElements()
 	if not deathGui then
@@ -41,7 +42,7 @@ local function bindGuiElements()
 	deathFrame 		= deathGui:WaitForChild("DeathFrame")
 	reviveButton 	= deathFrame:WaitForChild("ReviveBTN")
 	lobbyButton 	= deathFrame:WaitForChild("LobbyBTN")
-	reviveAllButton = deathFrame:FindFirstChild("RevivAllBTN")
+	reviveAllButton = deathFrame:FindFirstChild("ReviveAllBTN") or deathFrame:FindFirstChild("RevivAllBTN")
 
 	if reviveConn then
 		reviveConn:Disconnect()
@@ -116,12 +117,12 @@ local function resolveDeathGui()
 
 	deathGui.DisplayOrder = 100
 
-	-- Avoid stacking multiple ancestry connections
-	if deathGui._ancestryConn then
-		deathGui._ancestryConn:Disconnect()
-		deathGui._ancestryConn = nil
+	-- Avoid stacking multiple ancestry connections (store connection in a local, not on the Instance)
+	if deathGuiAncestryConn then
+		deathGuiAncestryConn:Disconnect()
+		deathGuiAncestryConn = nil
 	end
-	deathGui._ancestryConn = deathGui.AncestryChanged:Connect(function(_, parent)
+	deathGuiAncestryConn = deathGui.AncestryChanged:Connect(function(_, parent)
 		if parent == nil then
 			task.defer(function()
 				if deathGui and not deathGui.Parent then
