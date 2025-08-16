@@ -4,79 +4,54 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local WaterBottleService = require(script.Parent.WaterBottleService)
 
--- Create BindableEvent for server-to-server communication with water bottle
-local refillBindable = ReplicatedStorage:FindFirstChild("RefillWaterBottleBindable")
-if not refillBindable then
-	refillBindable = Instance.new("BindableEvent")
-	refillBindable.Name = "RefillWaterBottleBindable"
-	refillBindable.Parent = ReplicatedStorage
-end
+local DEBUG = false
 
 local WaterRefillManager = {}
 local refillPrompts = {}
-local playerConnections = {} -- Track player equipment connections
 
-local function updatePromptVisibility(part, player, hasWaterBottle)
-	local prompt = refillPrompts[part]
-	if not prompt then
+local function resolveHost(instance)
+	if instance:IsA("BasePart") or instance:IsA("Attachment") then
+		return instance
+	end
+	if instance:IsA("Model") then
+		if instance.PrimaryPart then return instance.PrimaryPart end
+		local bp = instance:FindFirstChildWhichIsA("BasePart", true)
+		if bp then return bp end
+	end
+	local bp = instance:FindFirstChildWhichIsA("BasePart", true)
+	return bp
+end
+
+local function createProximityPrompt(taggedInstance)
+	local host = resolveHost(taggedInstance)
+	if not host then
 		return
 	end
-
-	-- Show prompt only to players who have water bottle equipped
-	if hasWaterBottle then
-		prompt.Enabled = true
-	else
-		prompt.Enabled = false
-	end
-end
-
-local function checkAllPlayersForBottle(part)
-	-- Check all players and update prompt visibility accordingly
-	local anyPlayerHasBottle = false
-
-	for _, player in pairs(Players:GetPlayers()) do
-		if player.Character and player.Character:FindFirstChild("Water Bottle") then
-			anyPlayerHasBottle = true
-			break
-		end
-	end
-
-	local prompt = refillPrompts[part]
-	if prompt then
-		prompt.Enabled = anyPlayerHasBottle
-	end
-end
-
-local function createProximityPrompt(part)
-	if refillPrompts[part] then
+	if refillPrompts[host] then
 		return
 	end
 
 	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "WaterRefillPrompt"
 	prompt.ActionText = "Refill"
 	prompt.ObjectText = "Water Bottle"
-	prompt.HoldDuration = 2.0
-	prompt.MaxActivationDistance = 8
+	prompt.HoldDuration = 0.75
+	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
-	prompt.Enabled = false
-	prompt.Parent = part
+	prompt.Enabled = true
+	prompt.Parent = host
 
-	-- Store reference
-	refillPrompts[part] = prompt
+	refillPrompts[host] = prompt
 
-	local function onPromptTriggered(player)
-		-- Use BindableEvent to communicate with water bottle script
-		refillBindable:Fire(player)
-	end
-
-	prompt.Triggered:Connect(onPromptTriggered)
-
-	-- Check initial state
-	checkAllPlayersForBottle(part)
+	prompt.Triggered:Connect(function(player)
+		if DEBUG then print("[WaterRefillManager] local trigger", player and player.Name, host:GetFullName()) end
+		WaterBottleService.Refill(player)
+	end)
 end
 
 local function removeProximityPrompt(part)
@@ -87,73 +62,36 @@ local function removeProximityPrompt(part)
 	end
 end
 
-local function updateAllPrompts()
-	for part, _ in pairs(refillPrompts) do
-		checkAllPlayersForBottle(part)
-	end
-end
-
-local function setupPlayerTracking(player)
-	local function onCharacterAdded(character)
-		if playerConnections[player] then
-			for _, connection in pairs(playerConnections[player]) do
-				connection:Disconnect()
-			end
-		end
-		playerConnections[player] = {}
-		local function onChildAdded(child)
-			if child.Name == "Water Bottle" then
-				updateAllPrompts()
-			end
-		end
-
-		local function onChildRemoved(child)
-			if child.Name == "Water Bottle" then
-				updateAllPrompts()
-			end
-		end
-
-		playerConnections[player][#playerConnections[player] + 1] = character.ChildAdded:Connect(onChildAdded)
-		playerConnections[player][#playerConnections[player] + 1] = character.ChildRemoved:Connect(onChildRemoved)
-
-		-- Initial update
-		updateAllPrompts()
-	end
-
-	if player.Character then
-		onCharacterAdded(player.Character)
-	end
-
-	player.CharacterAdded:Connect(onCharacterAdded)
-end
-
-local function cleanupPlayerTracking(player)
-	if playerConnections[player] then
-		for _, connection in pairs(playerConnections[player]) do
-			connection:Disconnect()
-		end
-		playerConnections[player] = nil
-	end
-
-	-- Update prompts since player left
-	updateAllPrompts()
-end
-
 function WaterRefillManager.init()
+	if not _G.__WaterBottleServiceInit then
+		_G.__WaterBottleServiceInit = true
+		WaterBottleService.Init()
+	end
 	local taggedParts = CollectionService:GetTagged(CollectionServiceTags.WATER_REFILL_SOURCE)
 	for _, part in pairs(taggedParts) do
 		createProximityPrompt(part)
 	end
 
-	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(createProximityPrompt)
-	CollectionService:GetInstanceRemovedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(removeProximityPrompt)
+	CollectionService:GetInstanceAddedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(function(inst)
+		createProximityPrompt(inst)
+	end)
+	CollectionService:GetInstanceRemovedSignal(CollectionServiceTags.WATER_REFILL_SOURCE):Connect(function(inst)
+		removeProximityPrompt(inst)
+		local host = (function()
+			if inst:IsA("BasePart") then return inst end
+			local h = inst:FindFirstChildWhichIsA("BasePart", true)
+			return h
+		end)()
+		if host then removeProximityPrompt(host) end
+	end)
 
-	for _, player in pairs(Players:GetPlayers()) do
-		setupPlayerTracking(player)
-	end
-
-	Players.PlayerAdded:Connect(setupPlayerTracking)
-	Players.PlayerRemoving:Connect(cleanupPlayerTracking)
+	-- Global fallback (silent by default)
+	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+		if prompt and prompt.Name == "WaterRefillPrompt" then
+			if DEBUG then print("[WaterRefillManager] global trigger", player and player.Name, prompt.Parent and prompt.Parent:GetFullName()) end
+			WaterBottleService.Refill(player)
+		end
+	end)
 
 	return true
 end
@@ -163,13 +101,6 @@ function WaterRefillManager.shutdown()
 		prompt:Destroy()
 	end
 	refillPrompts = {}
-
-	for player, connections in pairs(playerConnections) do
-		for _, connection in pairs(connections) do
-			connection:Disconnect()
-		end
-	end
-	playerConnections = {}
 end
 
 return WaterRefillManager

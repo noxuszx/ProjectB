@@ -10,6 +10,9 @@ local DragDropConfig = {
     CARRY_SMOOTHNESS = 0.06,
     THROW_BOOST = 8,
     
+    -- Allow welding to anchored world geometry (map parts), while still blocking players/creatures
+    AllowAnchoredWeldTargets = true,
+    
     WELD_DETECTION_RADIUS = 3.0,
     WELD_HOVER_UPDATE_THROTTLE = 0.1,
     
@@ -32,7 +35,6 @@ local DragDropConfig = {
     PLAYER_COLLISION_GROUP = "player",
     
     HOVER_HIGHLIGHT_COLOR = Color3.fromRGB(0, 162, 255),
-    WELD_HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 0),
     
     MAX_CONCURRENT_DRAGS = 10,
     RAYCAST_FILTER_DESCENDANTS = true,

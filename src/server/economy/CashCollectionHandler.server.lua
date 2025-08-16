@@ -5,12 +5,14 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 
 -- Services
 local SystemLoadMonitor = _G.SystemLoadMonitor or require(script.Parent.Parent.SystemLoadMonitor)
 local EconomyService = require(script.Parent.Parent.services.EconomyService)
 local CashPoolManager = require(script.Parent.CashPoolManager)
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 -- Track cash items and their prompts
 local cashItems = {}
@@ -67,7 +69,15 @@ local function onCashCollected(promptObject, player)
 		return
 	end
 
-	if EconomyService.addMoney(player, cashValue) then
+if EconomyService.addMoney(player, cashValue) then
+		-- Randomly pick one of the two collection sounds at the player's character
+		pcall(function()
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart") or SoundService
+			local choices = {"economy.cash_small", "economy.cash_large"}
+			local idx = math.random(1, #choices)
+			SoundPlayer.playAt(choices[idx], root)
+		end)
 		if CashPoolManager.returnCashItem(cashItem) then
 			cashItems[cashItem] = nil
 			cashPrompts[cashItem] = nil

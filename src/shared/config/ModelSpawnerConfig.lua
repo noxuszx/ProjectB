@@ -9,11 +9,11 @@ ModelSpawnerConfig.MIN_SPAWN_DISTANCE = 30 		-- Minimum distance from spawn to p
 ModelSpawnerConfig.MAX_SPAWN_DISTANCE = 1200 		-- Maximum distance from spawn to place objects (covers full world)
 
 -- Spawn protection zone (around 0,0,0)
-ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS = 20 	-- No objects within this radius of spawn
+ModelSpawnerConfig.SPAWN_PROTECTION_RADIUS = 40 	-- No objects within this radius of spawn
 ModelSpawnerConfig.SPAWN_PROTECTION_HEIGHT = 100 	-- Height of protection cylinder
 
 ModelSpawnerConfig.VEGETATION_CHANCE = 0.25
-ModelSpawnerConfig.ROCK_CHANCE = 0.4
+ModelSpawnerConfig.ROCK_CHANCE = 0.3
 ModelSpawnerConfig.STRUCTURE_CHANCE = 0.01
 
 ModelSpawnerConfig.MIN_VEGETATION_DISTANCE = 8
@@ -58,7 +58,7 @@ ModelSpawnerConfig.MODEL_WEIGHTS = {
 
 ModelSpawnerConfig.MAX_OBJECTS_PER_CHUNK = {
 	Vegetation = 20,
-	Rocks = 10,
+	Rocks = 5,
 	Structures = 2
 }
 

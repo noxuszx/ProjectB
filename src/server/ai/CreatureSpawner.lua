@@ -17,6 +17,7 @@ local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
 local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
 local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local SFXManager = require(script.Parent.audio.SFXManager)
 
 
 local CreatureSpawner = {}
@@ -156,6 +157,13 @@ function CreatureSpawner.spawnCreature(creatureType, position, options)
 	if activationMode == "Zone" then
 		aiController.isIndoorCreature = true
 	end
+
+	-- Auto-bind creature SFX for specific types at creation time (covers both procedural and zone spawns)
+	pcall(function()
+		if creatureType == "Mummy" or creatureType == "TowerMummy" or creatureType == "Scorpion" then
+			SFXManager.setupForModel(creatureModel)
+		end
+	end)
 
 	spawnedCreaturesCount = spawnedCreaturesCount + 1
 	
@@ -319,6 +327,13 @@ local function processSpawner(spawnerPart)
 
 		if aiController then
 			aiManager:registerCreature(aiController)
+-- Auto-bind creature SFX for specific types
+			if creatureType == "Mummy" or creatureType == "TowerMummy" or creatureType == "Scorpion" then
+				pcall(function()
+					local model = aiController and aiController.model or creatureModel
+					if model then SFXManager.setupForModel(model) end
+				end)
+			end
 		end
 	end
 

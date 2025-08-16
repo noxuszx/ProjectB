@@ -10,7 +10,8 @@ repeat
     wait(0.1)
 until _G.BackpackController
 
+-- Deactivate mouse click retrieval; F key handles store/unstore on PC
+-- Leaving Activated connected to a no-op to avoid unexpected tool behavior
 tool.Activated:Connect(function()
-    -- Retrieve top item from backpack
-    _G.BackpackController.retrieveTopObject()
+    -- no-op
 end)

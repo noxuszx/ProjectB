@@ -10,6 +10,7 @@ local HostileCreature = require(script.Parent.Hostile)
 local BaseCreature = require(script.Parent.Base)
 local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
 local ProjectileService = require(ServerScriptService.Server.services.ProjectileService)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 local RoamingBehavior = require(script.Parent.Parent.behaviors.Roaming)
 local RangedChasingBehavior =
@@ -346,6 +347,16 @@ function RangedHostile:fireProjectile(targetPosition)
 	if self.playAnimation then
 		self:playAnimation("attack", false, 0.1)
 	end
+	
+	-- Play shooting sound at creature position
+	SoundPlayer.playAt("ai.shoot", self.model.PrimaryPart, {
+		volume = 0.7,
+		rolloff = {
+			max = 80,
+			min = 15,
+			emitter = 10
+		}
+	})
 	
 	-- Fire the projectile using ProjectileService
 	local result = ProjectileService.fire(origin, targetPosition, weaponName, self, ignoreList)

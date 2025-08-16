@@ -8,9 +8,26 @@ local SystemLoadMonitor = _G.SystemLoadMonitor or require(script.Parent.Parent.S
 
 local ToolGrantService = {}
 
+-- Track in-progress grants to avoid race-based duplicates
+local _inProgress = {}
+
 local toolsFolder = ReplicatedStorage:FindFirstChild("Tools")
 if not toolsFolder then
 	warn("[ToolGrantService] Tools folder not found in ReplicatedStorage - tool granting will fail")
+end
+
+-- Helper to check if a player already has a tool, either equipped (Character) or in Backpack
+local function playerHasTool(player, toolName)
+	if not player then return false end
+	local character = player.Character
+	if character and character:FindFirstChild(toolName) then
+		return true
+	end
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack and backpack:FindFirstChild(toolName) then
+		return true
+	end
+	return false
 end
 
 function ToolGrantService.grantTool(player, toolName)
@@ -29,6 +46,20 @@ function ToolGrantService.grantTool(player, toolName)
 		return false
 	end
 
+	-- Prevent duplicates if the player already has this tool in Backpack or equipped
+	if playerHasTool(player, toolName) then
+		print("[ToolGrantService] Skipping grant -", player.Name, "already has", toolName)
+		return true
+	end
+
+	-- Guard against concurrent double-grants (same player+tool within this tick)
+	local key = tostring(player.UserId) .. ":" .. tostring(toolName)
+	if _inProgress[key] then
+		print("[ToolGrantService] Skipping concurrent grant for", player.Name, toolName)
+		return true
+	end
+	_inProgress[key] = true
+
 	local toolTemplate = toolsFolder:FindFirstChild(toolName)
 	if not toolTemplate then
 		warn("[ToolGrantService] Tool template not found:", toolName)
@@ -40,11 +71,22 @@ function ToolGrantService.grantTool(player, toolName)
 		return false
 	end
 
-	local newTool = toolTemplate:Clone()
-	newTool.Parent = player.Backpack
+	local success = false
+	local newTool
+	local ok, err = pcall(function()
+		newTool = toolTemplate:Clone()
+		newTool.Parent = player.Backpack
+		success = true
+	end)
 
-	print("[ToolGrantService] Granted", toolName, "to", player.Name)
-	return true
+	if not ok then
+		warn("[ToolGrantService] Error granting tool", toolName, "to", player.Name, ":", err)
+	else
+		print("[ToolGrantService] Granted", toolName, "to", player.Name)
+	end
+
+	_inProgress[key] = nil
+	return success
 end
 
 function ToolGrantService.hasToolTemplate(toolName)

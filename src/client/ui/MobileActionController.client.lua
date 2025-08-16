@@ -257,19 +257,6 @@ local ACTIONS = {
         end,
         visuals = function() return getDragVisual() end,
     },
-{
-        key = "Heal",
-        actionName = "MobileHealUse",
-        canShow = canUseHeal,
-        onAction = function(_, inputState)
-            if inputState == Enum.UserInputState.Begin then
-                activateHeal()
-            end
-        end,
-        visuals = function()
-            return getHealVisuals()
-        end,
-    },
     {
         key = "Store",
         actionName = "MobileStore",
@@ -460,5 +447,39 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 if DEBUG_ENABLED then print("[MobileActionController] Update loop started") end
+
+-- Tool equip/unequip listeners to force immediate refresh of buttons
+local function immediateRefresh()
+    -- Force an immediate update
+    acc = INTERVAL
+    update()
+end
+
+local function wireToolListeners(char)
+    if not char then return end
+    local function hookTool(t)
+        if t and t:IsA("Tool") then
+            -- Refresh when this specific tool is equipped/unequipped
+            t.Equipped:Connect(immediateRefresh)
+            t.Unequipped:Connect(immediateRefresh)
+        end
+    end
+    -- Hook existing tools
+    for _, child in ipairs(char:GetChildren()) do
+        hookTool(child)
+    end
+    -- Hook future tools
+    char.ChildAdded:Connect(function(child)
+        hookTool(child)
+    end)
+end
+
+if player.Character then
+    wireToolListeners(player.Character)
+end
+player.CharacterAdded:Connect(function(char)
+    wireToolListeners(char)
+    immediateRefresh()
+end)
 
 -- Mobile action buttons system is now active and ready

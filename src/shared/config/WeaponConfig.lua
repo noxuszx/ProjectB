@@ -10,7 +10,26 @@ local WeaponConfig = {}
 -- Ranged Weapon Configurations
 WeaponConfig.RangedWeapons = {
 	Crossbow = {
-		Damage = 50,
+		Damage = 40,
+		Range = 200, -- Studs
+		Cooldown = 0.5, -- Seconds between shots
+		ProjectileSpeed = 120, -- Studs per second (for bullet travel)
+		BulletConfig = {
+			Color = Color3.new(0.8, 0.8, 0.2), -- Yellow-ish bullet
+			Size = Vector3.new(0.2, 0.2, 1), -- Bullet dimensions
+			Lifetime = 2.0, -- How long bullet exists
+			Material = Enum.Material.Neon, -- Glowing effect
+		},
+		MuzzleEffect = {
+			Sound = nil, -- Optional firing sound ID
+			Flash = true, -- Show muzzle flash
+			FlashColor = Color3.new(1, 0.8, 0),
+		},
+		DebugEnabled = false,
+	},
+
+	Bow = {
+		Damage = 200,
 		Range = 200, -- Studs
 		Cooldown = 0.5, -- Seconds between shots
 		ProjectileSpeed = 120, -- Studs per second (for bullet travel)
@@ -70,7 +89,7 @@ WeaponConfig.RangedWeapons = {
 -- Melee Weapon Configurations
 WeaponConfig.MeleeWeapons = {
 	Spear = {
-		Damage = 25,
+		Damage = 100,
 		Range = 15, -- Studs
 		Cooldown = 0.4, -- Seconds between attacks
 		SwingDuration = 0.5, -- How long the swing animation lasts

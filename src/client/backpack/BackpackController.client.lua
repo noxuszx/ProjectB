@@ -12,12 +12,9 @@ local Players               = game:GetService("Players")
 local SoundService          = game:GetService("SoundService")
 local ContentProvider       = game:GetService("ContentProvider")
 
--- Sound configuration
-local BACKPACK_SOUNDS = {
-	STORE_SOUND_ID = "rbxassetid://99564490958733",
-	UNSTORE_SOUND_ID = "rbxassetid://9113819353", 
-	VOLUME = 0.5
-}
+-- Sound system
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
+local SoundConfig = require(ReplicatedStorage.Shared.config.SoundConfig)
 
 local CS_tags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local player  = Players.LocalPlayer
@@ -42,26 +39,29 @@ local lastStoreTime  = 0
 local currentBackpackContents = {}
 local lastUIHint     = ""
 
+-- Helper to decide if we should store or retrieve when F is pressed
+local function canStoreNow()
+	local character = player.Character
+	if not character or not character:FindFirstChild("Backpack") then
+		return false
+	end
+	local target = InteractableHandler.GetCurrentTarget and InteractableHandler.GetCurrentTarget()
+	if not target then return false end
+	return CS_tags.hasTag(target, CS_tags.STORABLE)
+end
+
 -- Track last locally played sound to suppress duplicate server-triggered sound
 local lastSoundType  = nil
 local lastSoundTime  = 0
 
--- Define sound helper before any calls to it
+-- Map server legacy types to new keys
 local function playBackpackSound(soundType)
-	local soundId = BACKPACK_SOUNDS[soundType]
-	if soundId and soundId ~= "" then
-		lastSoundType = soundType
-		lastSoundTime = os.clock()
-
-		local sound = Instance.new("Sound")
-		sound.SoundId = soundId
-		sound.Volume = BACKPACK_SOUNDS.VOLUME
-		sound.Parent = SoundService
-		sound:Play()
-		
-		sound.Ended:Connect(function()
-			sound:Destroy()
-		end)
+	lastSoundType = soundType
+	lastSoundTime = os.clock()
+	if soundType == "STORE_SOUND_ID" then
+		SoundPlayer.play("backpack.store")
+	elseif soundType == "UNSTORE_SOUND_ID" then
+		SoundPlayer.play("backpack.unstore")
 	end
 end
 
@@ -85,8 +85,9 @@ local function storeCurrentObject()
 		return
 	end
 
-	-- Play sound immediately client-side to avoid roundtrip latency
-	playBackpackSound("STORE_SOUND_ID")
+-- Play sound immediately client-side to avoid roundtrip latency
+	SoundPlayer.play("backpack.store")
+	lastSoundType = "STORE_SOUND_ID"; lastSoundTime = os.clock()
 
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestStore", target)
@@ -98,8 +99,9 @@ local function retrieveTopObject()
 		return
 	end
 
-	-- Play sound immediately client-side to avoid roundtrip latency
-	playBackpackSound("UNSTORE_SOUND_ID")
+-- Play sound immediately client-side to avoid roundtrip latency
+	SoundPlayer.play("backpack.unstore")
+	lastSoundType = "UNSTORE_SOUND_ID"; lastSoundTime = os.clock()
 
 	lastStoreTime = currentTime
 	BackpackEvent:FireServer("RequestRetrieve")
@@ -149,40 +151,34 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 
-	if input.KeyCode == Enum.KeyCode.E then
+	if input.KeyCode == Enum.KeyCode.F then
 		local character = player.Character
 		if character and character:FindFirstChild("Backpack") then
-			storeCurrentObject()
-		end
-	elseif input.KeyCode == Enum.KeyCode.F then
-		local character = player.Character
-		if character and character:FindFirstChild("Backpack") then
-			retrieveTopObject()
+			if canStoreNow() then
+				storeCurrentObject()
+			else
+				retrieveTopObject()
+			end
 		end
 	end
 end)
 
-local function handleStoreAction(actionName, inputState, inputObject)
+-- Single action on F that conditionally stores or retrieves
+local function handleFAction(actionName, inputState, inputObject)
 	if inputState == Enum.UserInputState.Begin then
 		local character = player.Character
 		if character and character:FindFirstChild("Backpack") then
-			storeCurrentObject()
+			if canStoreNow() then
+				storeCurrentObject()
+			else
+				retrieveTopObject()
+			end
 		end
 	end
 end
 
-ContextActionService:BindAction("StoreObject", handleStoreAction, false, Enum.KeyCode.E)
-
-local function handleRetrieveAction(actionName, inputState, inputObject)
-	if inputState == Enum.UserInputState.Begin then
-		local character = player.Character
-		if character and character:FindFirstChild("Backpack") then
-			retrieveTopObject()
-		end
-	end
-end
-
-ContextActionService:BindAction("RetrieveObject", handleRetrieveAction, false, Enum.KeyCode.F)
+-- Bind only F; remove separate E binding
+ContextActionService:BindAction("BackpackPrimary", handleFAction, false, Enum.KeyCode.F)
 
 -- Mobile UI buttons (will be created when BackpackUI is implemented)
 local function setupMobileButtons()
@@ -202,18 +198,7 @@ setupMobileButtons()
 
 -- Preload backpack sounds to avoid decode/stream delay on first play
 task.spawn(function()
-	local toPreload = {}
-	if BACKPACK_SOUNDS.STORE_SOUND_ID and BACKPACK_SOUNDS.STORE_SOUND_ID ~= "" then
-		table.insert(toPreload, BACKPACK_SOUNDS.STORE_SOUND_ID)
-	end
-	if BACKPACK_SOUNDS.UNSTORE_SOUND_ID and BACKPACK_SOUNDS.UNSTORE_SOUND_ID ~= "" then
-		table.insert(toPreload, BACKPACK_SOUNDS.UNSTORE_SOUND_ID)
-	end
-	if #toPreload > 0 then
-		pcall(function()
-			ContentProvider:PreloadAsync(toPreload)
-		end)
-	end
+	SoundPlayer.preloadAll()
 end)
 
 BackpackEvent:FireServer("RequestSync")

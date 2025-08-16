@@ -9,6 +9,7 @@ local PhysicsService = game:GetService("PhysicsService")
 
 local ArenaCreature = require(script.Parent.ArenaCreature)
 local ArenaAIManager = require(script.Parent.ArenaAIManager)
+local SFXManager = require(script.Parent.Parent.audio.SFXManager)
 
 local ArenaCreatureSpawner = {}
 
@@ -176,7 +177,14 @@ function ArenaCreatureSpawner.spawnCreature(creatureType, position, options)
 		arenaFolder.Name = "ArenaCreatures"
 		arenaFolder.Parent = Workspace
 	end
-	model.Parent = arenaFolder
+model.Parent = arenaFolder
+
+	-- Auto-bind SFX for arena scorpions (and future arena types if desired)
+	pcall(function()
+		if creatureType == "ArenaScorpion" then
+			SFXManager.setupForModel(model)
+		end
+	end)
 	
 	-- Now set network owner (model is in workspace)
 	if model.PrimaryPart then

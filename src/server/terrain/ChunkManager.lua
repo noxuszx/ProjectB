@@ -1,7 +1,8 @@
 --[[
 	ChunkManager.lua
 	Handles chunk-based terrain generation and management
-]]--
+]]
+--
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -10,11 +11,21 @@ local ChunkConfig = require(game.ReplicatedStorage.Shared.config.ChunkConfig)
 local terrain = require(game.ReplicatedStorage.Shared.utilities.Terrain)
 
 local ChunkManager = {}
-local chunks = {}
+local chunks 	   = {}
 
 local chunkFolder = Instance.new("Folder")
+local workCounter = 0
+local YIELD_EVERY = 200
+
 chunkFolder.Name = "Chunks"
 chunkFolder.Parent = Workspace
+
+local function maybeYield()
+	workCounter += 1
+	if workCounter % YIELD_EVERY == 0 then
+		task.wait()
+	end
+end
 
 local function createChunkPart(x, z, width, depth, height)
 	local part = Instance.new("Part")
@@ -32,13 +43,14 @@ function ChunkManager.generateChunk(cx, cz)
 	local chunkSize = ChunkConfig.CHUNK_SIZE
 	local baseX, baseZ = cx * chunkSize, cz * chunkSize
 
-for x = 0, chunkSize - 1, chunkSize / ChunkConfig.SUBDIVISIONS do
+	for x = 0, chunkSize - 1, chunkSize / ChunkConfig.SUBDIVISIONS do
 		for z = 0, chunkSize - 1, chunkSize / ChunkConfig.SUBDIVISIONS do
 			local worldX, worldZ = baseX + x, baseZ + z
 			local height = terrain.getTerrainHeight(worldX, worldZ)
-					
+
 			local subdivisionSize = chunkSize / ChunkConfig.SUBDIVISIONS
 			createChunkPart(worldX, worldZ, subdivisionSize, subdivisionSize, height)
+			maybeYield()
 		end
 	end
 
@@ -51,16 +63,18 @@ function ChunkManager.clearChunks()
 		child:Destroy()
 	end
 	chunks = {}
+	workCounter = 0
 end
 
 function ChunkManager.init()
 	ChunkManager.clearChunks()
 
 	local renderDistance = ChunkConfig.RENDER_DISTANCE
-	
+
 	for cx = -renderDistance, renderDistance do
 		for cz = -renderDistance, renderDistance do
 			ChunkManager.generateChunk(cx, cz)
+			maybeYield()
 		end
 	end
 end

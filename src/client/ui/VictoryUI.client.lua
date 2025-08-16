@@ -10,17 +10,29 @@ local ArenaConfig = require(ReplicatedStorage.Shared.config.ArenaConfig)
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Reference existing VictoryGui elements
-local victoryGui = playerGui:WaitForChild("VictoryGui")
-local textLabel = victoryGui:WaitForChild("TextLabel")
-local textTimer = victoryGui:WaitForChild("TextTimer")
-local victoryFrame = victoryGui:WaitForChild("VictoryFrame")
-local lobbyBtn = victoryFrame:WaitForChild("LobbyBTN")
-local continueBtn = victoryFrame:WaitForChild("ContinueBTN")
+-- References (re-bound if GUI is recreated)
+local victoryGui
+local textLabel
+local textTimer
+local victoryFrame
+local lobbyBtn
+local continueBtn
+
+-- Connections to clean up on rebind
+local lobbyConn
+local continueConn
+local ancestryConn
 
 -- State tracking
 local countdownActive = false
 local countdownCoroutine = nil
+
+-- Forward declarations for functions used before definition
+local sendChoice
+local startCountdown
+local stopCountdown
+local showVictoryUI
+local ensureGuiBound
 
 -- Helper functions
 local function getArenaRemote(name)
@@ -32,15 +44,78 @@ local function getArenaRemote(name)
 	return arenaFolder:FindFirstChild(name)
 end
 
-local function sendChoice(choice)
-	local postGameRemote = getArenaRemote(ArenaConfig.Remotes.PostGameChoice)
+local function waitForArenaRemote(name, timeout)
+	timeout = timeout or 10
+	local start = os.clock()
+	-- Try fast path first
+	local r = getArenaRemote(name)
+	if r then return r end
+	-- Wait for the folders and remote to appear
+	local remotesFolder = ReplicatedStorage:WaitForChild("Remotes", math.max(0, timeout - (os.clock() - start)))
+	if not remotesFolder then return nil end
+	local arenaFolder = remotesFolder:WaitForChild(ArenaConfig.Remotes.Folder, math.max(0, timeout - (os.clock() - start)))
+	if not arenaFolder then return nil end
+	return arenaFolder:WaitForChild(name, math.max(0, timeout - (os.clock() - start)))
+end
+
+local function bindVictoryGui()
+	-- Disconnect old connections if any
+	if lobbyConn then lobbyConn:Disconnect() lobbyConn = nil end
+	if continueConn then continueConn:Disconnect() continueConn = nil end
+	if ancestryConn then ancestryConn:Disconnect() ancestryConn = nil end
+
+	victoryGui = playerGui:WaitForChild("VictoryGui")
+	textLabel = victoryGui:WaitForChild("TextLabel")
+	textTimer = victoryGui:WaitForChild("TextTimer")
+	victoryFrame = victoryGui:WaitForChild("VictoryFrame")
+	lobbyBtn = victoryFrame:WaitForChild("LobbyBTN")
+	continueBtn = victoryFrame:WaitForChild("ContinueBTN")
+
+	-- Ensure starts hidden on (re)bind
+	victoryGui.Enabled = false
+
+	-- Reconnect button handlers
+	lobbyConn = lobbyBtn.MouseButton1Click:Connect(function()
+		sendChoice("lobby")
+	end)
+	continueConn = continueBtn.MouseButton1Click:Connect(function()
+		sendChoice("continue")
+	end)
+
+	-- Watch for GUI removal (e.g., on respawn) and rebind when it comes back
+	ancestryConn = victoryGui.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			-- Stop any active countdown and wait for PlayerGui to restore child, then rebind
+			stopCountdown()
+			task.defer(function()
+				if playerGui and playerGui.Parent then
+					local ok = pcall(function()
+						bindVictoryGui()
+					end)
+					if not ok then
+						-- will try again on next removal/add cycle
+					end
+				end
+			end)
+		end
+	end)
+end
+
+local function ensureGuiBound()
+	if not victoryGui or victoryGui.Parent ~= playerGui then
+		bindVictoryGui()
+	end
+end
+
+sendChoice = function(choice)
+	local postGameRemote = getArenaRemote(ArenaConfig.Remotes.PostGameChoice) or waitForArenaRemote(ArenaConfig.Remotes.PostGameChoice, 5)
 	if postGameRemote then
 		postGameRemote:FireServer({ choice = choice })
 	end
 	hideVictoryUI()
 end
 
-local function startCountdown()
+startCountdown = function()
 	if countdownActive then
 		return
 	end
@@ -50,6 +125,10 @@ local function startCountdown()
 	
 	countdownCoroutine = task.spawn(function()
 		while timeLeft > 0 and countdownActive do
+			if not textTimer or textTimer.Parent == nil then
+				-- GUI likely recreated; try to rebind and continue
+				ensureGuiBound()
+			end
 			textTimer.Text = string.format("GOING BACK TO LOBBY IN %ds", timeLeft)
 			task.wait(1)
 			timeLeft -= 1
@@ -62,7 +141,7 @@ local function startCountdown()
 	end)
 end
 
-local function stopCountdown()
+stopCountdown = function()
 	countdownActive = false
 	if countdownCoroutine then
 		task.cancel(countdownCoroutine)
@@ -70,7 +149,8 @@ local function stopCountdown()
 	end
 end
 
-local function showVictoryUI(message)
+showVictoryUI = function(message)
+	ensureGuiBound()
 	-- Set victory message
 	textLabel.Text = message or "VICTORY!"
 	
@@ -92,6 +172,7 @@ local function showVictoryUI(message)
 	
 	local textLabelTween = TweenService:Create(textLabel, fadeInfo, {TextTransparency = 0})
 	local textTimerTween = TweenService:Create(textTimer, fadeInfo, {TextTransparency = 0})
+	-- Note: keep frame transparency behavior as per user preference (remain invisible)
 	local frameTween = TweenService:Create(victoryFrame, fadeInfo, {BackgroundTransparency = 1})
 	local lobbyBtnBgTween = TweenService:Create(lobbyBtn, fadeInfo, {BackgroundTransparency = 0})
 	local lobbyBtnTextTween = TweenService:Create(lobbyBtn, fadeInfo, {TextTransparency = 0})
@@ -115,29 +196,35 @@ end
 
 function hideVictoryUI()
 	stopCountdown()
-	victoryGui.Enabled = false
+	if victoryGui then
+		victoryGui.Enabled = false
+	end
 end
-
--- Button click handlers
-lobbyBtn.MouseButton1Click:Connect(function()
-	sendChoice("lobby")
-end)
-
-continueBtn.MouseButton1Click:Connect(function()
-	sendChoice("continue")
-end)
 
 -- Remote event connection
 local function connectVictoryRemote()
-	local victoryRemote = getArenaRemote(ArenaConfig.Remotes.Victory)
+	-- Be robust to replication timing: wait up to 10s for the remote to exist
+	local victoryRemote = getArenaRemote(ArenaConfig.Remotes.Victory) or waitForArenaRemote(ArenaConfig.Remotes.Victory, 10)
 	if victoryRemote then
 		victoryRemote.OnClientEvent:Connect(function(data)
 			local message = data and data.message or ArenaConfig.UI.VictoryMessage
 			showVictoryUI(message)
 		end)
+	else
+		-- As a fallback, listen for Remotes folder being added and try once more
+		ReplicatedStorage.ChildAdded:Once(function(child)
+			if child.Name == "Remotes" then
+				connectVictoryRemote()
+			end
+		end)
 	end
 end
 
 -- Initialize
-victoryGui.Enabled = false -- Start hidden
+bindVictoryGui()
 connectVictoryRemote()
+
+-- Also rebind if the character respawns (some setups rebuild GUIs)
+player.CharacterAdded:Connect(function()
+	bindVictoryGui()
+end)

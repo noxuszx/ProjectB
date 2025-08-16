@@ -25,6 +25,13 @@ function ChasingBehavior:enter(creature)
 
 	self.chaseStartTime = os.clock()
 
+	-- Trigger aggro SFX for specific creatures (e.g., Scorpion) via attribute hook
+	pcall(function()
+		if creature and creature.model and (creature.creatureType == "Scorpion" or creature.creatureType == "ArenaScorpion") then
+			creature.model:SetAttribute("AggroTick", os.clock())
+		end
+	end)
+
 	if AIConfig.Debug.LogBehaviorChanges then
 		local targetName = self.targetPlayer and self.targetPlayer.Name or "Unknown"
 		print("[ChasingBehavior] " .. creature.creatureType .. " chasing " .. targetName)

@@ -4,6 +4,7 @@
 local Players 			   = game:GetService("Players")
 local ReplicatedStorage    = game:GetService("ReplicatedStorage")
 local RagdollModule 	   = require(ReplicatedStorage.Shared.modules.RagdollModule)
+local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 
 local deathRemotes 		   = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
 local showUIRemote 		   = deathRemotes:WaitForChild("ShowUI")
@@ -18,6 +19,74 @@ local deadPlayers 		   = {}
 local deathTimers 		   = {}
 local ragdollPositions 	   = {}
 local revivalPrompts	   = {}
+
+-- Locate item template by name in ReplicatedStorage/Items (and subfolders)
+local function getItemTemplateByName(itemName)
+	local itemsFolder = ReplicatedStorage:FindFirstChild("Items")
+	if not itemsFolder then return nil end
+	local template = itemsFolder:FindFirstChild(itemName)
+	if template then return template end
+	-- Common subfolder
+	local weaponsFolder = itemsFolder:FindFirstChild("Weapons")
+	if weaponsFolder then
+		local t2 = weaponsFolder:FindFirstChild(itemName)
+		if t2 then return t2 end
+	end
+	return nil
+end
+
+-- Spawn a world item from Items template and toss it slightly
+local function spawnDroppedItemFromTemplate(itemName, position)
+	local template = getItemTemplateByName(itemName)
+	if not template then return nil end
+	local inst = template:Clone()
+	-- Place
+	local placePos = position + Vector3.new(math.random(-3,3), math.random(2,5), math.random(-3,3))
+	if inst:IsA("BasePart") then
+		inst.CFrame = CFrame.new(placePos)
+	elseif inst:IsA("Tool") then
+		local handle = inst:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			handle.CFrame = CFrame.new(placePos)
+		end
+	elseif inst.PrimaryPart then
+		inst:SetPrimaryPartCFrame(CFrame.new(placePos))
+	else
+		inst:MoveTo(placePos)
+	end
+	-- Parent under SpawnedItems if present for organization
+	local spawnedFolder = workspace:FindFirstChild("SpawnedItems")
+	inst.Parent = spawnedFolder or workspace
+	-- Tag basic drag/store behavior similar to ItemSpawner
+	if inst:IsA("BasePart") then
+		CollectionServiceTags.addTag(inst, CollectionServiceTags.DRAGGABLE)
+		CollectionServiceTags.addTag(inst, CollectionServiceTags.WELDABLE)
+	elseif inst:IsA("Tool") then
+		local handle = inst:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.DRAGGABLE)
+			CollectionServiceTags.addTag(handle, CollectionServiceTags.WELDABLE)
+		end
+	elseif inst:IsA("Model") then
+		local primary = inst.PrimaryPart or inst:FindFirstChildOfClass("BasePart")
+		if primary then
+			CollectionServiceTags.addTag(primary, CollectionServiceTags.DRAGGABLE)
+			CollectionServiceTags.addTag(primary, CollectionServiceTags.WELDABLE)
+		end
+	end
+	-- Give some outward velocity if possible
+	local mainPart = nil
+	if inst:IsA("BasePart") then mainPart = inst end
+	if inst:IsA("Tool") then mainPart = inst:FindFirstChild("Handle") end
+	if inst:IsA("Model") then mainPart = inst.PrimaryPart or inst:FindFirstChildOfClass("BasePart") end
+	if mainPart and mainPart:IsA("BasePart") then
+		pcall(function()
+			mainPart.AssemblyLinearVelocity = Vector3.new(math.random(-12,12), math.random(10,18), math.random(-12,12))
+			mainPart.AssemblyAngularVelocity = Vector3.new(math.random(-6,6), math.random(-6,6), math.random(-6,6))
+		end)
+	end
+	return inst
+end
 
 local function areAllPlayersDead()
 	local alivePlayers 	   = 0
@@ -66,12 +135,36 @@ local function handleRespawnRequest(player)
 	end
 
 	if spawnPosition then
-		-- Set position immediately when character spawns
+		-- Set position immediately when character spawns and grant temporary invulnerability
 		local connection
 		connection = player.CharacterAdded:Connect(function(character)
 			connection:Disconnect()
 			local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 			humanoidRootPart.CFrame = CFrame.new(spawnPosition)
+
+			-- Grant 5 seconds of invulnerability using Roblox's default ForceField
+			local forceField = Instance.new("ForceField")
+			forceField.Visible = true
+			forceField.Parent = character
+			task.delay(5, function()
+				if forceField and forceField.Parent then
+					forceField:Destroy()
+				end
+			end)
+		end)
+	else
+		-- Even if we don't have a spawn position, still grant temporary invulnerability on revival
+		local connection
+		connection = player.CharacterAdded:Connect(function(character)
+			connection:Disconnect()
+			local forceField = Instance.new("ForceField")
+			forceField.Visible = true
+			forceField.Parent = character
+			task.delay(5, function()
+				if forceField and forceField.Parent then
+					forceField:Destroy()
+				end
+			end)
 		end)
 	end
 	
@@ -113,6 +206,35 @@ local function onPlayerAdded(player)
 				return
 			end
 
+			-- Drop all Roblox Tools from Character and Backpack as world items from ReplicatedStorage/Items
+			pcall(function()
+				local origin = (character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position)
+					or (character.PrimaryPart and character.PrimaryPart.Position) or Vector3.new()
+				-- Detach equipped tools
+				pcall(function() humanoid:UnequipTools() end)
+				-- Collect tools from Character
+				local charTools = {}
+				for _, child in ipairs(character:GetChildren()) do
+					if child:IsA("Tool") then table.insert(charTools, child) end
+				end
+				for _, tool in ipairs(charTools) do
+					spawnDroppedItemFromTemplate(tool.Name, origin)
+					tool:Destroy()
+				end
+				-- Collect tools from Roblox Backpack
+				local rbBackpack = player:FindFirstChild("Backpack")
+				if rbBackpack then
+					local packTools = {}
+					for _, child in ipairs(rbBackpack:GetChildren()) do
+						if child:IsA("Tool") then table.insert(packTools, child) end
+					end
+					for _, tool in ipairs(packTools) do
+						spawnDroppedItemFromTemplate(tool.Name, origin)
+						tool:Destroy()
+					end
+				end
+			end)
+
 			local success = RagdollModule.Ragdoll(character)
 
 			if success then
@@ -138,6 +260,39 @@ local function onPlayerAdded(player)
 					
 					-- Hide the prompt from the dead player themselves
 					proximityPrompt:SetAttribute("HiddenFromPlayer", player.UserId)
+
+					-- Create an always-on-top red highlight on the body (visible to others only)
+					local highlight = Instance.new("Highlight")
+					highlight.Name = "DeathHighlight"
+					highlight.Adornee = character -- highlight entire character
+					highlight.FillColor = Color3.fromRGB(255, 60, 60)
+					highlight.OutlineColor = Color3.fromRGB(255, 120, 120)
+					highlight.FillTransparency = 0.6
+					highlight.OutlineTransparency = 0
+					highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					highlight.Parent = character
+					highlight:SetAttribute("HiddenFromPlayer", player.UserId)
+
+					-- Create a floating name/"Downed" label above the body
+					local billboard = Instance.new("BillboardGui")
+					billboard.Name = "DeathBillboard"
+					billboard.Adornee = humanoidRootPart
+					billboard.AlwaysOnTop = true
+					billboard.Size = UDim2.new(0, 140, 0, 36)
+					billboard.StudsOffset = Vector3.new(0, 3, 0)
+					billboard.Parent = humanoidRootPart
+					billboard:SetAttribute("HiddenFromPlayer", player.UserId)
+
+					local label = Instance.new("TextLabel")
+					label.Name = "Text"
+					label.Size = UDim2.new(1, 0, 1, 0)
+					label.BackgroundTransparency = 1
+					label.Text = player.Name
+					label.TextColor3 = Color3.new(1, 0.85, 0.85)
+					label.TextStrokeTransparency = 0.4
+					label.FontFace = Font.new("rbxasset://fonts/families/Balthazar.json", Enum.FontWeight.Light)
+					label.TextScaled = true
+					label.Parent = billboard
 					
 					-- Handle revival attempts
 					proximityPrompt.Triggered:Connect(function(reviverPlayer)

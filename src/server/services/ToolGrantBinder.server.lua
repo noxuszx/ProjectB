@@ -8,6 +8,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local ToolGrantService = require(script.Parent.ToolGrantService)
 
+-- Track prompt connections without attaching arbitrary fields to Instances
+local promptConnections = setmetatable({}, { __mode = "k" })
+
 local function getPrimaryBasePart(instance)
 	if instance:IsA("BasePart") then
 		return instance
@@ -58,19 +61,45 @@ local function bindInstance(inst)
 	if not prompt then
 		return
 	end
+
+	-- If this prompt is already wired for centralized item use handling, skip binder wiring
+	-- We detect this by either name (UsePrompt) or presence of a UseType attribute
+	if prompt.Name == "UsePrompt" or prompt:GetAttribute("UseType") ~= nil then
+		return
+	end
+
 	prompt.ActionText = "Pick up"
 	prompt.ObjectText = getToolName(inst)
 
-	if prompt._conn then
-		prompt._conn:Disconnect()
-		prompt._conn = nil
+	-- Disconnect any previous connection we stored for this prompt
+	local existingConn = promptConnections[prompt]
+	if existingConn then
+		existingConn:Disconnect()
+		promptConnections[prompt] = nil
 	end
-	prompt._conn = prompt.Triggered:Connect(function(player)
+
+	-- Connect and store in our map
+	local conn
+	conn = prompt.Triggered:Connect(function(player)
 		local toolName = getToolName(inst)
 		local ok = ToolGrantService.grantTool(player, toolName)
 		if ok then
 			-- Clean up the world instance
 			inst:Destroy()
+			-- Clear stored connection mapping as prompt will be destroyed soon
+			promptConnections[prompt] = nil
+		end
+	end)
+	promptConnections[prompt] = conn
+
+	-- If the prompt leaves the game, clean up our connection map
+	prompt.AncestryChanged:Connect(function(_, parent)
+		if not parent then
+			local c = promptConnections[prompt]
+			if c then
+				c:Disconnect()
+				promptConnections[prompt] = nil
+			end
 		end
 	end)
 end

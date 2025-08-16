@@ -1,41 +1,52 @@
 -- RevivalPromptVisibility.client.lua
--- Handles hiding revival prompts from dead players themselves
+-- Handles hiding revival prompts and death indicators from dead players themselves
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
--- Track which prompts to hide based on player death state
-local function handlePromptVisibility()
-	-- Find all revival prompts in the workspace
-for _, otherPlayer in pairs(Players:GetPlayers()) do
-		if otherPlayer.Character then
-			local humanoidRootPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-			if humanoidRootPart then
-				local revivalPrompt = humanoidRootPart:FindFirstChild("RevivalPrompt")
-				if revivalPrompt and revivalPrompt:IsA("ProximityPrompt") then
-					local hiddenFromPlayerId = revivalPrompt:GetAttribute("HiddenFromPlayer")
-					
-					-- Hide for the owner (dead player), show for everyone else
-					if hiddenFromPlayerId == player.UserId then
-						revivalPrompt.Enabled = false
-					else
-						revivalPrompt.Enabled = true
-					end
+local function shouldHide(instance)
+	local hiddenFromPlayerId = instance and instance:GetAttribute("HiddenFromPlayer")
+	return hiddenFromPlayerId == player.UserId
+end
+
+-- Track which prompts/indicators to hide based on HiddenFromPlayer attribute
+local function handleVisibility()
+	for _, otherPlayer in pairs(Players:GetPlayers()) do
+		local character = otherPlayer.Character
+		if character then
+			local hrp = character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				-- Proximity Prompt
+				local prompt = hrp:FindFirstChild("RevivalPrompt")
+				if prompt and prompt:IsA("ProximityPrompt") then
+					prompt.Enabled = not shouldHide(prompt)
 				end
+
+				-- Billboard (Death label)
+				local billboard = hrp:FindFirstChild("DeathBillboard")
+				if billboard and billboard:IsA("BillboardGui") then
+					billboard.Enabled = not shouldHide(billboard)
+				end
+			end
+
+			-- Highlight on character
+			local highlight = character:FindFirstChild("DeathHighlight")
+			if highlight and highlight:IsA("Highlight") then
+				highlight.Enabled = not shouldHide(highlight)
 			end
 		end
 	end
 end
 
--- Check visibility every frame (lightweight since we're just checking attributes)
-RunService.Heartbeat:Connect(handlePromptVisibility)
+-- Check visibility every frame (lightweight attribute checks)
+RunService.Heartbeat:Connect(handleVisibility)
 
 -- Also check when players are added/removed
 Players.PlayerAdded:Connect(function()
-	task.wait(1) -- Small delay to ensure character loads
-	handlePromptVisibility()
+	task.wait(1)
+	handleVisibility()
 end)
 
-Players.PlayerRemoving:Connect(handlePromptVisibility)
+Players.PlayerRemoving:Connect(handleVisibility)

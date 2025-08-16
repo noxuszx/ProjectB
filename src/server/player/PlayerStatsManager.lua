@@ -147,6 +147,12 @@ function PlayerStatsManager.setupRagdollIntegration()
 		local function onCharacterAdded(character)
 			local humanoid = character:WaitForChild("Humanoid")
 			
+			-- Clear ragdoll state on new character spawn so decay resumes after respawn/revive
+			ragdolledPlayers[player.UserId] = nil
+			if PlayerStatsConfig.DEBUG_MODE then
+				print("[PlayerStatsManager] Player", player.Name, "spawned - resuming stat decay")
+			end
+			
 			humanoid.Died:Connect(function()
 				ragdolledPlayers[player.UserId] = true
 				if PlayerStatsConfig.DEBUG_MODE then

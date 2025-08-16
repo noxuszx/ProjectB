@@ -171,61 +171,130 @@ local function advance()
 		return
 	end
 	startStep(step)
-	-- Wire completion conditions per step id
 	if step.id == "drag_basics" then
-		-- Heuristic: watch for any ProximityPrompt triggers that we know are drag-result actions, or the drag/drop client can fire a BindableEvent. As a lightweight fallback, consider first click/drag on DRAGGABLE.
-		local dragEndedEvent = ReplicatedStorage:FindFirstChild("DragDrop")
-			and ReplicatedStorage.DragDrop:FindFirstChild("DragEnded")
-		if dragEndedEvent and dragEndedEvent:IsA("RemoteEvent") then
+		local IH = _G.InteractableHandler
+		local completed = false
+		if IH and typeof(IH) == "table" and IH.StartDrag and IH.StopDrag then
+			local origStart, origStop = IH.StartDrag, IH.StopDrag
+			local sawStart = false
+			IH.StartDrag = function(...)
+				sawStart = true
+				return origStart(...)
+			end
+			IH.StopDrag = function(...)
+				local r = origStop(...)
+				if sawStart and not completed then
+					completed = true
+					advance()
+				end
+				return r
+			end
+			-- Ensure we restore the patched functions on cleanup
+			table.insert(connections, {
+				Disconnect = function()
+					if _G.InteractableHandler then
+						_G.InteractableHandler.StartDrag = origStart
+						_G.InteractableHandler.StopDrag = origStop
+					end
+				end,
+			})
+			-- Secondary guard: detect a true->false transition of IsCarrying
+			local RS = game:GetService("RunService")
+			local prev = IH.IsCarrying and IH.IsCarrying()
 			table.insert(
 				connections,
-				dragEndedEvent.OnClientEvent:Connect(function()
-					advance()
+				RS.Heartbeat:Connect(function()
+					if completed or not IH or not IH.IsCarrying then
+						return
+					end
+					local now = IH.IsCarrying()
+					if prev == true and now == false then
+						completed = true
+						advance()
+					end
+					prev = now
 				end)
 			)
 		else
-			-- Fallback: if a DRAGGABLE gets its Parent changed by the player locally (proxy), weak heuristic with timeout.
-			local conn = CollectionService:GetInstanceAddedSignal("DRAGGABLE"):Connect(function() end)
-			table.insert(connections, conn)
-			task.delay(5, function()
-				-- Auto-advance to avoid stalls in absence of events
-				advance()
+			-- Minimal fallback: short timeout to avoid stall
+			task.delay(6, function()
+				if not completed then
+					completed = true
+					advance()
+				end
 			end)
 		end
 	elseif step.id == "cook_food" then
-		-- Listen for a cooked item appearing (tag CONSUMABLE near a COOKING_SURFACE) or a dedicated remote if available
-		local cookedEvent = ReplicatedStorage:FindFirstChild("Food") and ReplicatedStorage.Food:FindFirstChild("Cooked")
-		if cookedEvent and cookedEvent:IsA("RemoteEvent") then
+		-- No-remote approach: attach to highlighted target's IsCooked attribute and also poll/observe new consumables
+		local completed = false
+		local function completeOnce()
+			if not completed then
+				completed = true
+				advance()
+			end
+		end
+		-- If currentTarget is a Model/BasePart with IsCooked attribute, listen for change
+		if currentTarget and currentTarget:GetAttribute("IsCooked") ~= nil then
 			table.insert(
 				connections,
-				cookedEvent.OnClientEvent:Connect(function()
-					advance()
+				currentTarget:GetAttributeChangedSignal("IsCooked"):Connect(function()
+					local val = currentTarget:GetAttribute("IsCooked")
+					if val == true then
+						completeOnce()
+					end
 				end)
 			)
-		else
-			-- Poll lightly for a short time
-			task.spawn(function()
-				for i = 1, 40 do
-					task.wait(0.25)
-					local char = player.Character
-					local hrp = char and char:FindFirstChild("HumanoidRootPart")
-					local origin = hrp and hrp.Position or Vector3.new()
-					local candidate = nil
-					for _, inst in ipairs(CollectionService:GetTagged("CONSUMABLE")) do
-						if inst:IsDescendantOf(workspace) then
-							candidate = inst
-							break
+		end
+		-- Light polling to catch cooking of other items
+		task.spawn(function()
+			for i = 1, 60 do -- ~15s at 0.25s interval
+				if completed then
+					return
+				end
+				task.wait(0.25)
+				for _, inst in ipairs(CollectionService:GetTagged("CONSUMABLE")) do
+					if inst:IsDescendantOf(workspace) then
+						local cooked = inst:GetAttribute("IsCooked") == true
+							or CollectionService:HasTag(inst, "CookedMeat")
+						if cooked then
+							completeOnce()
+							return
 						end
 					end
-					if candidate then
-						advance()
-						return
+				end
+			end
+		end)
+		-- Also react to new consumables entering the world
+		table.insert(
+			connections,
+			CollectionService:GetInstanceAddedSignal("CONSUMABLE"):Connect(function(inst)
+				if completed then
+					return
+				end
+				if inst and inst:IsDescendantOf(workspace) then
+					local cooked = inst:GetAttribute("IsCooked") == true or CollectionService:HasTag(inst, "CookedMeat")
+					if cooked then
+						completeOnce()
+					else
+						-- Listen on this instance specifically as well
+						local conn
+						conn = inst:GetAttributeChangedSignal("IsCooked"):Connect(function()
+							if inst:GetAttribute("IsCooked") == true then
+								if conn then
+									conn:Disconnect()
+								end
+								completeOnce()
+							end
+						end)
+						table.insert(connections, conn)
 					end
 				end
-				-- timeout advance
-				advance()
 			end)
-		end
+		)
+		-- Final safety: timeout auto-advance to avoid permanent stall
+		task.delay(20, function()
+			completeOnce()
+		end)
 	elseif step.id == "eat_food" then
 		-- Detect hunger increase via PlayerStats Update remote if exposed on client
 		local updateStats = ReplicatedStorage:FindFirstChild("UpdatePlayerStats")
@@ -279,14 +348,16 @@ end
 
 -- Public start
 if TutorialConfig.Enabled then
-    advance()
+	advance()
 else
-    -- Hide UI if present
-    local _, frame = (function()
-        local pg = player:FindFirstChild("PlayerGui")
-        local gui = pg and pg:FindFirstChild("TutorialGui")
-        local frame = gui and gui:FindFirstChild("TutorialFrame")
-        return gui, frame
-    end)()
-    if frame then frame.Visible = false end
+	-- Hide UI if present
+	local _, frame = (function()
+		local pg = player:FindFirstChild("PlayerGui")
+		local gui = pg and pg:FindFirstChild("TutorialGui")
+		local frame = gui and gui:FindFirstChild("TutorialFrame")
+		return gui, frame
+	end)()
+	if frame then
+		frame.Visible = false
+	end
 end

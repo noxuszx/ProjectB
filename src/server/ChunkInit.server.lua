@@ -1,12 +1,11 @@
 --[[
 	ChunkInit.server.lua
-	Mobile-optimized terrain generation with proper sequencing
+	Unified terrain/gameplay initialization with proper sequencing
 ]]
 --
 
 -- Services
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 local SystemLoadMonitor 	= _G.SystemLoadMonitor or require(script.Parent.SystemLoadMonitor)
 local ChunkManager 			= require(script.Parent.terrain.ChunkManager)
@@ -29,73 +28,14 @@ local CreaturePoolManager 	= require(script.Parent.ai.CreaturePoolManager)
 local NightHuntManager 		= require(script.Parent.ai.NightHuntManager)
 local FoodDropSystem 		= require(script.Parent.loot.FoodDropSystem)
 
--- Configuration
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
-local function mobileOptimizedInit()
-	ChunkManager.init()
-
-	DayNightCycle.init()
-	LightingManager.init()
-	SystemLoadMonitor.reportSystemLoaded("Environment")
-
-	CollectionServiceTags.initializeDefaultTags()
-	CollectionServiceTags.tagItemsFolder()
-	SystemLoadMonitor.reportSystemLoaded("CollectionService")
-
-	PlayerStatsManager.init()
-	WaterRefillManager.init()
-	SystemLoadMonitor.reportSystemLoaded("PlayerStats")
-	SystemLoadMonitor.reportSystemLoaded("FoodSystem")
-
-	CoreStructureSpawner.spawnLandmarks()
-
-	task.wait(0.5)
-
-	local initPedestalEvent = game.ReplicatedStorage.Remotes.Events.InitPedestal
-	if initPedestalEvent then
-		initPedestalEvent:Fire()
-	end
-
-	TreasureSpawner.Initialize()
-	SystemLoadMonitor.reportSystemLoaded("TerrainSystem")
-
-	VillageSpawner.spawnVillages()
-	SpawnerPlacement.run()
-	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
-	ItemSpawner.Initialize()
-	EventItemSpawner.initialize()
-	CreaturePoolManager.init()
-	AIManager.getInstance():init()
-	NightHuntManager.init()
-	FoodDropSystem.init()
-	CreatureSpawner.populateWorld()
-	CreaturePoolManager.startRespawnLoop()
-	SystemLoadMonitor.reportSystemLoaded("AIManager")
-
-	task.wait(0.1)
-end
-
-local function desktopOptimizedInit()
+local function initServer()
 	local terrainReady = false
 	local environmentReady = false
 	local tagsReady = false
 
+	-- Kick off independent phases in parallel
 	task.spawn(function()
 		ChunkManager.init()
-		CoreStructureSpawner.spawnLandmarks()
-
-		task.wait(0.5)
-
-		local initPedestalEvent = game.ReplicatedStorage.Remotes.Events.InitPedestal
-		if initPedestalEvent then
-			initPedestalEvent:Fire()
-		end
-
-		TreasureSpawner.Initialize()
-		VillageSpawner.spawnVillages()
-		SpawnerPlacement.run()
-		CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
 		terrainReady = true
 	end)
 
@@ -111,6 +51,7 @@ local function desktopOptimizedInit()
 		tagsReady = true
 	end)
 
+	-- Player stats and food system can initialize independently
 	task.spawn(function()
 		PlayerStatsManager.init()
 		WaterRefillManager.init()
@@ -118,14 +59,32 @@ local function desktopOptimizedInit()
 		SystemLoadMonitor.reportSystemLoaded("FoodSystem")
 	end)
 
+	-- Wait for core phases
 	repeat
 		task.wait(0.1)
 	until terrainReady and environmentReady and tagsReady
 
+	-- Report core system readiness
 	SystemLoadMonitor.reportSystemLoaded("TerrainSystem")
 	SystemLoadMonitor.reportSystemLoaded("Environment")
 	SystemLoadMonitor.reportSystemLoaded("CollectionService")
 
+	-- Content that depends on terrain and tags
+	CoreStructureSpawner.spawnLandmarks()
+
+	-- Give dependent listeners a brief moment to connect
+	task.wait(0.5)
+	local initPedestalEvent = game.ReplicatedStorage.Remotes.Events.InitPedestal
+	if initPedestalEvent then
+		initPedestalEvent:Fire()
+	end
+
+	TreasureSpawner.Initialize()
+	VillageSpawner.spawnVillages()
+	SpawnerPlacement.run()
+	CustomModelSpawner.init(ChunkConfig.RENDER_DISTANCE, ChunkConfig.CHUNK_SIZE, ChunkConfig.SUBDIVISIONS)
+
+	-- Gameplay/AI systems
 	ItemSpawner.Initialize()
 	EventItemSpawner.initialize()
 	CreaturePoolManager.init()
@@ -137,10 +96,4 @@ local function desktopOptimizedInit()
 	SystemLoadMonitor.reportSystemLoaded("AIManager")
 end
 
-if isMobile then
-	mobileOptimizedInit()
-else
-	desktopOptimizedInit()
-end
-
-task.wait(0.5)
+initServer()

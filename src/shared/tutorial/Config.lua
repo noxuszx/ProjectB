@@ -3,7 +3,7 @@
 -- Toggle Enabled to true when you want to show the tutorial again
 
 local Config = {
-	Enabled = false,
+	Enabled = true,
 }
 
 return Config

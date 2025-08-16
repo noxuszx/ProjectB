@@ -22,8 +22,8 @@ local activeHealthBars = {}
 -- Configuration
 local HEALTH_BAR_CONFIG = {
 	BAR_WIDTH = 100,
-	BAR_HEIGHT = 8,
-	BAR_COLOR = Color3.fromRGB(76, 175, 80),
+	BAR_HEIGHT = 12,
+	BAR_COLOR = Color3.fromRGB(50, 205, 50),
 	BACKGROUND_COLOR = Color3.fromRGB(50, 50, 50),
 	BORDER_COLOR = Color3.fromRGB(200, 200, 200),
 	
@@ -91,13 +91,6 @@ function CreatureHealthBars.createHealthBar(creatureModel, health, maxHealth)
 	bar.BorderSizePixel = 0
 	bar.Parent = background
 	
-	local gradient = Instance.new("UIGradient")
-	gradient.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1, HEALTH_BAR_CONFIG.BAR_COLOR)
-	}
-	gradient.Rotation = 90
-	gradient.Parent = bar
 	
 	activeHealthBars[creatureModel] = {
 		frame = frame,
@@ -127,16 +120,7 @@ function CreatureHealthBars.updateHealthBar(creatureModel, health, maxHealth)
 		healthBarData.lastFullHealthTime = nil
 	end
 	
-	local tweenInfo = TweenInfo.new(
-		HEALTH_BAR_CONFIG.UPDATE_SMOOTHNESS,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out
-	)
-	
-	local tween = TweenService:Create(healthBarData.bar, tweenInfo, {
-		Size = UDim2.new(percentage, 0, 1, 0)
-	})
-	tween:Play()
+	healthBarData.bar.Size = UDim2.new(percentage, 0, 1, 0)
 	
 	local color = HEALTH_BAR_CONFIG.BAR_COLOR
 	if percentage < 0.25 then
@@ -145,10 +129,7 @@ function CreatureHealthBars.updateHealthBar(creatureModel, health, maxHealth)
 		color = Color3.fromRGB(255, 193, 7)
 	end
 	
-	local colorTween = TweenService:Create(healthBarData.bar, tweenInfo, {
-		BackgroundColor3 = color
-	})
-	colorTween:Play()
+	healthBarData.bar.BackgroundColor3 = color
 end
 
 function CreatureHealthBars.updateHealthBarPositions()

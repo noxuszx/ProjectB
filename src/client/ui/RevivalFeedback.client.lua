@@ -21,8 +21,8 @@ local function showRevivalMessage(messageType)
 		
 		local frame = Instance.new("Frame")
 		frame.Name = "MessageFrame"
-		frame.Size = UDim2.new(0, 400, 0, 80)
-		frame.Position = UDim2.new(0.5, -200, 0.5, -40)
+		frame.Size = UDim2.new(0, 300, 0, 60)
+		frame.Position = UDim2.new(0.5, -150, 0.5, -30)
 		frame.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 		frame.BorderSizePixel = 0
 		frame.Parent = screenGui
@@ -39,19 +39,19 @@ local function showRevivalMessage(messageType)
 		textLabel.Text = "Requires Bandage or Medkit!"
 		textLabel.TextColor3 = Color3.new(1, 1, 1)
 		textLabel.TextScaled = true
-		textLabel.Font = Enum.Font.GothamBold
+		textLabel.FontFace = Font.new("rbxasset://fonts/families/Balthazar.json", Enum.FontWeight.Light)
 		textLabel.Parent = frame
 		
 		-- Animate in
-		frame.Position = UDim2.new(0.5, -200, 0.5, -100)
+		frame.Position = UDim2.new(0.5, -150, 0.5, -70)
 		local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-		local slideIn = TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -200, 0.5, -40)})
+		local slideIn = TweenService:Create(frame, tweenInfo, {Position = UDim2.new(0.5, -150, 0.5, -30)})
 		slideIn:Play()
 		
 		-- Auto-remove after 3 seconds
 		task.wait(3)
 		local fadeOut = TweenService:Create(frame, TweenInfo.new(0.5), {
-			Position = UDim2.new(0.5, -200, 0.5, 20),
+			Position = UDim2.new(0.5, -150, 0.5, 10),
 			BackgroundTransparency = 1
 		})
 		local textFadeOut = TweenService:Create(textLabel, TweenInfo.new(0.5), {

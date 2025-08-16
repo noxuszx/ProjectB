@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 
 local ItemConfig             = require(ReplicatedStorage.Shared.config.ItemConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local ToolGrantService      = require(script.Parent.Parent.services.ToolGrantService)
 
 
 local ItemSpawner   = {}
@@ -348,15 +349,61 @@ local function spawnItem(itemName, position)
 
 	-- If this spawned object should grant a Tool on pickup, mark it now
 	local toolNameAttr = nil
-	-- Priority: explicit attribute on template, config mapping, fallback to itemName
+	-- Priority: explicit attribute on template, config mapping, then heuristics
 	if itemTemplate:GetAttribute("ToolName") then
 		toolNameAttr = itemTemplate:GetAttribute("ToolName")
 	elseif ItemConfig.ToolMappings and ItemConfig.ToolMappings[itemName] then
 		toolNameAttr = ItemConfig.ToolMappings[itemName]
+	else
+		-- Heuristics: if template or spawned instance is flagged as a weapon/heal, or if a tool template exists
+		local flaggedAsToolPickup = false
+		local function isTrueAttr(inst, attrName)
+			local v = inst:GetAttribute(attrName)
+			return v == true or v == "true" or v == 1
+		end
+		flaggedAsToolPickup = isTrueAttr(itemTemplate, "weapons") or isTrueAttr(itemTemplate, "heals")
+		if not flaggedAsToolPickup then
+			flaggedAsToolPickup = isTrueAttr(newItem, "weapons") or isTrueAttr(newItem, "heals")
+		end
+		-- If explicitly flagged, prefer using the itemName unless a ToolName is already provided
+		if flaggedAsToolPickup and not toolNameAttr then
+			if ToolGrantService.hasToolTemplate and ToolGrantService.hasToolTemplate(itemName) then
+				toolNameAttr = itemName
+			end
+		end
+		-- As a final fallback, if a matching tool template exists with the same name, use it
+		if not toolNameAttr and ToolGrantService.hasToolTemplate and ToolGrantService.hasToolTemplate(itemName) then
+			toolNameAttr = itemName
+		end
 	end
 	if toolNameAttr then
 		newItem:SetAttribute("ToolName", toolNameAttr)
 		CollectionServiceTags.addTag(newItem, CollectionServiceTags.TOOL_GRANT)
+		-- Also attach a UsePrompt so it behaves like BuyZone pickups
+		local mainPart
+		if newItem:IsA("BasePart") then
+			mainPart = newItem
+		elseif newItem:IsA("Tool") then
+			mainPart = newItem:FindFirstChild("Handle")
+		elseif newItem:IsA("Model") then
+			mainPart = newItem.PrimaryPart or newItem:FindFirstChildOfClass("BasePart")
+		else
+			mainPart = newItem:FindFirstChildOfClass("BasePart")
+		end
+		if mainPart then
+			local usePrompt = Instance.new("ProximityPrompt")
+			usePrompt.Name = "UsePrompt"
+			usePrompt.ActionText = "Equip " .. tostring(toolNameAttr)
+			usePrompt.ObjectText = "Tool"
+			usePrompt.HoldDuration = 0
+			usePrompt.MaxActivationDistance = 8
+			usePrompt.RequiresLineOfSight = false
+			usePrompt.Style = Enum.ProximityPromptStyle.Default
+			-- Attributes used by ItemUseHandler
+			usePrompt:SetAttribute("UseType", "GrantTool")
+			usePrompt:SetAttribute("ToolTemplate", toolNameAttr)
+			usePrompt.Parent = mainPart
+		end
 	end
 
 	spawnedItemsCount += 1

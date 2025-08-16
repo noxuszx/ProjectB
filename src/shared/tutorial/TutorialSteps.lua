@@ -53,7 +53,32 @@ TutorialSteps.Steps = {
             local char = player.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local origin = root and root.Position or Vector3.new()
-            return findNearestByTag(CollectionServiceTags.COOKING_SURFACE, origin)
+            -- Prefer highlighting a nearby raw food item (CONSUMABLE with IsCooked == false or tagged RawMeat)
+            local CollectionService = game:GetService("CollectionService")
+            local nearest, nearestDist = nil, math.huge
+            for _, inst in ipairs(CollectionService:GetTagged(CollectionServiceTags.CONSUMABLE)) do
+                if inst and inst:IsDescendantOf(workspace) then
+                    local isCookedAttr = inst:GetAttribute("IsCooked")
+                    local isRawTag = CollectionService:HasTag(inst, "RawMeat")
+                    if (isCookedAttr == false) or isRawTag then
+                        local pos
+                        if inst:IsA("BasePart") then
+                            pos = inst.Position
+                        elseif inst:IsA("Model") then
+                            local primary = inst.PrimaryPart or inst:FindFirstChildOfClass("BasePart")
+                            pos = primary and primary.Position
+                        end
+                        if pos then
+                            local d = (pos - origin).Magnitude
+                            if d < nearestDist then
+                                nearest, nearestDist = inst, d
+                            end
+                        end
+                    end
+                end
+            end
+            -- Fallback to highlighting a cooking surface if no raw food is nearby
+            return nearest or findNearestByTag(CollectionServiceTags.COOKING_SURFACE, origin)
         end,
         -- completion heuristic handled by controller (detect cooked item nearby or server hint)
     },
@@ -76,7 +101,11 @@ TutorialSteps.Steps = {
             local char = player.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local origin = root and root.Position or Vector3.new()
-            return findNearestByTag(CollectionServiceTags.SELL_ZONE, origin)
+            local zone = findNearestByTag(CollectionServiceTags.SELL_ZONE, origin)
+            if not zone then return nil end
+            -- Prefer highlighting the parent Model that represents the trading post
+            local postModel = zone:FindFirstAncestorOfClass("Model")
+            return postModel or zone
         end,
         -- completion handled by controller via money increase or server hint
     },

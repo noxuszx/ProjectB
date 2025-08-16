@@ -22,11 +22,14 @@ function HighlightManager.attachHighlight(target, options)
     h.Name = "TutorialHighlight"
     h.Adornee = target -- let Highlight handle models; Roblox supports Model Adornee
     h.Enabled = true
-    h.FillTransparency = options and options.FillTransparency or 0.6
-    h.OutlineTransparency = options and options.OutlineTransparency or 0
-    h.FillColor = options and options.FillColor or Color3.fromRGB(255, 215, 0) -- gold tint
-    h.OutlineColor = options and options.OutlineColor or Color3.fromRGB(255, 255, 255)
+    -- Visible fill and outline to highlight the entire object
+    h.FillTransparency = (options and options.FillTransparency) or 0.4
+    h.OutlineTransparency = (options and options.OutlineTransparency) or 0.1
+    h.FillColor = (options and options.FillColor) or Color3.fromRGB(255, 230, 120) -- warm gold fill
+    h.OutlineColor = (options and options.OutlineColor) or Color3.fromRGB(255, 200, 0) -- bright outline
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     h.Parent = target
+
     return h
 end
 

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CashPoolManager = require(script.Parent.CashPoolManager)
 local EconomyConfig = require(ReplicatedStorage.Shared.config.EconomyConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 -- Cache Money folder at file scope
 local MoneyFolder = ReplicatedStorage:FindFirstChild("Money")
@@ -114,7 +115,12 @@ local function onSellZoneTouched(sellZone, hit)
 		cashClone.Parent = workspace
 		cashClone.Position = spawnPosition
 	end
-	cashClone:SetAttribute("CashValue", itemValue)
+cashClone:SetAttribute("CashValue", itemValue)
+
+-- Play economy sell sound at the zone for feedback
+pcall(function()
+    SoundPlayer.playAt("economy.sell", sellZone)
+end)
 end
 
 local function setupSellZone(sellZone)

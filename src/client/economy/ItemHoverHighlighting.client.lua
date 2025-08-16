@@ -88,6 +88,13 @@ local function removeItemHighlight()
 	lastHoveredItem = nil
 end
 
+-- Helper to check if a model has a BuyPrompt (spawned by BuyZoneHandler)
+local function hasBuyPrompt(model)
+	if not model or not model:IsA("Model") then return false end
+	local prompt = model:FindFirstChild("BuyPrompt", true) -- deep search
+	return prompt ~= nil and prompt:IsA("ProximityPrompt")
+end
+
 -- Handle mouse hover detection
 local function checkMouseHover()
 	local mouse = player:GetMouse()
@@ -97,10 +104,10 @@ local function checkMouseHover()
 	if target ~= lastHoveredItem then
 		removeItemHighlight()
 
-		-- Check if new target is a buyable item model
+		-- Check if new target is a buyable item model with a BuyPrompt
 		if target then
 			local item = target.Parent
-			if item and item:IsA("Model") and isItemBuyable(item) then
+			if item and item:IsA("Model") and isItemBuyable(item) and hasBuyPrompt(item) then
 				local canAfford = canAffordItem(item)
 				createItemHighlight(item, canAfford)
 				lastHoveredItem = target

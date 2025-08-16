@@ -87,8 +87,6 @@ local function createItemFromTemplate(itemName, position)
 		-- Make Ankh face world origin (0,0) like the pyramid does
 		local targetPosition = Vector3.new(0, position.Y, 0) -- Keep same Y, but look at 0,0
 		cframe = CFrame.lookAt(position, targetPosition)
-		-- Then rotate 90 degrees around Y-axis (green axis) to fix front orientation
-		cframe = cframe * CFrame.Angles(0, math.rad(90), 0)
 	end
 	
 	if item:IsA("MeshPart") then
