@@ -8,6 +8,22 @@ local SystemLoadMonitor = _G.SystemLoadMonitor or require(script.Parent.Parent.S
 
 local ToolGrantService = {}
 
+-- Tools that should be limited to one instance per player (by exact name)
+local SINGLE_INSTANCE_TOOLS = {
+	Spear = true,
+	Katana = true,
+	Crossbow = true,
+	Bow = true,
+	Machete = true,
+	Kopesh = true,
+}
+
+-- Tools that are allowed to have multiple instances
+local MULTI_INSTANCE_TOOLS = {
+	Bandage = true,
+	Medkit = true,
+}
+
 -- Track in-progress grants to avoid race-based duplicates
 local _inProgress = {}
 
@@ -46,10 +62,17 @@ function ToolGrantService.grantTool(player, toolName)
 		return false
 	end
 
-	-- Prevent duplicates if the player already has this tool in Backpack or equipped
-	if playerHasTool(player, toolName) then
-		print("[ToolGrantService] Skipping grant -", player.Name, "already has", toolName)
-		return true
+	-- Enforce duplicate policy: single-instance weapons cannot be granted twice
+	local hasAlready = playerHasTool(player, toolName)
+	if hasAlready then
+		if SINGLE_INSTANCE_TOOLS[toolName] and not MULTI_INSTANCE_TOOLS[toolName] then
+			-- Deny grant so world item remains for others
+			print("[ToolGrantService] Deny grant -", player.Name, "already has single-instance tool", toolName)
+			return false
+		else
+			-- Allow multiples for whitelisted tools (e.g., Bandage, Medkit)
+			print("[ToolGrantService] Player already has", toolName, "but multiples are allowed; proceeding to grant")
+		end
 	end
 
 	-- Guard against concurrent double-grants (same player+tool within this tick)

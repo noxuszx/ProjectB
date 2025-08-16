@@ -172,60 +172,8 @@ local function updateTimer()
 	end
 end
 
--- Remote event connections
-local function connectRemotes()
-	local startTimerRemote = getArenaRemote(ArenaConfig.Remotes.StartTimer)
-	if startTimerRemote then
-		startTimerRemote.OnClientEvent:Connect(function(data)
-			arenaActive = true
-			endTime = data.endTime
-			arenaGui:SetAttribute("Active", true)
-			arenaGui:SetAttribute("EndTime", endTime or 0)
-			showArenaUI()
-		end)
-	end
-	
-	local syncRemote = getArenaRemote(ArenaConfig.Remotes.Sync)
-	if syncRemote then
-		syncRemote.OnClientEvent:Connect(function(data)
-			if arenaActive then
-				endTime = data.endTime
-				arenaGui:SetAttribute("EndTime", endTime or 0)
-			end
-		end)
-	end
-	
-	local pauseRemote = getArenaRemote(ArenaConfig.Remotes.Pause)
-	if pauseRemote then
-		pauseRemote.OnClientEvent:Connect(function()
-			-- Could add pause UI effects here
-		end)
-	end
-	
-	local resumeRemote = getArenaRemote(ArenaConfig.Remotes.Resume)
-	if resumeRemote then
-		resumeRemote.OnClientEvent:Connect(function(data)
-			endTime = data.endTime
-			arenaGui:SetAttribute("EndTime", endTime or 0)
-		end)
-	end
-	
-	local victoryRemote = getArenaRemote(ArenaConfig.Remotes.Victory)
-	if victoryRemote then
-		victoryRemote.OnClientEvent:Connect(function(data)
-			hideArenaUI()
-			-- TODO: Show victory UI with data.message
-		end)
-	end
-end
-
--- Timer update loop
-task.spawn(function()
-	while true do
-		updateTimer()
-		task.wait(0.1) -- Update every 100ms for smooth countdown
-	end
-end)
+-- Remote event connections are handled by the new UI system when enabled
+-- This script is deprecated when UseUIManager is true. Legacy logic removed.
 
 -- Initialize
 arenaGui.Enabled = false -- Start hidden
@@ -240,6 +188,3 @@ player.CharacterAdded:Connect(function()
 		arenaGui.Enabled = true
 	end
 end)
-
-connectRemotes()
-

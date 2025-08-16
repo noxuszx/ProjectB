@@ -10,6 +10,7 @@ local PhysicsService     = game:GetService("PhysicsService")
 -- Time/Environment modules for /time command
 local DayNightCycle      = require(script.Parent.Parent.environment.DayNightCycle)
 local TimeConfig         = require(ReplicatedStorage.Shared.config.Time)
+local EconomyService     = require(script.Parent.Parent.services.EconomyService)
 
 local AdminCommands = {}
 
@@ -268,6 +269,45 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
                 hum.Health = 0
                 print("[AdminCommands] Killed", plr.Name)
             end
+        end
+    elseif cmd == "givemoney" or cmd == "givemoneyto" then
+        -- Usage: /givemoney <amount> (self only for now)
+        local amountNum = tonumber(arg1)
+        if not amountNum or amountNum <= 0 then
+            warn("[AdminCommands] /givemoney requires a positive number amount, e.g. /givemoney 100")
+            return
+        end
+        if EconomyService.addMoney(plr, math.floor(amountNum)) then
+            print(string.format("[AdminCommands] Gave %s %d coins", plr.Name, math.floor(amountNum)))
+        end
+    elseif cmd == "money" then
+        -- Usage: /money set <amount>
+        local sub = string.lower(parts[2] or "")
+        local amt = tonumber(parts[3])
+        if sub == "set" then
+            if not amt or amt < 0 then
+                warn("[AdminCommands] /money set requires a non-negative number amount, e.g. /money set 500")
+                return
+            end
+            amt = math.floor(amt)
+            local current = EconomyService.getMoney(plr)
+            local delta = amt - current
+            if delta > 0 then
+                EconomyService.addMoney(plr, delta)
+                print(string.format("[AdminCommands] Set %s money to %d (+%d)", plr.Name, amt, delta))
+            elseif delta < 0 then
+                local toRemove = -delta
+                if not EconomyService.removeMoney(plr, toRemove) then
+                    -- Fallback: if for any reason remove fails (shouldn't when delta<0 and balance known), clamp to 0
+                    local have = EconomyService.getMoney(plr)
+                    if have > 0 then EconomyService.removeMoney(plr, have) end
+                end
+                print(string.format("[AdminCommands] Set %s money to %d (-%d)", plr.Name, amt, toRemove))
+            else
+                print(string.format("[AdminCommands] %s already has %d coins", plr.Name, amt))
+            end
+        else
+            warn("[AdminCommands] /money supports: set <amount>")
         end
     end
 end

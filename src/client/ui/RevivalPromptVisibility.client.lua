@@ -18,10 +18,24 @@ local function handleVisibility()
 		if character then
 			local hrp = character:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				-- Proximity Prompt
+				-- Revival Proximity Prompt
 				local prompt = hrp:FindFirstChild("RevivalPrompt")
 				if prompt and prompt:IsA("ProximityPrompt") then
 					prompt.Enabled = not shouldHide(prompt)
+				end
+
+				-- Heal Proximity Prompt: only hide for the target; do not force-enable for others
+				local healPrompt = hrp:FindFirstChild("HealPrompt")
+				if healPrompt and healPrompt:IsA("ProximityPrompt") then
+					if shouldHide(healPrompt) then
+						healPrompt.Enabled = false
+					else
+						-- Use server-authored Healable attribute to reflect correct visibility
+						local healable = hrp:GetAttribute("Healable")
+						if typeof(healable) == "boolean" then
+							healPrompt.Enabled = healable
+						end
+					end
 				end
 
 				-- Billboard (Death label)

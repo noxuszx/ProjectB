@@ -5,6 +5,7 @@ local Players 			   = game:GetService("Players")
 local ReplicatedStorage    = game:GetService("ReplicatedStorage")
 local RagdollModule 	   = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local ToolGrantService      = require(script.Parent.Parent.services.ToolGrantService)
 
 local deathRemotes 		   = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
 local showUIRemote 		   = deathRemotes:WaitForChild("ShowUI")
@@ -57,6 +58,16 @@ local function spawnDroppedItemFromTemplate(itemName, position)
 	-- Parent under SpawnedItems if present for organization
 	local spawnedFolder = workspace:FindFirstChild("SpawnedItems")
 	inst.Parent = spawnedFolder or workspace
+	-- Mark as tool grant so ToolGrantBinder attaches a prompt (event-driven, no polling)
+	local toolName = nil
+	if ToolGrantService.hasToolTemplate and ToolGrantService.hasToolTemplate(itemName) then
+		toolName = itemName
+	else
+		-- Fallback to instance name; Binder will still try using this
+		toolName = itemName
+	end
+	inst:SetAttribute("ToolName", toolName)
+	CollectionServiceTags.addTag(inst, CollectionServiceTags.TOOL_GRANT)
 	-- Tag basic drag/store behavior similar to ItemSpawner
 	if inst:IsA("BasePart") then
 		CollectionServiceTags.addTag(inst, CollectionServiceTags.DRAGGABLE)
@@ -127,6 +138,8 @@ local function handleRespawnRequest(player)
 	deadPlayers		[player.UserId] = nil
 	ragdolledPlayers[player.UserId] = nil
 	ragdollPositions[player.UserId] = nil
+	-- Clear any lingering heal cooldown on revive
+	player:SetAttribute("HealCooldownUntil", nil)
 	
 	-- Clean up revival prompt
 	if revivalPrompts[player.UserId] then
@@ -189,6 +202,8 @@ local function onPlayerAdded(player)
 		deadPlayers[player.UserId] = nil
 		ragdolledPlayers[player.UserId] = nil
 		ragdollPositions[player.UserId] = nil
+		-- Clear any lingering heal cooldown on new character
+		player:SetAttribute("HealCooldownUntil", nil)
 		
 		-- Clean up revival prompt
 		if revivalPrompts[player.UserId] then

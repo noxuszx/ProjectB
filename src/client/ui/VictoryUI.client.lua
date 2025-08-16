@@ -220,11 +220,4 @@ local function connectVictoryRemote()
 	end
 end
 
--- Initialize
-bindVictoryGui()
-connectVictoryRemote()
-
--- Also rebind if the character respawns (some setups rebuild GUIs)
-player.CharacterAdded:Connect(function()
-	bindVictoryGui()
-end)
+-- Legacy VictoryUI logic is disabled; handled by UIManager.
