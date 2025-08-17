@@ -1,8 +1,37 @@
 local RP = game:GetService("ReplicatedStorage")
+local PhysicsService = game:GetService("PhysicsService")
+
+-- Ensure collision groups exist (safe to register repeatedly)
+pcall(function()
+	PhysicsService:RegisterCollisionGroup("Item")
+end)
+pcall(function()
+	PhysicsService:RegisterCollisionGroup("player")
+end)
+
+local function setCollisionGroupDeep(root, groupName)
+	if not root then
+		return
+	end
+	if root:IsA("BasePart") then
+		root.CollisionGroup = groupName
+		return
+	end
+	if root:IsA("Model") or root:IsA("Tool") then
+		for _, d in pairs(root:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CollisionGroup = groupName
+			end
+		end
+	end
+end
 
 RP.Remotes.PickupItem.OnServerEvent:Connect(function(plr, object)
-	if not object then return end
+	if not object then
+		return
+	end
 
+	-- Assign network ownership for responsiveness
 	if object:IsA("MeshPart") or object:IsA("Part") then
 		object:SetNetworkOwner(plr)
 	elseif object.PrimaryPart then
@@ -15,11 +44,17 @@ RP.Remotes.PickupItem.OnServerEvent:Connect(function(plr, object)
 			end
 		end
 	end
+
+	-- Server-authoritative collision group swap so items don't collide with the player while carried
+	setCollisionGroupDeep(object, "Item")
 end)
 
 RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
-	if not object then return end
+	if not object then
+		return
+	end
 
+	-- Apply throw velocity to an appropriate part
 	if object:IsA("MeshPart") or object:IsA("Part") then
 		if velocity then
 			object.AssemblyLinearVelocity = velocity
@@ -55,6 +90,9 @@ RP.Remotes.DropItem.OnServerEvent:Connect(function(plr, object, velocity)
 					end
 				end
 			end
+
+			-- Reset collision group back to Default on the server
+			setCollisionGroupDeep(object, "Default")
 		end
 	end)
 end)

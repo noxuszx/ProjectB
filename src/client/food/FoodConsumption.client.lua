@@ -9,6 +9,7 @@ local ReplicatedStorage 	= game:GetService("ReplicatedStorage")
 
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local EconomyConfig 		= require(ReplicatedStorage.Shared.config.EconomyConfig)
+local SoundPlayer         = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 local player 			= Players.LocalPlayer
 
@@ -159,6 +160,8 @@ function FoodConsumption.attemptConsumption()
 		return
 	end
 
+	-- Play local feedback immediately (covers desktop and mobile)
+	SoundPlayer.play("food.eat")
 	-- Proceed with food consumption (sack check now handled in input handler)
 	consumeFoodRemote:FireServer(highlightedFood)
 	FoodConsumption.clearHighlight()

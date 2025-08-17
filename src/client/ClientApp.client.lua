@@ -11,6 +11,12 @@ local RemoteRegistry = require(script.Parent.ui.core.RemoteRegistry)
 local UIManager = require(script.Parent.ui.UIManager)
 local ArenaController = require(script.Parent.controllers.ArenaController)
 local DeathController = require(script.Parent.controllers.DeathController)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
+
+-- Preload commonly used sounds upfront
+pcall(function()
+	SoundPlayer.preloadAll()
+end)
 
 if not UIRuntimeConfig.UseUIManager then
 	return

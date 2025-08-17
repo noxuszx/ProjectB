@@ -143,6 +143,18 @@
         "AdminFlyControl": {
           "$className": "RemoteEvent"
         },
+        "Admin": {
+          "$className": "Folder",
+          "AdminUIToggle": {
+            "$className": "RemoteEvent"
+          },
+          "AdminCommand": {
+            "$className": "RemoteEvent"
+          },
+          "AdminStateSync": {
+            "$className": "RemoteEvent"
+          }
+        },
         "UpdateBottleState": {
           "$className": "RemoteEvent"
         },
@@ -181,9 +193,9 @@
         "$properties": {
           "Anchored": true,
           "Color": [
-            0.38823,
-            0.37254,
-            0.38823
+            0.84314,
+            0.77255,
+            0.60392
           ],
           "Locked": true,
           "Position": [

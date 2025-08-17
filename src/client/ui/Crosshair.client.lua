@@ -22,8 +22,8 @@ screenGui.Parent = playerGui
 -- Crosshair dot
 local crosshair = Instance.new("Frame")
 crosshair.Name = "Crosshair"
-crosshair.Size = UDim2.new(0, 8, 0, 8)  -- 8x8 pixel dot
-crosshair.Position = UDim2.new(0.5, -4, 0.5, -4)  -- Centered
+crosshair.Size = UDim2.new(0, 4, 0, 4)  -- 4x4 pixel dot (smaller)
+crosshair.Position = UDim2.new(0.5, -2, 0.5, -2)  -- Centered
 crosshair.BackgroundColor3 = Color3.new(1, 1, 1)  -- White
 crosshair.BorderSizePixel = 0
 crosshair.Visible = false
@@ -31,8 +31,15 @@ crosshair.Parent = screenGui
 
 -- Add rounded corners for smoother dot
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 4)  -- Makes it circular
+corner.CornerRadius = UDim.new(0, 2)  -- Makes it circular
 corner.Parent = crosshair
+
+-- Add stroke
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.5
+stroke.Transparency = 0.6
+stroke.Color = Color3.new(0, 0, 0)  -- Black stroke
+stroke.Parent = crosshair
 
 
 local function isFirstPerson()

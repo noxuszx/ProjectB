@@ -111,10 +111,10 @@ if EconomyService.addMoney(player, cashValue) then
 end
 
 local function monitorWorkspaceChildAdded()
-	workspace.ChildAdded:Connect(function(child)
+workspace.ChildAdded:Connect(function(child)
 		if child:IsA(
 			"MeshPart"
-		) and (child.Name == "cash5" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
+		) and (child.Name == "cash5" or child.Name == "cash10" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
 			-- Wait a frame to ensure attributes are set
 			RunService.Heartbeat:Wait()
 
@@ -210,6 +210,14 @@ local function onGoldpilePromptTriggered(promptObject, player)
 	local value = getGoldValue(goldpile)
 	if value <= 0 then value = 100 end
 	if EconomyService.addMoney(player, value) then
+		-- Play the same pickup sound as collecting cash/coins at the player's position
+		pcall(function()
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart") or SoundService
+			local choices = {"economy.cash_small", "economy.cash_large"}
+			local idx = math.random(1, #choices)
+			SoundPlayer.playAt(choices[idx], root)
+		end)
 		goldpile:Destroy()
 		if EconomyConfig.Debug.Enabled then
 			print("[CashCollectionHandler]", player.Name, "collected goldpile for", value)
@@ -227,10 +235,10 @@ local function init()
 	ProximityPromptService.PromptTriggered:Connect(onGoldpilePromptTriggered)
 	monitorWorkspaceChildAdded()
 
-	for _, child in pairs(workspace:GetChildren()) do
+for _, child in pairs(workspace:GetChildren()) do
 		if child:IsA(
 			"MeshPart"
-		) and (child.Name == "cash5" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
+		) and (child.Name == "cash5" or child.Name == "cash10" or child.Name == "cash15" or child.Name == "cash25" or child.Name == "cash50") then
 			cashItems[child] = true
 			createCashPrompt(child)
 

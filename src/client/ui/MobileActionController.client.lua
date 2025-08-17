@@ -143,6 +143,13 @@ local function isMeleeEquipped()
     return meleeCfg ~= nil
 end
 
+local function isRangedEquipped()
+    local tool = getEquippedTool()
+    if not tool then return false end
+    local rangedCfg = WeaponConfig.RangedWeapons and WeaponConfig.RangedWeapons[tool.Name]
+    return rangedCfg ~= nil
+end
+
 local function getEquippedHealType()
     local tool = getEquippedTool()
     if not tool then return nil end
@@ -234,6 +241,31 @@ end
 
 -- ACTIONS registry in priority order (1=highest priority for slot assignment)
 local ACTIONS = {
+    {
+        key = "Fire",
+        actionName = "MobileRangedFire",
+        canShow = isRangedEquipped,
+        onAction = function(_, inputState)
+            if inputState == Enum.UserInputState.Begin then
+                local tool = getEquippedTool()
+                if tool and tool.Activate then
+                    -- Explicitly signal crosshair-aim fire to the weapon script
+                    pcall(function()
+                        tool:SetAttribute("AimMode", "Crosshair")
+                    end)
+                    tool:Activate()
+                    task.defer(function()
+                        pcall(function()
+                            tool:SetAttribute("AimMode", nil)
+                        end)
+                    end)
+                end
+            end
+        end,
+        visuals = function()
+            return "Fire", { released = Color3.fromRGB(255,255,255), pressed = Color3.fromRGB(125,125,125) }
+        end,
+    },
     {
         key = "Melee",
         actionName = "MobileMelee",
@@ -328,6 +360,7 @@ local BUTTON_POSITIONS = {
     Axis     = UDim2.new(0.728, 0, -1.2, 0),        -- axis moved down from -1.4 to -1.2
     Heal     = UDim2.new(-0.005, 0, 0.188, 0),      -- near rotate
     Melee    = UDim2.new(-1.472, 0, -0.312, 0),     -- same spot as Store for reachability
+    Fire     = UDim2.new(-1.472, 0, -0.312, 0),     -- reuse Melee slot; only one shows at a time
 }
 
 local function ensureBound(action)

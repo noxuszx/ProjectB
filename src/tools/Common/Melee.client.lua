@@ -10,6 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local ContextActionUtility = require(ReplicatedStorage.Shared.modules.ContextActionUtility)
+local LocalHitRegistry = require(ReplicatedStorage.Shared.modules.LocalHitRegistry)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 -- Tool and player references
 local tool = script.Parent
@@ -186,6 +188,11 @@ local function executeAttack()
 
     -- Send to server using existing damage pipeline (server decides creature:takeDamage)
     if targetModel and weaponRemote and config and config.Damage then
+        -- Play local hit-confirm immediately for reliability (first and last hits)
+        local parent = targetModel.PrimaryPart or targetModel
+        SoundPlayer.playAt("hit_confirm", parent, { volume = 0.5, rolloff = { min = 8, max = 60, emitter = 5 } })
+        -- Still claim for potential future uses (optional)
+        LocalHitRegistry.claim(targetModel)
         weaponRemote:FireServer(targetModel, config.Damage)
     end
 

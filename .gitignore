@@ -41,6 +41,8 @@ Thumbs.db
 *.temp
 *.cache
 
+Place2/
+
 # Documentation that might be personal/temporary
 DEVELOPER_ROADMAP.md
 IMPROVEMENTS_AND_SUGGESTIONS.md

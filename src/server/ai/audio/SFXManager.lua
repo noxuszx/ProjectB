@@ -23,6 +23,9 @@ local DefaultRules = {
 	Skeleton = { hurt = true, death = true, aggro = false },
 	TowerSkeleton = { hurt = true, death = true, aggro = false },
 	TowerMummy = { hurt = true, death = true, aggro = true },     -- aggro via attribute trigger
+	-- Enable full bark set for scorpions
+	Scorpion = { hurt = true, death = true, aggro = true },
+	ArenaScorpion = { hurt = true, death = true, aggro = true },
 }
 
 -- Name tokens to find sounds for each event (case-insensitive)

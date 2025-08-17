@@ -1,20 +1,30 @@
 -- src/shared/config/EconomyConfig.lua
 -- Configuration for the Economy System
--- Defines sellable item values, buyable items, and economy settings
 
 local EconomyConfig = {
-	-- Starting money for new players
+	-- NOT BEING USED
 	STARTING_MONEY = 0,
-	
-	-- Sellable item values (matched to CollectionService tags)
+
+	-- Sellable item values
 	SellableItems = {
 		SELLABLE_SCRAP = 5,
-		SELLABLE_LOW = 15,    -- Low-value items (scrap metal, wood scraps, cloth)
-		SELLABLE_MID = 25,    -- Mid-value items (refined materials, tools, electronics)
-		SELLABLE_HIGH = 50,   -- High-value items (rare materials, gems, advanced components)
+		SELLABLE_LOW = 15,
+		SELLABLE_MID = 25,
+		SELLABLE_HIGH = 50,
 	},
-	
-	-- Normalized categories: "Weapons", "Health", "Food", "Ammo"
+
+	-- Humanoid enemy sell values
+	CreatureSellValues = {
+		EgyptianSkeleton = 5,
+		EgyptianSkeleton2 = 5,
+		SkeletonArcher = 10,
+		Mummy = 10,
+		TowerSkeleton = 10,
+		TowerMummy = 10,
+		-- Intentionally exclude any Villager* types
+	},
+
+	-- CATEGORIES: "Weapons", "Health", "Food", "Ammo"
 	BuyableItems = {
 		{
 			ItemName = "Spear",
@@ -22,7 +32,7 @@ local EconomyConfig = {
 			SpawnWeight = 0.3,
 			Category = "Weapons",
 			Type = "Tool",
-			GiveToolName = "Spear"
+			GiveToolName = "Spear",
 		},
 		{
 			ItemName = "Crossbow",
@@ -30,41 +40,50 @@ local EconomyConfig = {
 			SpawnWeight = 0.4,
 			Category = "Weapons",
 			Type = "Tool",
-			GiveToolName = "Crossbow"
+			GiveToolName = "Crossbow",
+		},
+		{
+			ItemName = "Bow",
+			Cost = 20,
+			SpawnWeight = 0.4,
+			Category = "Weapons",
+			Type = "Tool",
+			GiveToolName = "Bow",
 		},
 		{
 			ItemName = "Katana",
-			Cost = 100,
+			Cost = 200,
 			SpawnWeight = 0.1,
 			Category = "Weapons",
 			Type = "Tool",
-			GiveToolName = "Katana"
+			GiveToolName = "Katana",
 		},
 		{
 			ItemName = "Machete",
-			Cost = 50,
+			Cost = 70,
 			SpawnWeight = 0.4,
 			Category = "Weapons",
 			Type = "Tool",
-			GiveToolName = "Machete"
+			GiveToolName = "Machete",
 		},
 		{
 			ItemName = "Medkit",
-			Cost = 10,
+			Cost = 30,
 			SpawnWeight = 0.4,
 			Category = "Health",
 			Type = "Tool",
-			GiveToolName = "Medkit"
+			GiveToolName = "Medkit",
 		},
 		{
 			ItemName = "Bandage",
-			Cost = 5,
+			Cost = 10,
 			SpawnWeight = 0.7,
 			Category = "Health",
 			Type = "Tool",
-			GiveToolName = "Bandage"
+			GiveToolName = "Bandage",
 		},
-		-- Ammo (consumable items that add to inventory)
+
+		-- AMMO [!]
 		{
 			ItemName = "Bolts",
 			Cost = 10,
@@ -72,57 +91,56 @@ local EconomyConfig = {
 			Category = "Ammo",
 			Type = "Ammo",
 			AmmoType = "CrossbowBolt",
-			AmmoAmount = 5
+			AmmoAmount = 5,
 		},
-		-- Food (consumable world items that should only be consumable after purchase)
+
+		-- FOOD [!]
 		{
 			ItemName = "CamelMeat",
-			Cost = 15,
+			Cost = 20,
 			SpawnWeight = 0.5,
 			Category = "Food",
-			Type = "Food"
+			Type = "Food",
 		},
 		{
 			ItemName = "CoyoteMeat",
 			Cost = 15,
 			SpawnWeight = 0.5,
 			Category = "Food",
-			Type = "Food"
+			Type = "Food",
 		},
 		{
 			ItemName = "RabbitMeat",
-			Cost = 15,
+			Cost = 5,
 			SpawnWeight = 0.5,
 			Category = "Food",
-			Type = "Food"
+			Type = "Food",
 		},
 		{
 			ItemName = "ScorpionMeat",
-			Cost = 15,
+			Cost = 20,
 			SpawnWeight = 0.5,
 			Category = "Food",
-			Type = "Food"
+			Type = "Food",
 		},
 	},
-	
+
 	-- Zone settings
 	Zones = {
-		-- Sell zone configuration
 		SellZone = {
 			TouchCooldown = 1.0,
 			EffectDuration = 0.5,
 			SoundEnabled = true,
 		},
-		
-		-- Buy zone configuration
+
 		BuyZone = {
 			SpawnHeight = 2, -- Studs above the buy zone part
 			ProximityRange = 10, -- Range for proximity prompt activation
 			InteractionCooldown = 0.5, -- Prevent rapid clicking
 			RandomSpawnChance = true, -- Whether to use weighted random selection
-		}
+		},
 	},
-	
+
 	-- UI Settings
 	UI = {
 		MoneyDisplay = {
@@ -133,31 +151,28 @@ local EconomyConfig = {
 			Size = UDim2.new(0, 150, 0, 30),
 			UpdateAnimationTime = 0.3, -- Smooth money updates
 		},
-		
-		-- Highlighting colors for buy zones
+
 		Highlighting = {
 			CanAfford = Color3.fromRGB(0, 255, 0), -- Green
 			CannotAfford = Color3.fromRGB(255, 0, 0), -- Red
 			Brightness = 0.3,
 			Transparency = 0.5,
-		}
+		},
 	},
-	
-	-- Performance settings
-		Performance = {
-		BatchUpdatesEnabled = true, -- Batch money updates to reduce network calls
-		UpdateBatchSize = 5, -- Max operations per batch
+
+	Performance = {
+		BatchUpdatesEnabled = true,
+		UpdateBatchSize = 5,
 		TouchDebounceTime = 0.3,
 		HighlightUpdateRate = 0.5,
-		},
-	
-	-- Debug settings
+	},
+
 	Debug = {
-		Enabled = true, -- Enable debug to check pooling
+		Enabled = true,
 		LogSells = true,
 		LogBuys = true,
 		LogMoneyChanges = true,
-	}
+	},
 }
 
 return EconomyConfig

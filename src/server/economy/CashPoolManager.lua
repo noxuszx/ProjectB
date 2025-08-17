@@ -14,6 +14,7 @@ local POOL_HIDING_POSITION = Vector3.new(0, -5000, 0) -- Far below the map
 -- Pool storage for each cash type
 local cashPools = {
 	cash5 = {},
+	cash10 = {},
 	cash15 = {},
 	cash25 = {},
 	cash50 = {}
@@ -22,6 +23,7 @@ local cashPools = {
 -- Pool limits to prevent memory bloat
 local POOL_LIMITS = {
 	cash5 = 25,
+	cash10 = 22,
 	cash15 = 20,
 	cash25 = 15,
 	cash50 = 10

@@ -5,7 +5,10 @@
       "Bash(rg:*)",
       "Bash(mkdir:*)",
       "Bash(move:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "mcp__notion__notion-create-pages",
+      "mcp__notion__search",
+      "mcp__notion__fetch"
     ],
     "deny": []
   }

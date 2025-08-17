@@ -22,79 +22,65 @@ local function layoutTutorialBar()
 	if not pg then
 		return
 	end
-	local gui = pg:FindFirstChild("TutorialGui")
+	-- Search descendants to support nested UI organization
+	local gui = pg:FindFirstChild("TutorialGui") or pg:FindFirstChild("TutorialGui", true)
 	if not gui then
 		return
 	end
-	local frame = gui:FindFirstChild("TutorialFrame")
-	local label = frame and frame:FindFirstChild("TutorialText")
+	local frame = gui:FindFirstChild("TutorialFrame") or gui:FindFirstChild("TutorialFrame", true)
+	local label = frame and (frame:FindFirstChild("TutorialText") or frame:FindFirstChild("TutorialText", true))
 	if not frame or not label then
 		return
 	end
 
-	local cam = workspace.CurrentCamera
-	local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
-	local isPhone = UserInputService.TouchEnabled and vp.X < 1000
-
-	-- Compute a top offset: prefer GuiService inset if non-zero, otherwise a fixed margin to avoid top buttons
-	local ok, topLeftInset = pcall(function()
-		local tl, _ = GuiService:GetGuiInset()
-		return tl
-	end)
-	local insetY = (ok and topLeftInset and topLeftInset.Y) or 0
-	local marginY = 12
-	local fallbackTop = 36 -- when Topbar is disabled, give some breathing room
-	local topOffset = (insetY > 0 and (insetY + marginY)) or (fallbackTop + marginY)
-
-	-- Smaller on phones to avoid covering too much of the screen
-	local barHeight = isPhone and 44 or 60
-	local fontSize = isPhone and 16 or 20
-
-	-- We control exact pixel placement regardless of core insets to keep it simple and stable
-	frame.Position = UDim2.new(0, 0, 0, topOffset)
-	frame.Size = UDim2.new(1, 0, 0, barHeight)
-
-	local horizontalPadding = (isPhone and 8) or 10
-	label.Size = UDim2.new(1, -(horizontalPadding * 2), 1, 0)
-	label.Position = UDim2.new(0, horizontalPadding, 0, 0)
-	label.TextSize = fontSize
-	label.TextWrapped = true
+	-- Layout adjustments are handled by UI; skipping explicit sizing/positioning here
+	return
 end
 
 -- Simple UI binding: assumes there is a ScreenGui named TutorialGui with Frame:TutorialFrame and TextLabel:TutorialText
 local function getTutorialUI()
 	local pg = player:WaitForChild("PlayerGui")
-	local gui = pg:FindFirstChild("TutorialGui")
+	-- Try direct child first, then descendants (supports nested organization)
+	local gui = pg:FindFirstChild("TutorialGui") or pg:FindFirstChild("TutorialGui", true)
+	print("[Tutorial Debug] PlayerGui:", pg)
+	print("[Tutorial Debug] PlayerGui children:")
+	for i, child in ipairs(pg:GetChildren()) do
+		print("  ", i, child.Name, child.ClassName)
+	end
+	print("[Tutorial Debug] Looking for TutorialGui...")
+	print("[Tutorial Debug] Found TutorialGui (initial search):", gui)
 	if not gui then
+		print("[Tutorial Debug] TutorialGui not found yet; waiting up to 3s for StarterGui cloning...")
+		gui = pg:WaitForChild("TutorialGui", 3)
+		if not gui then
+			-- Try descendant search again after wait
+			gui = pg:FindFirstChild("TutorialGui", true)
+		end
+	end
+	if not gui then
+		print("[Tutorial Debug] TutorialGui still not found, creating fallback ScreenGui...")
 		-- Create minimal fallback UI if not present
 		gui = Instance.new("ScreenGui")
 		gui.Name = "TutorialGui"
 		gui.ResetOnSpawn = false
-		-- We will manually offset from the top to avoid overlap
-		gui.IgnoreGuiInset = true
 		gui.Parent = pg
 		local frame = Instance.new("Frame")
 		frame.Name = "TutorialFrame"
-		frame.Size = UDim2.new(1, 0, 0, 60)
-		frame.Position = UDim2.new(0, 0, 0, 48)
 		frame.BackgroundTransparency = 0.5
 		frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		frame.Parent = gui
 		local label = Instance.new("TextLabel")
 		label.Name = "TutorialText"
 		label.BackgroundTransparency = 1
-		label.Size = UDim2.new(1, -20, 1, 0)
-		label.Position = UDim2.new(0, 10, 0, 0)
 		label.TextColor3 = Color3.fromRGB(255, 255, 255)
 		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.TextYAlignment = Enum.TextYAlignment.Center
 		label.Font = Enum.Font.Gotham
-		label.TextSize = 20
 		label.TextWrapped = true
 		label.Parent = frame
 	else
-		-- Ensure we control exact placement
-		gui.IgnoreGuiInset = true
+		print("[Tutorial Debug] Using existing TutorialGui")
+		-- Using existing UI layout; not overriding sizing/position
 	end
 
 	-- Apply responsive layout and wire updates once
@@ -110,18 +96,25 @@ local function getTutorialUI()
 		end)
 	end
 
-	local frame = gui:FindFirstChild("TutorialFrame")
-	local label = frame and frame:FindFirstChild("TutorialText")
+	local frame = gui:FindFirstChild("TutorialFrame") or gui:FindFirstChild("TutorialFrame", true)
+	local label = frame and (frame:FindFirstChild("TutorialText") or frame:FindFirstChild("TutorialText", true))
+	print("[Tutorial Debug] Frame found:", frame)
+	print("[Tutorial Debug] Label found:", label)
 	return gui, frame, label
 end
 
 local function setTutorialText(text)
 	local _, frame, label = getTutorialUI()
+	print("[Tutorial Debug] setTutorialText called with:", text)
+	print("[Tutorial Debug] Frame available:", frame)
+	print("[Tutorial Debug] Label available:", label)
 	if label then
 		label.Text = text or ""
+		print("[Tutorial Debug] Set label text to:", text or "")
 	end
 	if frame then
 		frame.Visible = text ~= nil and text ~= ""
+		print("[Tutorial Debug] Set frame visibility to:", text ~= nil and text ~= "")
 	end
 end
 

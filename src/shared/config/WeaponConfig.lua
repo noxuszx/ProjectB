@@ -1,47 +1,50 @@
 --[[
     WeaponConfig.lua
     Configuration for all weapons in the game
-    Supports melee weapons with different stats and behaviors
-]]
---
+]]--
+
 
 local WeaponConfig = {}
 
--- Ranged Weapon Configurations
 WeaponConfig.RangedWeapons = {
 	Crossbow = {
-		Damage = 40,
-		Range = 200, -- Studs
-		Cooldown = 0.5, -- Seconds between shots
-		ProjectileSpeed = 120, -- Studs per second (for bullet travel)
+		Damage = 55,
+		Range = 200,
+		Cooldown = 0.5,
+		ProjectileSpeed = 120,
+		HeadshotsEnabled = true,
+		HeadshotMultiplier = 2,
 		BulletConfig = {
-			Color = Color3.new(0.8, 0.8, 0.2), -- Yellow-ish bullet
-			Size = Vector3.new(0.2, 0.2, 1), -- Bullet dimensions
-			Lifetime = 2.0, -- How long bullet exists
-			Material = Enum.Material.Neon, -- Glowing effect
+			Color = Color3.new(0.8, 0.8, 0.2),
+			Size = Vector3.new(0.2, 0.2, 1),
+			Lifetime = 2.0,
+			Material = Enum.Material.Neon,
 		},
 		MuzzleEffect = {
-			Sound = nil, -- Optional firing sound ID
-			Flash = true, -- Show muzzle flash
+			Sound = nil,
+			Flash = true,
 			FlashColor = Color3.new(1, 0.8, 0),
 		},
 		DebugEnabled = false,
 	},
 
 	Bow = {
-		Damage = 200,
-		Range = 200, -- Studs
-		Cooldown = 0.5, -- Seconds between shots
-		ProjectileSpeed = 120, -- Studs per second (for bullet travel)
+		Damage = 20,
+		Range = 200,
+		Cooldown = 0.5,
+		ProjectileSpeed = 120,
+
+		HeadshotsEnabled = true,
+		HeadshotMultiplier = 2,
 		BulletConfig = {
-			Color = Color3.new(0.8, 0.8, 0.2), -- Yellow-ish bullet
-			Size = Vector3.new(0.2, 0.2, 1), -- Bullet dimensions
-			Lifetime = 2.0, -- How long bullet exists
-			Material = Enum.Material.Neon, -- Glowing effect
+			Color = Color3.new(0.8, 0.8, 0.2),
+			Size = Vector3.new(0.2, 0.2, 1),
+			Lifetime = 2.0,
+			Material = Enum.Material.Neon,
 		},
 		MuzzleEffect = {
-			Sound = nil, -- Optional firing sound ID
-			Flash = true, -- Show muzzle flash
+			Sound = nil,
+			Flash = true,
 			FlashColor = Color3.new(1, 0.8, 0),
 		},
 		DebugEnabled = false,
@@ -67,7 +70,7 @@ WeaponConfig.RangedWeapons = {
 	},
 
 	SkeletonArrow = {
-		Damage = 6,
+		Damage = 7,
 		Range = 120,
 		Cooldown = 1,
 		ProjectileSpeed = 80,
@@ -89,24 +92,24 @@ WeaponConfig.RangedWeapons = {
 -- Melee Weapon Configurations
 WeaponConfig.MeleeWeapons = {
 	Spear = {
-		Damage = 100,
-		Range = 15, -- Studs
-		Cooldown = 0.4, -- Seconds between attacks
-		SwingDuration = 0.5, -- How long the swing animation lasts
-		Animation = "Slash", -- R6 animation name
-		HitDetection = "Magnitude", -- "Magnitude" or "Raycast"
-		MaxTargets = 1, -- How many targets to hit (1 for single, -1 for all in range)
-		RequireLineOfSight = true, -- Use raycast to check for walls/obstacles
-		DirectionalAngle = 180, -- Degrees of arc in front of player (360 for all around)
+		Damage = 25,
+		Range = 15,
+		Cooldown = 0.4,
+		SwingDuration = 0.5,
+		Animation = "Slash",
+		HitDetection = "Magnitude",
+		MaxTargets = 1,
+		RequireLineOfSight = true,
+		DirectionalAngle = 180,
 		HitEffect = {
-			Sound = nil, -- Optional hit sound ID
-			Particle = nil, -- Optional particle effect
+			Sound = nil,
+			Particle = nil,
 		},
-		DebugEnabled = true, -- Enable debug prints for this weapon
+		DebugEnabled = true,
 	},
 
 	Kopesh = {
-		Damage = 30,
+		Damage = 40,
 		Range = 12,
 		Cooldown = 0.4,
 		SwingDuration = 0.5,
@@ -119,7 +122,7 @@ WeaponConfig.MeleeWeapons = {
 	},
 
 	Katana = {
-		Damage = 30,
+		Damage = 60,
 		Range = 12,
 		Cooldown = 0.4,
 		SwingDuration = 0.5,
@@ -133,8 +136,8 @@ WeaponConfig.MeleeWeapons = {
 
 	Knife = {
 		Damage = 15,
-		Range = 8,
-		Cooldown = 0.4, -- Fast attacks, low damage
+		Range = 10,
+		Cooldown = 0.4,
 		SwingDuration = 0.5,
 		Animation = "Slash",
 		HitEffect = {
@@ -147,7 +150,7 @@ WeaponConfig.MeleeWeapons = {
 	Machete = {
 		Damage = 40,
 		Range = 10,
-		Cooldown = 0.6, -- Slow but powerful
+		Cooldown = 0.6,
 		SwingDuration = 0.4,
 		Animation = "Slash",
 		HitEffect = {
@@ -160,9 +163,9 @@ WeaponConfig.MeleeWeapons = {
 
 -- Global weapon settings
 WeaponConfig.GlobalSettings = {
-	MaxRange = 300, -- Maximum possible weapon range (increased for ranged NPC weapons)
-	MinCooldown = 0.3, -- Minimum cooldown to prevent spam
-	DefaultDamage = 20, -- Fallback damage if weapon not configured
+	MaxRange = 300,
+	MinCooldown = 0.3,
+	DefaultDamage = 20,
 	RaycastParams = {
 		FilterType = Enum.RaycastFilterType.Blacklist,
 		FilterDescendantsInstances = {},
@@ -175,16 +178,14 @@ WeaponConfig.GlobalSettings = {
 	},
 }
 
--- Helper function to get weapon config
+-- Helper function for getting the weapon config
 function WeaponConfig.getWeaponConfig(weaponName)
-	-- Try ranged weapons first
 	local config = WeaponConfig.RangedWeapons[weaponName]
 	if config then
 		config.WeaponType = "Ranged"
 		return config
 	end
 
-	-- Then try melee weapons
 	config = WeaponConfig.MeleeWeapons[weaponName]
 	if config then
 		config.WeaponType = "Melee"
@@ -205,7 +206,6 @@ function WeaponConfig.getWeaponConfig(weaponName)
 	}
 end
 
--- Helper function to get ranged weapon config specifically
 function WeaponConfig.getRangedWeaponConfig(weaponName)
 	local config = WeaponConfig.RangedWeapons[weaponName]
 	if not config then

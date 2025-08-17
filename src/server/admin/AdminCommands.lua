@@ -11,6 +11,7 @@ local PhysicsService     = game:GetService("PhysicsService")
 local DayNightCycle      = require(script.Parent.Parent.environment.DayNightCycle)
 local TimeConfig         = require(ReplicatedStorage.Shared.config.Time)
 local EconomyService     = require(script.Parent.Parent.services.EconomyService)
+local ArenaManager       = require(script.Parent.Parent.events.ArenaManager)
 
 local AdminCommands = {}
 
@@ -308,6 +309,55 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
             end
         else
             warn("[AdminCommands] /money supports: set <amount>")
+        end
+    elseif cmd == "arena" then
+        -- Usage: /arena <start|pause|resume|victory|door|state>
+        local subCmd = string.lower(parts[2] or "")
+        if subCmd == "start" then
+            local ok = ArenaManager.start()
+            print("[AdminCommands] Arena start:", ok)
+        elseif subCmd == "pause" then
+            local ok = ArenaManager.pause()
+            print("[AdminCommands] Arena pause:", ok)
+        elseif subCmd == "resume" then
+            local ok = ArenaManager.resume()
+            print("[AdminCommands] Arena resume:", ok)
+        elseif subCmd == "victory" then
+            local ok = ArenaManager.victory()
+            print("[AdminCommands] Arena victory:", ok)
+        elseif subCmd == "door" or subCmd == "opendoor" then
+            -- Open the Egypt door directly (ensure initialized)
+            local ok, EgyptDoor = pcall(function()
+                return require(script.Parent.Parent.events.EgyptDoor)
+            end)
+            if ok and EgyptDoor then
+                pcall(function()
+                    EgyptDoor.init()
+                end)
+                local success = pcall(function()
+                    EgyptDoor.openDoor()
+                end)
+                print("[AdminCommands] Arena openEgyptDoor:", success)
+            else
+                warn("[AdminCommands] Could not require EgyptDoor module")
+            end
+        elseif subCmd == "state" then
+            local st = ArenaManager.getState()
+            print("[AdminCommands] Arena state:", st)
+        elseif subCmd == "tp" or subCmd == "teleport" then
+            local ok = ArenaManager.teleportPlayerToArena(plr)
+            print("[AdminCommands] Arena tp:", ok)
+        else
+            warn("[AdminCommands] /arena supports: start | pause | resume | victory | door | state | tp")
+        end
+    elseif cmd == "adminui" or cmd == "ui" then
+        -- Toggle admin UI visibility
+        local toggleRemote = ReplicatedStorage.Remotes.Admin:FindFirstChild("AdminUIToggle")
+        if toggleRemote then
+            toggleRemote:FireClient(plr)
+            print("[AdminCommands] Toggled admin UI for", plr.Name)
+        else
+            warn("[AdminCommands] AdminUIToggle RemoteEvent not found")
         end
     end
 end

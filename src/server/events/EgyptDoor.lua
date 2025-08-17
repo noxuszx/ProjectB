@@ -33,7 +33,22 @@ local function initializeDoor()
 		return false
 	end
 
-	doorPart = doors[1]
+	-- Resolve to a BasePart; if the tag is on a Model, use its PrimaryPart
+	local inst = doors[1]
+	if inst:IsA("Model") then
+		if inst.PrimaryPart then
+			doorPart = inst.PrimaryPart
+		else
+			warn("[EgyptDoor] Tagged Model has no PrimaryPart: ", inst:GetFullName())
+			return false
+		end
+	elseif inst:IsA("BasePart") then
+		doorPart = inst
+	else
+		warn("[EgyptDoor] Tagged instance is not a BasePart or Model: ", inst.ClassName)
+		return false
+	end
+
 	originalPosition = doorPart.Position
 
 	-- Calculate open position (door slides down by its height + buffer)
@@ -69,9 +84,9 @@ local function cancelCurrentTween()
 end
 
 -- Create tween info for door movement
-local function createTweenInfo()
+local function createTweenInfo(durationSeconds)
 	return TweenInfo.new(
-		TWEEN_DURATION,
+		durationSeconds or TWEEN_DURATION,
 		TWEEN_EASING_STYLE,
 		TWEEN_EASING_DIRECTION,
 		0, -- RepeatCount
@@ -117,7 +132,7 @@ function EgyptDoor.openDoor()
 end
 
 -- Close the door (slide up)
-function EgyptDoor.closeDoor()
+function EgyptDoor.closeDoor(durationSeconds)
 	if not doorPart then
 		return
 	end
@@ -137,7 +152,7 @@ function EgyptDoor.closeDoor()
 	cancelCurrentTween()
 
 	-- Create and play closing tween
-	local tweenInfo = createTweenInfo()
+	local tweenInfo = createTweenInfo(durationSeconds)
 	currentTween = TweenService:Create(doorPart, tweenInfo, {
 		Position = originalPosition,
 	})
@@ -167,6 +182,11 @@ function EgyptDoor.init()
 	end
 
 	return true
+end
+
+-- Expose tween settings for other systems (e.g., treasure door)
+function EgyptDoor.getOpenTweenInfo()
+	return createTweenInfo()
 end
 
 return EgyptDoor

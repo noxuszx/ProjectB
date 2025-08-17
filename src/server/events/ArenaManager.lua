@@ -17,6 +17,59 @@ local State  = {
 	Victory  = "Victory",
 }
 
+-- Returns a list of Vector3 positions for teleporting players into the arena
+local function getTeleportPositions()
+	-- Prefer live, in-world tagged markers
+	local okTagged, tagged = pcall(function()
+		return CollectionService:GetTagged(CS_tags.ARENA_TELEPORT_MARKER)
+	end)
+	local positions = {}
+	if okTagged and tagged then
+		for _, inst in ipairs(tagged) do
+			if inst:IsA("BasePart") and inst:IsDescendantOf(workspace) then
+				table.insert(positions, inst.Position)
+			end
+		end
+	end
+	if #positions > 0 then return positions end
+	-- Fallback to explicit folder path if configured
+	if ArenaConfig.Paths.TeleportMarkersFolder then
+		local okFolder, folder = pcall(function()
+			return workspace:FindFirstChild(ArenaConfig.Paths.TeleportMarkersFolder, true)
+		end)
+		if okFolder and folder then
+			for _, part in ipairs(folder:GetChildren()) do
+				if part:IsA("BasePart") then
+					table.insert(positions, part.Position)
+				end
+			end
+		end
+		if #positions > 0 then return positions end
+	end
+	-- Final fallback to static config
+	return ArenaConfig.TeleportPositions or {}
+end
+
+function ArenaManager.teleportPlayerToArena(player)
+	if not player or not player.Character then return false end
+	local model = player.Character
+	if not model.PrimaryPart then return false end
+	local positions = getTeleportPositions()
+	if #positions == 0 then
+		warn("[Arena] teleportPlayerToArena: No teleport positions available")
+		return false
+	end
+	local target = positions[math.random(1, #positions)]
+	local ok, err = pcall(function()
+		model:PivotTo(CFrame.new(target))
+	end)
+	if not ok then
+		warn("[Arena] teleportPlayerToArena failed:", err)
+		return false
+	end
+	return true
+end
+
 local currentState = State.Inactive
 local arenaStarted = false
 local arenaMusic = nil
@@ -51,18 +104,29 @@ end
 
 
 local function getTreasureDoor()
+	-- Prefer an explicit path if provided, but ensure it's in the live world
 	if ArenaConfig.Paths.TreasureDoor then
 		local ok, inst = pcall(function()
 			return game:GetService("Workspace"):FindFirstChild(ArenaConfig.Paths.TreasureDoor, true)
 		end)
-		if ok and inst and inst:IsA("BasePart") then
-			return inst
+		if ok and inst then
+			if inst:IsA("BasePart") and inst:IsDescendantOf(workspace) then
+				return inst
+			elseif inst:IsA("Model") and inst.PrimaryPart and inst.PrimaryPart:IsDescendantOf(workspace) then
+				return inst.PrimaryPart
+			end
 		end
 	end
-	local tagged = CollectionService:GetTagged(CS_tags.TREASURE_DOOR)
-	for _, inst in ipairs(tagged) do
+	-- Match EgyptDoor logic: only use live, in-world tagged instances
+	local liveTagged = CS_tags.getLiveTagged(CS_tags.TREASURE_DOOR)
+	for _, inst in ipairs(liveTagged) do
+		if not inst:IsDescendantOf(workspace) then
+			continue
+		end
 		if inst:IsA("BasePart") then
 			return inst
+		elseif inst:IsA("Model") and inst.PrimaryPart and inst.PrimaryPart:IsDescendantOf(workspace) then
+			return inst.PrimaryPart
 		end
 	end
 	return nil
@@ -71,11 +135,68 @@ end
 local function openTreasureDoor()
 	local door = getTreasureDoor()
 	if not door then
+		local taggedCount = 0
+		local okTagged, tagged = pcall(function()
+			return CollectionService:GetTagged(CS_tags.TREASURE_DOOR)
+		end)
+		if okTagged and tagged then taggedCount = #tagged end
+		warn("[Arena] openTreasureDoor: No door found. ArenaConfig.Paths.TreasureDoor=", tostring(ArenaConfig.Paths.TreasureDoor), " taggedCount=", taggedCount)
 		return false
 	end
-	local goal = door.CFrame * CFrame.new(0, -door.Size.Y - 0.1, 0)
-	local tween =
-		TweenService:Create(door, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = goal })
+	-- Basic sanity checks that commonly block movement
+	if door.Anchored then
+		warn("[Arena] openTreasureDoor: Door is Anchored (", door:GetFullName(), ") — tween may have no visible effect.")
+	end
+	local okConn, connected = pcall(function()
+		return door:GetConnectedParts(true)
+	end)
+	if okConn and connected then
+		for _, p in ipairs(connected) do
+			if p ~= door and p.Anchored then
+				warn("[Arena] openTreasureDoor: Door is connected to an anchored part (", p:GetFullName(), ") — CFrame tween may be blocked.")
+				break
+			end
+		end
+	end
+	-- Compute target position (match EgyptDoor behavior: slide down by height + small buffer)
+	local goalPos = door.Position + Vector3.new(0, -door.Size.Y - 0.1, 0)
+	-- Play the same door sound used by EgyptDoor, if available
+	local referenceDoorSound = SoundService:FindFirstChild("Large-Stone-Door")
+	if referenceDoorSound then
+		local s = Instance.new("Sound")
+		s.Name = "TreasureDoorSound"
+		s.SoundId = referenceDoorSound.SoundId
+		s.Volume = referenceDoorSound.Volume
+		s.Pitch = referenceDoorSound.Pitch
+		s.RollOffMode = Enum.RollOffMode.Linear
+		s.EmitterSize = 10
+		s.Parent = door
+		s:Play()
+		s.Ended:Connect(function()
+			s:Destroy()
+		end)
+	end
+	warn("[Arena] openTreasureDoor: Tweening door ", door:GetFullName(), " down by height.")
+	-- Use EgyptDoor's opening tween settings if available; fallback to previous quick tween
+	local tweenInfo
+	do
+		local okEgypt, EgyptDoor = pcall(function()
+			return require(script.Parent.EgyptDoor)
+		end)
+		if okEgypt and EgyptDoor and EgyptDoor.getOpenTweenInfo then
+			local okInfo, info = pcall(function()
+				return EgyptDoor.getOpenTweenInfo()
+			end)
+			if okInfo and info then
+				tweenInfo = info
+			end
+		end
+	end
+	if not tweenInfo then
+		-- Fallback: 2s Quad Out (legacy)
+		tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	end
+	local tween = TweenService:Create(door, tweenInfo, { Position = goalPos })
 	tween:Play()
 	return true
 end
@@ -85,9 +206,10 @@ local function setSealEnabled(enabled)
 		return require(script.Parent.EgyptDoor)
 	end)
 	if ok and EgyptDoor then
-		if enabled then
+if enabled then
 			pcall(function()
-				EgyptDoor.closeDoor()
+				-- Close quickly at arena start (3s)
+				EgyptDoor.closeDoor(3.0)
 			end)
 		else
 			pcall(function()
@@ -254,10 +376,14 @@ function ArenaManager.openTreasureDoor()
 end
 
 function ArenaManager.onPlayerChoice(player, choice)
+	warn("[Arena] PostGameChoice from ", player and player.Name or "?", " choice:", tostring(choice))
 	if choice == "lobby" then
 		-- teleportToLobby not implemented
 	elseif choice == "continue" then
-		openTreasureDoor()
+		local ok, res = pcall(openTreasureDoor)
+		if not ok then
+			warn("[Arena] openTreasureDoor failed:", res)
+		end
 	end
 end
 
@@ -294,8 +420,11 @@ local function connectRemotes()
 	if post then
 		post.OnServerEvent:Connect(function(player, payload)
 			local choice = payload and payload.choice
+			warn("[Arena] Received PostGameChoice remote from ", player and player.Name or "?", " with choice:", tostring(choice))
 			ArenaManager.onPlayerChoice(player, choice)
 		end)
+	else
+		warn("[Arena] PostGameChoice remote not found under Remotes/", tostring(ArenaConfig.Remotes.Folder))
 	end
 end
 

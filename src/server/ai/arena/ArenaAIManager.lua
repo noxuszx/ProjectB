@@ -402,19 +402,23 @@ end
 
 function ArenaAIManager:canComputePath(creatureId)
 	local currentTime = os.clock()
-	
 	-- Check global throttle
 	if currentTime - PathfindingThrottle.globalLastCompute < PathfindingThrottle.globalMinInterval then
 		return false
 	end
-	
 	-- Check per-creature throttle
 	local lastTime = PathfindingThrottle.lastComputeTime[creatureId] or 0
 	if currentTime - lastTime < PathfindingThrottle.minInterval then
 		return false
 	end
-	
 	return true
+end
+
+-- Record that a path computation has occurred for throttling purposes
+function ArenaAIManager:recordPathCompute(creatureId)
+	local now = os.clock()
+	PathfindingThrottle.globalLastCompute = now
+	PathfindingThrottle.lastComputeTime[creatureId] = now
 end
 
 function ArenaAIManager:recordPathCompute(creatureId)

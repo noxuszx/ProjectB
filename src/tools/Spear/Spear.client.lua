@@ -9,6 +9,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
+local LocalHitRegistry = require(ReplicatedStorage.Shared.modules.LocalHitRegistry)
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
 
 local tool = script.Parent
 local player = Players.LocalPlayer
@@ -196,6 +198,11 @@ local function executeAttack()
 	local targetModel = findNearestTargetInRange(character.PrimaryPart.Position, range)
 
 	if targetModel and weaponRemote and config and config.Damage then
+		-- Play local hit-confirm immediately
+		local parent = targetModel.PrimaryPart or targetModel
+		SoundPlayer.playAt("hit_confirm", parent, { volume = 0.5, rolloff = { min = 8, max = 60, emitter = 5 } })
+		-- Optional: keep claim for consistency
+		LocalHitRegistry.claim(targetModel)
 		weaponRemote:FireServer(targetModel, config.Damage)
 	end
 

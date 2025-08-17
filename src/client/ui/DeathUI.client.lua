@@ -5,6 +5,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local SoundPlayer = require(ReplicatedStorage.Shared.modules.SoundPlayer)
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -151,6 +153,10 @@ local function showDeathUI(timeoutSeconds)
 
 	isShowingDeathUI = true
 	deathGui.Enabled = true
+
+	-- Play a UI death sound via shared SoundPlayer (configured in SoundConfig)
+	-- Safe if key is missing: SoundPlayer.play will no-op
+	SoundPlayer.play("ui.death")
 
 	if arenaGui.Enabled then
 		arenaGui.Enabled = false

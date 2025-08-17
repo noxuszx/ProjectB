@@ -65,18 +65,40 @@ The project file structure is defined in `default.project.json` and should be bu
 - `AIManager.lua` - Singleton pattern central coordinator handling creature lifecycle and updates
 - `AICreatureRegistry.lua` - Centralized creature tracking and management registry
 - `CreaturePoolManager.lua` - Memory pooling system preventing frame drops by reusing models
-- `LODPolicy.lua` - Distance-based performance optimization (30Hz close, 2Hz far)  
-- `ParallelLODActor.lua` - Parallel processing for large creature populations
 - `CreatureSpawner.lua` - Spawns creatures using class-based system with pooling integration
+- `NightHuntManager.lua` - Night-specific creature spawning and behavior management
+- `SpawnerPlacement.lua` - Spawner positioning and zone-based placement logic
+- `ZoneSpawnerController.server.lua` - Zone-based spawning control system
+- `UpdateExistingCreatures.server.lua` - Runtime creature updates and modifications
 
-**Class-Based Creature Architecture**
-- `BaseCreature.lua` - Abstract base class providing common functionality and interface
-- `PassiveCreature.lua` - Inherits from BaseCreature, handles roaming and fleeing behaviors
-- `HostileCreature.lua` - Inherits from BaseCreature, handles chasing and attacking behaviors
-- Behavior system with modular state classes (`Roaming.lua`, `Chasing.lua`, `Fleeing.lua`)
+**Modular Creature Architecture (`creatures/` folder)**
+- `Base.lua` - Abstract base class providing common functionality and interface
+- `Passive.lua` - Inherits from Base, handles roaming and fleeing behaviors
+- `Hostile.lua` - Inherits from Base, handles chasing and attacking behaviors
+- `RangedHostile.lua` - Specialized ranged combat creature with projectile attacks
 - No individual creature scripts - all logic handled through class inheritance
 
-**Performance Optimization Systems**
+**Enhanced Behavior System (`behaviors/` folder)**
+- `AIBehavior.lua` - Base behavior class with standardized interface
+- `Roaming.lua` - Wandering movement patterns for passive creatures
+- `Chasing.lua` - Pursuit behavior for hostile creatures
+- `Fleeing.lua` - Escape behavior when threatened
+- `RangedAttack.lua` - Projectile-based combat behavior
+- `RangedChasing.lua` - Ranged pursuit with distance management
+
+**Arena Combat System (`arena/` folder)**
+- `ArenaAIManager.lua` - Specialized AI manager for arena-based combat encounters
+- `ArenaCreature.lua` - Arena-specific creature behaviors and mechanics
+- `ArenaCreatureSpawner.lua` - Arena creature spawning and management
+
+**Audio Integration (`audio/` folder)**
+- `AutoBindSFX.server.lua` - Automatic sound effect binding to creature actions
+- `SFXManager.lua` - Centralized audio management for AI creatures
+
+**Performance Optimization Systems (`optimization/` folder)**
+- `LODPolicy.lua` - Distance-based performance optimization (30Hz close, 2Hz far)
+- `ParallelLODActor.lua` - Parallel processing for large creature populations
+- `PathNav.lua` - Advanced pathfinding navigation system
 - `AIDebugger.lua` - Performance monitoring and debugging tools
 - Player position caching system eliminates expensive character lookups
 - Batched LOD updates with time-budgeted processing
@@ -129,9 +151,9 @@ All systems are driven by configuration files in `src/shared/config/`:
 ## Key Development Patterns
 
 ### AI Creature Development
-When working with creatures, follow the class-based inheritance pattern:
+When working with creatures, follow the modular class-based inheritance pattern:
 1. **Define creature stats** in `AIConfig.lua` first with all creature type configurations
-2. **Extend creature classes** - Modify `PassiveCreature.lua` or `HostileCreature.lua` for new behaviors
+2. **Extend creature classes** - Modify `creatures/Passive.lua`, `creatures/Hostile.lua`, or `creatures/RangedHostile.lua` for new behaviors
 3. **Create behavior classes** - Add new behavior modules in `behaviors/` folder if needed
 4. **Update CreatureSpawner** - Add new creature types to spawning logic
 5. **Leverage pooling system** - Creatures are reused via `CreaturePoolManager`, not destroyed
@@ -139,10 +161,10 @@ When working with creatures, follow the class-based inheritance pattern:
 
 **Class-Based Creature Example:**
 ```lua
--- Example: Adding new behavior to PassiveCreature
-function PassiveCreature:update(deltaTime)
+-- Example: Adding new behavior to creatures/Passive.lua
+function Passive:update(deltaTime)
     -- Base creature update
-    BaseCreature.update(self, deltaTime)
+    Base.update(self, deltaTime)
     
     -- Passive-specific logic
     if self.health <= self.maxHealth * 0.3 then
@@ -158,9 +180,10 @@ end
 
 **Adding New Creature Types:**
 1. Add creature definition to `AIConfig.lua`
-2. Determine if it extends `PassiveCreature` or `HostileCreature`
-3. Create new class file if significantly different behavior needed
+2. Determine if it extends `creatures/Passive.lua`, `creatures/Hostile.lua`, or `creatures/RangedHostile.lua`
+3. Create new class file in `creatures/` folder if significantly different behavior needed
 4. Update `CreatureSpawner.lua` to include in spawning logic
+5. Consider arena variants using `arena/` system for combat encounters
 
 ### Building System Integration
 The drag/drop system uses:
@@ -183,7 +206,7 @@ The drag/drop system uses:
 - **Configs**: Centralized in `src/shared/config/` with clear hierarchies
 - **Tags**: Use `CollectionService` tags defined in `CollectionServiceTags.lua`
 - **Remotes**: Defined in project structure, accessed via ReplicatedStorage.Remotes
-- **Creature Classes**: Class-based inheritance system extending from `BaseCreature`
+- **Creature Classes**: Modular class-based inheritance system in `creatures/` folder extending from `Base.lua`
 
 ## Adding New Creature Types
 
@@ -203,7 +226,7 @@ CreatureTypes = {
 }
 ```
 
-2. **Determine creature class** - Decide if Wolf extends `PassiveCreature` or `HostileCreature`
+2. **Determine creature class** - Decide if Wolf extends `creatures/Passive.lua`, `creatures/Hostile.lua`, or `creatures/RangedHostile.lua`
 
 3. **Update CreatureSpawner** - Add Wolf to the spawning logic in `CreatureSpawner.lua`
 

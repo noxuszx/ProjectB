@@ -17,49 +17,144 @@ if not MoneyFolder then
 end
 
 -- Tracking for debouncing - instance-keyed weak tables
-local touchDebounce = {} -- [sellZone] = weak-key table of [item] = lastTime
+local touchDebounce = {}
 
 local function getZoneDebounceTable(zone)
 	local t = touchDebounce[zone]
 	if not t then
-		t = setmetatable({}, { __mode = "k" }) -- weak keys for auto-cleanup
+		t = setmetatable({}, { __mode = "k" })
 		touchDebounce[zone] = t
 	end
 	return t
 end
 
--- Handle when something touches a sell zone
+-- Resolve the topmost model for a touched part
+local function resolveTopModel(part)
+	if not part then return nil end
+	return part:FindFirstAncestorOfClass("Model")
+end
+
+
+local function isSellableHumanoidCorpse(model)
+	if not model or not model.Parent then return false end
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	if not hum then return false end
+	local ragdolled = model:GetAttribute("Ragdolled")
+	local isDead = model:GetAttribute("IsDead") or (hum and hum.Health <= 0) or false
+	local ctype = model:GetAttribute("CreatureType")
+
+	if game.Players:GetPlayerFromCharacter(model) then return false end
+	if ctype and string.find(ctype, "Villager") then return false end
+	if not (ragdolled or isDead) then return false end
+	if not (ctype and EconomyConfig.CreatureSellValues[ctype]) then return false end
+	return true
+end
+
 local function onSellZoneTouched(sellZone, hit)
 	if EconomyConfig.Debug.Enabled then
-		print(
-			"[SellZoneHandler] Something touched sell zone:",
-			hit.Name,
-			"from",
-			hit.Parent and hit.Parent.Name or "nil"
-		)
+		print("[SellZoneHandler] Something touched sell zone:", hit.Name, "from", hit.Parent and hit.Parent.Name or "nil")
 	end
 
-	-- Simplified: only handle MeshPart sellables
+	local zoneDebounce = getZoneDebounceTable(sellZone)
+	local now = os.clock()
+
+	local model = resolveTopModel(hit)
+	if model and isSellableHumanoidCorpse(model) then
+		local last = zoneDebounce[model]
+		if last and now - last < EconomyConfig.Performance.TouchDebounceTime then
+			return
+		end
+		zoneDebounce[model] = now
+
+		local ctype = model:GetAttribute("CreatureType")
+		local itemValue = EconomyConfig.CreatureSellValues[ctype]
+		local cashType = "cash" .. tostring(itemValue)
+
+		if not MoneyFolder then
+			warn("[SellZoneHandler] Money folder not available")
+			return
+		end
+		local cashMeshpart = MoneyFolder:FindFirstChild(cashType)
+		if not cashMeshpart then
+			warn("[SellZoneHandler] Cash meshpart", cashType, "not found in Money folder")
+			return
+		end
+
+		pcall(function()
+			model:Destroy()
+		end)
+
+		local spawnPosition = sellZone.Position + Vector3.new(0, sellZone.Size.Y / 2 + 1, 0)
+		local cashClone = CashPoolManager.getCashItem(cashType, spawnPosition)
+		if not cashClone then
+			cashClone = cashMeshpart:Clone()
+			for _, child in pairs(cashClone:GetChildren()) do child:Destroy() end
+			cashClone.Parent = workspace
+			cashClone.Position = spawnPosition
+		end
+		cashClone:SetAttribute("CashValue", itemValue)
+		pcall(function() SoundPlayer.playAt("economy.sell", sellZone) end)
+		return
+	end
+
+	if model and not isSellableHumanoidCorpse(model) then
+		local selectedValue, selectedCashType
+		for tagName, value in pairs(EconomyConfig.SellableItems) do
+			if CollectionService:HasTag(model, tagName) then
+				selectedValue = value
+				selectedCashType = "cash" .. tostring(value)
+				break
+			end
+		end
+		if selectedValue then
+			local lastModel = zoneDebounce[model]
+			if lastModel and now - lastModel < EconomyConfig.Performance.TouchDebounceTime then
+				return
+			end
+			zoneDebounce[model] = now
+
+			if not MoneyFolder then
+				warn("[SellZoneHandler] Money folder not available")
+				return
+			end
+			local cashMeshpart = MoneyFolder:FindFirstChild(selectedCashType)
+			if not cashMeshpart then
+				warn("[SellZoneHandler] Cash meshpart", selectedCashType, "not found in Money folder")
+				return
+			end
+
+			pcall(function()
+				model:Destroy()
+			end)
+
+			local spawnPosition = sellZone.Position + Vector3.new(0, sellZone.Size.Y / 2 + 1, 0)
+			local cashClone = CashPoolManager.getCashItem(selectedCashType, spawnPosition)
+			if not cashClone then
+				cashClone = cashMeshpart:Clone()
+				for _, child in pairs(cashClone:GetChildren()) do child:Destroy() end
+				cashClone.Parent = workspace
+				cashClone.Position = spawnPosition
+			end
+			cashClone:SetAttribute("CashValue", selectedValue)
+			pcall(function() SoundPlayer.playAt("economy.sell", sellZone) end)
+			return
+		end
+	end
+
 	local item = hit
 	if not item or not item:IsA("MeshPart") then
 		if EconomyConfig.Debug.Enabled then
-			print("[SellZoneHandler] Hit object is not a MeshPart:", hit.Name, hit.ClassName)
+			print("[SellZoneHandler] Not a MeshPart and no sellable creature/model found:", hit.Name, hit.ClassName)
 		end
 		return
 	end
 
-	-- Debounce check using instance-keyed weak tables
-	local zoneDebounce = getZoneDebounceTable(sellZone)
 	local lastTime = zoneDebounce[item]
-	local currentTime = os.clock()
-
-	if lastTime and currentTime - lastTime < EconomyConfig.Performance.TouchDebounceTime then
+	if lastTime and now - lastTime < EconomyConfig.Performance.TouchDebounceTime then
 		return -- Still on debounce
 	end
+	zoneDebounce[item] = now
 
-	zoneDebounce[item] = currentTime
-
-	-- Validate that the item is sellable and get cash type
 	local function checkSellableTags(obj)
 		for tagName, value in pairs(EconomyConfig.SellableItems) do
 			if CollectionService:HasTag(obj, tagName) then
@@ -69,14 +164,12 @@ local function onSellZoneTouched(sellZone, hit)
 		return false, 0, nil, nil
 	end
 
-	-- Check the item itself first
 	if EconomyConfig.Debug.Enabled then
 		print("[SellZoneHandler] Checking item:", item.Name, "ClassName:", item.ClassName)
 		print("[SellZoneHandler] Item tags:", table.concat(CollectionService:GetTags(item), ", "))
 	end
 
 	local isSellable, itemValue, cashType, tagName = checkSellableTags(item)
-
 	if not isSellable then
 		if EconomyConfig.Debug.Enabled then
 			print("[SellZoneHandler] Item", item.Name, "is not sellable - no valid tags found")
@@ -84,11 +177,6 @@ local function onSellZoneTouched(sellZone, hit)
 		return
 	end
 
-	if EconomyConfig.Debug.Enabled then
-		print("[SellZoneHandler] Found sellable item:", item.Name, "value:", itemValue, "tag:", tagName)
-	end
-
-	-- Use cached Money folder
 	if not MoneyFolder then
 		warn("[SellZoneHandler] Money folder not available")
 		return
@@ -102,25 +190,16 @@ local function onSellZoneTouched(sellZone, hit)
 
 	item:Destroy()
 
-	-- Spawn cash 1 stud above the sell zone
-	local sellZonePosition = sellZone.Position
-	local spawnPosition = sellZonePosition + Vector3.new(0, sellZone.Size.Y / 2 + 1, 0)
+	local spawnPosition = sellZone.Position + Vector3.new(0, sellZone.Size.Y / 2 + 1, 0)
 	local cashClone = CashPoolManager.getCashItem(cashType, spawnPosition)
-
 	if not cashClone then
 		cashClone = cashMeshpart:Clone()
-		for _, child in pairs(cashClone:GetChildren()) do
-			child:Destroy()
-		end
+		for _, child in pairs(cashClone:GetChildren()) do child:Destroy() end
 		cashClone.Parent = workspace
 		cashClone.Position = spawnPosition
 	end
-cashClone:SetAttribute("CashValue", itemValue)
-
--- Play economy sell sound at the zone for feedback
-pcall(function()
-    SoundPlayer.playAt("economy.sell", sellZone)
-end)
+	cashClone:SetAttribute("CashValue", itemValue)
+	pcall(function() SoundPlayer.playAt("economy.sell", sellZone) end)
 end
 
 local function setupSellZone(sellZone)
