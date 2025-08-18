@@ -20,7 +20,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
         
         if success then
             local contents = BackpackService.getBackpackContents(player)
-            BackpackEvent:FireClient(player, "Sync", contents, message)
+            local count, capacity = BackpackService.getBackpackStats(player)
+            BackpackEvent:FireClient(player, "Sync", contents, message, capacity)
             -- Fire instant update event
             BackpackChanged:FireClient(player, contents)
             -- Play store sound
@@ -34,7 +35,8 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
         
         if success then
             local contents = BackpackService.getBackpackContents(player)
-            BackpackEvent:FireClient(player, "Sync", contents, message)
+            local count, capacity = BackpackService.getBackpackStats(player)
+            BackpackEvent:FireClient(player, "Sync", contents, message, capacity)
             -- Fire instant update event
             BackpackChanged:FireClient(player, contents)
             -- Play unstore sound
@@ -45,6 +47,7 @@ BackpackEvent.OnServerEvent:Connect(function(player, action, ...)
         
     elseif action == "RequestSync" then
         local contents = BackpackService.getBackpackContents(player)
-        BackpackEvent:FireClient(player, "Sync", contents)
+        local count, capacity = BackpackService.getBackpackStats(player)
+        BackpackEvent:FireClient(player, "Sync", contents, nil, capacity)
     end
 end)

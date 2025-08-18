@@ -8,6 +8,9 @@
         "config": {
           "$path": "src/shared/config"
         },
+        "profile": {
+          "$path": "src/shared/profile"
+        },
         "utilities": {
           "$path": "src/shared/utilities"
         },
@@ -175,6 +178,10 @@
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
+      },
+      "data": {
+        "$className": "Folder",
+        "$path": "src/server/data"
       }
     },
     "StarterPlayer": {

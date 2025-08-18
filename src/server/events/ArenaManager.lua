@@ -360,6 +360,24 @@ function ArenaManager.victory()
 		aiManager:stop()
 	end
 	
+	-- Increment wins for players who are still in the arena (considered winners)
+	do
+		local accessor = _G and _G.ProfileAccessor
+		if accessor and accessor.updateProfileData then
+			for _, p in ipairs(Players:GetPlayers()) do
+				if inArena[p.UserId] and p.Parent ~= nil then
+					pcall(function()
+						accessor:updateProfileData(p, function(data)
+							data.Wins = (tonumber(data.Wins) or 0) + 1
+						end)
+					end)
+				end
+			end
+		else
+			warn("[Arena] ProfileAccessor not available; cannot increment Wins")
+		end
+	end
+	
 	-- Clean up arena spawner
 	local ArenaSpawner = require(script.Parent.ArenaSpawner)
 	if ArenaSpawner.cleanup then

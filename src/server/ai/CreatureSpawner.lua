@@ -2,22 +2,20 @@
 -- Integrates with existing spawning patterns and chunk system
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
-local Workspace = game:GetService("Workspace")
 local PhysicsService = game:GetService("PhysicsService")
 
-local AIConfig = require(ReplicatedStorage.Shared.config.ai.AIConfig)
-local CreatureSpawnConfig = require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
-local DayNightCycle = require(script.Parent.Parent.environment.DayNightCycle)
-local PassiveCreature = require(script.Parent.creatures.Passive)
-local HostileCreature = require(script.Parent.creatures.Hostile)
-local RangedHostile = require(script.Parent.creatures.RangedHostile)
-local AIManager = require(script.Parent.AIManager)
-local CreaturePoolManager = require(script.Parent.CreaturePoolManager)
-local FrameBatched = require(ReplicatedStorage.Shared.utilities.FrameBatched)
-local FrameBudgetConfig = require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
+local AIConfig 			  	= require(ReplicatedStorage.Shared.config.ai.AIConfig)
+local CreatureSpawnConfig 	= require(ReplicatedStorage.Shared.config.ai.CreatureSpawning)
+local DayNightCycle 	  	= require(script.Parent.Parent.environment.DayNightCycle)
+local PassiveCreature 	  	= require(script.Parent.creatures.Passive)
+local HostileCreature 	  	= require(script.Parent.creatures.Hostile)
+local RangedHostile 	  	= require(script.Parent.creatures.RangedHostile)
+local AIManager 		  	= require(script.Parent.AIManager)
+local CreaturePoolManager 	= require(script.Parent.CreaturePoolManager)
+local FrameBatched 		  	= require(ReplicatedStorage.Shared.utilities.FrameBatched)
+local FrameBudgetConfig   	= require(ReplicatedStorage.Shared.config.FrameBudgetConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
-local SFXManager = require(script.Parent.audio.SFXManager)
+local SFXManager 			= require(script.Parent.audio.SFXManager)
 
 
 local CreatureSpawner = {}

@@ -16,15 +16,12 @@ local ChasingBehavior = require(script.Parent.behaviors.Chasing)
 
 local NightHuntManager = {}
 
--- Internal state
 local active = false
-local perPlayer = {} -- [UserId] = { loopConnection, spawned = { aiController, ... }, nightSpawnCount = 0 }
+local perPlayer = {}
 local periodChangedConnection = nil
 
--- Cache frequently used values
 local NIGHT_HUNT_TAG = "NIGHT_HUNT"
 
--- Select a random creature type based on weights
 local function selectRandomCreatureType()
 	local totalWeight = 0
 	for _, weight in pairs(NightHuntConfig.CreatureTypes) do
@@ -41,15 +38,13 @@ local function selectRandomCreatureType()
 		end
 	end
 	
-	-- Fallback to first creature type
 	for creatureType, _ in pairs(NightHuntConfig.CreatureTypes) do
 		return creatureType
 	end
 	
-	return "Mummy" -- Ultimate fallback
+	return "Mummy"
 end
 
--- Get total active Night Hunt creatures across all players
 local function getTotalActiveNightHunt()
 	local total = 0
 	for _, playerData in pairs(perPlayer) do
@@ -58,7 +53,6 @@ local function getTotalActiveNightHunt()
 	return total
 end
 
--- Get total spawns this night across all players
 local function getTotalNightSpawns()
 	local total = 0
 	for _, playerData in pairs(perPlayer) do
@@ -67,7 +61,6 @@ local function getTotalNightSpawns()
 	return total
 end
 
--- Get dynamic global cap based on current player count
 local function getDynamicGlobalCap()
 	local playerCount = 0
 	for _ in pairs(perPlayer) do
@@ -76,7 +69,6 @@ local function getDynamicGlobalCap()
 	return playerCount * NightHuntConfig.PerPlayerNightLimit
 end
 
--- Check if spawn preconditions are met
 local function canSpawn(player)
 	if not active then return false, "Night Hunt not active" end
 	if not (player and player.Character and player.Character.PrimaryPart) then
@@ -93,17 +85,14 @@ local function canSpawn(player)
 		return false, "Player data not found"
 	end
 	
-	-- Check per-player concurrent cap
 	if #playerData.spawned >= NightHuntConfig.PerPlayerCap then
 		return false, "Per-player concurrent cap reached (" .. NightHuntConfig.PerPlayerCap .. ")"
 	end
 	
-	-- Check per-player night limit (lifetime spawns this night)
 	if playerData.nightSpawnCount >= NightHuntConfig.PerPlayerNightLimit then
 		return false, "Per-player night limit reached (" .. NightHuntConfig.PerPlayerNightLimit .. ")"
 	end
 	
-	-- Check dynamic global night limit
 	local totalNightSpawns = getTotalNightSpawns()
 	local dynamicGlobalCap = getDynamicGlobalCap()
 	if totalNightSpawns >= dynamicGlobalCap then

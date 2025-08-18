@@ -350,6 +350,72 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
         else
             warn("[AdminCommands] /arena supports: start | pause | resume | victory | door | state | tp")
         end
+    elseif cmd == "door" or cmd == "egyptdoor" or cmd == "opendoor" or cmd == "closedoor" then
+        -- Usage:
+        --   /door open
+        --   /door close
+        --   /door state
+        --   /door init
+        -- Shorthands:
+        --   /opendoor, /closedoor
+        local function withDoor(handler)
+            local okReq, EgyptDoor = pcall(function()
+                return require(script.Parent.Parent.events.EgyptDoor)
+            end)
+            if not okReq or not EgyptDoor then
+                warn("[AdminCommands] Could not require EgyptDoor module")
+                return
+            end
+            -- Ensure initialized (idempotent)
+            local okInit = true
+            if EgyptDoor.getDoorPart() == nil then
+                okInit = pcall(function()
+                    EgyptDoor.init()
+                end)
+            end
+            if not okInit then
+                warn("[AdminCommands] EgyptDoor.init() failed")
+                return
+            end
+            handler(EgyptDoor)
+        end
+
+        local sub = string.lower(parts[2] or "")
+        if cmd == "opendoor" then sub = "open" end
+        if cmd == "closedoor" then sub = "close" end
+
+        if sub == "open" or sub == "" then
+            withDoor(function(EgyptDoor)
+                local ok = pcall(function()
+                    EgyptDoor.openDoor()
+                end)
+                print("[AdminCommands] Door open:", ok)
+            end)
+        elseif sub == "close" then
+            withDoor(function(EgyptDoor)
+                local ok = pcall(function()
+                    EgyptDoor.closeDoor()
+                end)
+                print("[AdminCommands] Door close:", ok)
+            end)
+        elseif sub == "state" then
+            withDoor(function(EgyptDoor)
+                local st = "unknown"
+                local ok = pcall(function()
+                    st = EgyptDoor.getDoorState()
+                end)
+                print("[AdminCommands] Door state:", ok and st or "error")
+            end)
+        elseif sub == "init" then
+            withDoor(function(EgyptDoor)
+                local ok = pcall(function()
+                    EgyptDoor.init()
+                end)
+                print("[AdminCommands] Door init:", ok)
+            end)
+        else
+            warn("[AdminCommands] /door supports: open | close | state | init")
+        end
     elseif cmd == "adminui" or cmd == "ui" then
         -- Toggle admin UI visibility
         local toggleRemote = ReplicatedStorage.Remotes.Admin:FindFirstChild("AdminUIToggle")

@@ -42,15 +42,7 @@ local function getTutorialUI()
 	local pg = player:WaitForChild("PlayerGui")
 	-- Try direct child first, then descendants (supports nested organization)
 	local gui = pg:FindFirstChild("TutorialGui") or pg:FindFirstChild("TutorialGui", true)
-	print("[Tutorial Debug] PlayerGui:", pg)
-	print("[Tutorial Debug] PlayerGui children:")
-	for i, child in ipairs(pg:GetChildren()) do
-		print("  ", i, child.Name, child.ClassName)
-	end
-	print("[Tutorial Debug] Looking for TutorialGui...")
-	print("[Tutorial Debug] Found TutorialGui (initial search):", gui)
 	if not gui then
-		print("[Tutorial Debug] TutorialGui not found yet; waiting up to 3s for StarterGui cloning...")
 		gui = pg:WaitForChild("TutorialGui", 3)
 		if not gui then
 			-- Try descendant search again after wait
@@ -58,7 +50,6 @@ local function getTutorialUI()
 		end
 	end
 	if not gui then
-		print("[Tutorial Debug] TutorialGui still not found, creating fallback ScreenGui...")
 		-- Create minimal fallback UI if not present
 		gui = Instance.new("ScreenGui")
 		gui.Name = "TutorialGui"
@@ -79,7 +70,6 @@ local function getTutorialUI()
 		label.TextWrapped = true
 		label.Parent = frame
 	else
-		print("[Tutorial Debug] Using existing TutorialGui")
 		-- Using existing UI layout; not overriding sizing/position
 	end
 
@@ -98,23 +88,16 @@ local function getTutorialUI()
 
 	local frame = gui:FindFirstChild("TutorialFrame") or gui:FindFirstChild("TutorialFrame", true)
 	local label = frame and (frame:FindFirstChild("TutorialText") or frame:FindFirstChild("TutorialText", true))
-	print("[Tutorial Debug] Frame found:", frame)
-	print("[Tutorial Debug] Label found:", label)
 	return gui, frame, label
 end
 
 local function setTutorialText(text)
 	local _, frame, label = getTutorialUI()
-	print("[Tutorial Debug] setTutorialText called with:", text)
-	print("[Tutorial Debug] Frame available:", frame)
-	print("[Tutorial Debug] Label available:", label)
 	if label then
 		label.Text = text or ""
-		print("[Tutorial Debug] Set label text to:", text or "")
 	end
 	if frame then
 		frame.Visible = text ~= nil and text ~= ""
-		print("[Tutorial Debug] Set frame visibility to:", text ~= nil and text ~= "")
 	end
 end
 

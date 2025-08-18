@@ -18,6 +18,7 @@ local counterLabel = mainFrame:WaitForChild("Counter")
 
 local isMobile = UserInputService.TouchEnabled
 local currentItemCount = 0
+local maxCapacity = 10
 local sackEquipped = false
 
 counterLabel.TextSize = 12
@@ -31,14 +32,21 @@ local function updateVisibility()
 end
 
 
-local function updateContents(contents)
+local function updateContents(contents, capacity)
 	currentItemCount = #contents
-	counterLabel.Text = string.format("%d/10", currentItemCount)
+	if typeof(capacity) == "number" then
+		maxCapacity = capacity
+	end
+	counterLabel.Text = string.format("%d/%d", currentItemCount, maxCapacity)
 	updateVisibility()
 end
 
 local function findSackTool(container)
-	return container:FindFirstChild("Backpack") or container:FindFirstChild("Sack")
+	return container:FindFirstChild("Backpack")
+		or container:FindFirstChild("BackpackPro")
+		or container:FindFirstChild("BackPackPro")
+		or container:FindFirstChild("BackpackPrestige")
+		or container:FindFirstChild("Sack")
 end
 
 local function checkSackEquipped()
@@ -55,7 +63,7 @@ end
 
 local function onCharacterAdded(character)
 	character.ChildAdded:Connect(function(child)
-		if (child.Name == "Backpack" or child.Name == "Sack") and child:IsA("Tool") then
+		if (child:IsA("Tool") and (child.Name == "Backpack" or child.Name == "BackpackPro" or child.Name == "BackpackPrestige" or child.Name == "Sack")) then
 			sackEquipped = true
 			updateVisibility()
 			child.AncestryChanged:Connect(function()
@@ -70,7 +78,7 @@ local function onCharacterAdded(character)
 end
 
 local function onBackpackAdded(child)
-	if (child.Name == "Backpack" or child.Name == "Sack") and child:IsA("Tool") then
+	if child:IsA("Tool") and (child.Name == "Backpack" or child.Name == "BackpackPro" or child.Name == "BackpackPrestige" or child.Name == "Sack") then
 		child.Equipped:Connect(function()
 			sackEquipped = true
 			updateVisibility()
@@ -84,7 +92,7 @@ end
 
 player.Backpack.ChildAdded:Connect(onBackpackAdded)
 for _, tool in pairs(player.Backpack:GetChildren()) do
-	if (tool.Name == "Backpack" or tool.Name == "Sack") and tool:IsA("Tool") then
+	if tool:IsA("Tool") and (tool.Name == "Backpack" or tool.Name == "BackpackPro" or tool.Name == "BackpackPrestige" or tool.Name == "Sack") then
 		onBackpackAdded(tool)
 	end
 end
@@ -95,7 +103,7 @@ end
 player.CharacterAdded:Connect(onCharacterAdded)
 
 BackpackChanged.OnClientEvent:Connect(function(contents)
-	updateContents(contents or {})
+	updateContents(contents or {}, maxCapacity)
 end)
 
 task.spawn(function()
@@ -106,7 +114,7 @@ task.spawn(function()
 	if typeof(get) == "function" then
 		local ok, contents = pcall(get)
 		if ok and contents then
-			updateContents(contents)
+			updateContents(contents, maxCapacity)
 		end
 	end
 end)

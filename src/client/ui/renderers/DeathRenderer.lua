@@ -10,7 +10,8 @@ function DeathRenderer.render(refs, state, now)
 	local timer = refs.TextTimer or (refs.Gui and refs.Gui:FindFirstChild("TextTimer"))
 	local frame = refs.DeathFrame or (refs.Gui and refs.Gui:FindFirstChild("DeathFrame"))
 
-	if state.visible then
+if state.visible then
+		if not gui.Enabled then print("[DeathRenderer] Enabling Death UI") end
 		gui.Enabled = true
 		gui.DisplayOrder = 100
 		if title then title.Text = state.message or "YOU DIED" end
@@ -24,7 +25,8 @@ function DeathRenderer.render(refs, state, now)
 		else
 			if timer then timer.Text = "Other players are still alive" end
 		end
-	else
+else
+		if gui.Enabled then print("[DeathRenderer] Disabling Death UI") end
 		gui.Enabled = false
 		refs._activatedAt = nil
 	end

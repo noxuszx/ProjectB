@@ -42,7 +42,11 @@ local lastUIHint     = ""
 -- Helper to decide if we should store or retrieve when F is pressed
 local function canStoreNow()
 	local character = player.Character
-	if not character or not character:FindFirstChild("Backpack") then
+	if not character then return false end
+	local hasBackpack = character:FindFirstChild("Backpack")
+		or character:FindFirstChild("BackpackPro")
+		or character:FindFirstChild("BackpackPrestige")
+	if not hasBackpack then
 		return false
 	end
 	local target = InteractableHandler.GetCurrentTarget and InteractableHandler.GetCurrentTarget()
@@ -125,13 +129,14 @@ BackpackEvent.OnClientEvent:Connect(function(action, ...)
 	if action == "Sync" then
 		currentBackpackContents = args[1] or {}
 		local uiHint = args[2]
+		local capacity = args[3]
 
 		if uiHint then
 			showUIHint(uiHint)
 		end
 
 		if _G.BackpackUI then
-			_G.BackpackUI.updateContents(currentBackpackContents)
+			_G.BackpackUI.updateContents(currentBackpackContents, capacity)
 		end
 	elseif action == "Error" then
 		local errorMessage = args[1] or "Unknown error"
@@ -153,7 +158,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
 	if input.KeyCode == Enum.KeyCode.F then
 		local character = player.Character
-		if character and character:FindFirstChild("Backpack") then
+		if character and (character:FindFirstChild("Backpack") or character:FindFirstChild("BackpackPro") or character:FindFirstChild("BackpackPrestige")) then
 			if canStoreNow() then
 				storeCurrentObject()
 			else
@@ -167,7 +172,7 @@ end)
 local function handleFAction(actionName, inputState, inputObject)
 	if inputState == Enum.UserInputState.Begin then
 		local character = player.Character
-		if character and character:FindFirstChild("Backpack") then
+		if character and (character:FindFirstChild("Backpack") or character:FindFirstChild("BackpackPro") or character:FindFirstChild("BackpackPrestige")) then
 			if canStoreNow() then
 				storeCurrentObject()
 			else

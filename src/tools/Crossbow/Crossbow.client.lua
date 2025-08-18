@@ -96,8 +96,6 @@ local function performHitscan(muzzlePos, mouseHitPos)
     local raycastParams = RaycastParams.new()
 
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    
-    -- Filter out character, tool, and zone parts so we can hit targets inside zones
     local filterList = { currentCharacter, tool }
     local zoneParts = getZoneParts()
     for _, zonePart in pairs(zoneParts) do
@@ -201,7 +199,6 @@ local function executeFire()
             end
         end
     else
-        -- Desktop: use mouse position if available, otherwise fallback to crosshair
         local mouse = player:GetMouse()
         if mouse and mouse.Hit then
             mouseHitPos = mouse.Hit.Position

@@ -14,8 +14,10 @@ function VictoryRenderer.render(refs, state, now)
 	local lobbyBtn = refs.LobbyBTN
 	local continueBtn = refs.ContinueBTN
 
-	if state.visible then
+if state.visible then
+		if not gui.Enabled then print("[VictoryRenderer] Enabling Victory UI") end
 		gui.Enabled = true
+		gui.DisplayOrder = 100
 		if textLabel then textLabel.Text = state.message or "VICTORY!" end
 		-- Initial visibility
 		if textLabel then textLabel.TextTransparency = 0 end
@@ -32,7 +34,8 @@ function VictoryRenderer.render(refs, state, now)
 			textTimer.Text = string.format("GOING BACK TO LOBBY IN %ds", remaining)
 		end
 		-- Auto-hide will be triggered by controller when time elapses (optional)
-	else
+else
+		if gui.Enabled then print("[VictoryRenderer] Disabling Victory UI") end
 		gui.Enabled = false
 		refs._activatedAt = nil
 	end

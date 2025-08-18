@@ -199,11 +199,9 @@ function ArenaCreature:setTarget(player)
 	self.currentWaypointIndex = 1
 	
 	if player then
-		print(string.format("[ArenaCreature] %s targeting %s", self.creatureType, player.Name))
-		-- Immediately start moving towards target
+			-- Immediately start moving towards target
 		self:updatePath()
 	else
-		print(string.format("[ArenaCreature] %s lost target", self.creatureType))
 	end
 end
 
@@ -440,8 +438,6 @@ function ArenaCreature:performAttack()
 	self.attackCooldown = CONFIG.ATTACK_COOLDOWN
 	self.lastAttackTime = os.clock()
 	
-	print(string.format("[ArenaCreature] %s attacked %s for %d damage", 
-		self.creatureType, self.currentTarget.Name, self.damage))
 end
 
 -- ============================================
@@ -514,7 +510,6 @@ function ArenaCreature:update(deltaTime)
 		return
 	end
 	
-	-- Debug: Check if we have a target
 	if not self.currentTarget then
 		-- No target, don't run stuck detection
 		return
@@ -640,11 +635,6 @@ function ArenaCreature:die()
 		end
 		Debris:AddItem(self.model, 2)
 	else
-		-- Debug: count Motor6D joints before ragdoll to ensure they still exist
-		local motorCount = 0
-		for _, d in ipairs(self.model:GetDescendants()) do
-			if d:IsA("Motor6D") then motorCount += 1 end
-		end
 
 		-- Use shared RagdollModule for permanent NPC ragdoll
 		local ok, res = pcall(function()

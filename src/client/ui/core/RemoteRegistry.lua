@@ -27,7 +27,7 @@ end
 function Registry:init(timeout)
 	timeout = timeout or 10
 	local remotes = waitForChildTimeout(ReplicatedStorage, "Remotes", timeout)
-	if not remotes then return false end
+	if not remotes then print("[RemoteRegistry] Remotes folder not found"); return false end
 	-- Arena
 	local arenaFolder = waitForChildTimeout(remotes, ArenaConfig.Remotes.Folder, timeout)
 	if arenaFolder then
@@ -37,6 +37,8 @@ function Registry:init(timeout)
 		self.Arena.Sync = waitForChildTimeout(arenaFolder, ArenaConfig.Remotes.Sync, timeout)
 		self.Arena.Victory = waitForChildTimeout(arenaFolder, ArenaConfig.Remotes.Victory, timeout)
 		self.Arena.PostGameChoice = waitForChildTimeout(arenaFolder, ArenaConfig.Remotes.PostGameChoice, timeout)
+	else
+		print("[RemoteRegistry] Arena folder not found:", ArenaConfig.Remotes.Folder)
 	end
 	-- Death
 	local deathFolder = remotes:FindFirstChild("Death")
@@ -44,6 +46,8 @@ function Registry:init(timeout)
 		self.Death.ShowUI = deathFolder:FindFirstChild("ShowUI")
 		self.Death.RequestRespawn = deathFolder:FindFirstChild("RequestRespawn")
 		self.Death.RevivalFeedback = deathFolder:FindFirstChild("RevivalFeedback")
+	else
+		print("[RemoteRegistry] Death folder not found")
 	end
 	return true
 end

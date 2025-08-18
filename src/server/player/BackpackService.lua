@@ -15,7 +15,7 @@ local playerBackpacks = {}
 
 local BACKPACK_HIDING_POSITION = Vector3.new(10000, -5000, 10000)
 
-local MAX_SLOTS = 10
+local DEFAULT_MAX_SLOTS = 10
 local COOLDOWN_TIME = 0.1
 
 local function initializeBackpack(player)
@@ -23,6 +23,7 @@ local function initializeBackpack(player)
 		topIndex = 0,
 		slots = {},
 		lastAction = 0,
+		maxSlots = DEFAULT_MAX_SLOTS,
 	}
 end
 
@@ -225,7 +226,8 @@ function BackpackService.canStore(player, object)
 		return false, "No backpack initialized"
 	end
 
-	if backpack.topIndex >= MAX_SLOTS then
+	local capacity = backpack.maxSlots or DEFAULT_MAX_SLOTS
+	if backpack.topIndex >= capacity then
 		return false, "Backpack is full"
 	end
 
@@ -330,10 +332,11 @@ end
 function BackpackService.getBackpackStats(player)
 	local backpack = playerBackpacks[player.UserId]
 	if not backpack then
-		return 0, MAX_SLOTS
+		return 0, DEFAULT_MAX_SLOTS
 	end
 
-	return backpack.topIndex, MAX_SLOTS
+	local capacity = backpack.maxSlots or DEFAULT_MAX_SLOTS
+	return backpack.topIndex, capacity
 end
 
 -- Event handlers
@@ -343,6 +346,18 @@ Players.PlayerRemoving:Connect(cleanupBackpack)
 -- Initialize existing players
 for _, player in pairs(Players:GetPlayers()) do
 	initializeBackpack(player)
+end
+
+-- Setter to update a player's capacity (e.g., from gamepass preference)
+function BackpackService.setPlayerCapacity(player, capacity)
+	local backpack = playerBackpacks[player.UserId]
+	if not backpack then
+		initializeBackpack(player)
+		backpack = playerBackpacks[player.UserId]
+	end
+	if typeof(capacity) == "number" and capacity >= 1 and capacity <= 200 then
+		backpack.maxSlots = math.floor(capacity)
+	end
 end
 
 return BackpackService

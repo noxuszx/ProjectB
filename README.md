@@ -247,4 +247,40 @@ The backpack system now uses manually created UI in Studio:
 
 ---
 
+## Backpack Gamepasses: Wiring Checklist (Game Place)
+
+Files added for this feature:
+- src/shared/config/GamepassConfig.lua (capacities, tool names, placeholder IDs)
+- src/shared/profile/ProfileSchema.lua (ProfileService defaults)
+- src/server/services/BackpackPreferenceService.lua (variant resolution + equip)
+
+Integration steps:
+1) ProfileService bootstrap
+- Ensure ServerScriptService/data/ProfileService.lua is loaded.
+- Expose a small accessor (e.g., _G.ProfileAccessor) with:
+  - getProfileData(player) -> table (profile.Data)
+  - updateProfileData(player, mutatorFn)
+
+2) Resolve variant on join
+- In a PlayerAdded handler, call BackpackPreferenceService.resolveVariant(player) to decide Base/Pro/Prestige.
+- Compute capacity via getCapacityForVariant(variant).
+- After refactoring BackpackService to per-player capacity, set that capacity for this player.
+
+3) Equip on spawn
+- In CharacterAdded, call BackpackPreferenceService.equipChosenBackpack(player, variant).
+- This grants the correct Tool from ReplicatedStorage/Tools and removes other variants from Character and player.Backpack.
+
+4) UI sync
+- Extend BackpackEvent "Sync" (server) to include maxSlots.
+- Update client UI (BackpackUI.client.lua) to display count/max.
+
+5) Ownership config
+- Fill GamepassConfig.IDS.PRO and .PRESTIGE with your numeric gamepass IDs when ready.
+
+Notes
+- If TeleportData.BackpackChoice exists (from lobby), resolveVariant will honor it when valid.
+- Purchases happen only in lobby; game place only reads preference and ownership.
+
+---
+
 **Built with Rojo** • **Procedural Generation** • **AI Systems** • **Roblox**

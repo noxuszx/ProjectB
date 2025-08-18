@@ -11,6 +11,13 @@ local deathRemotes 		   = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild
 local showUIRemote 		   = deathRemotes:WaitForChild("ShowUI")
 local requestRespawnRemote = deathRemotes:WaitForChild("RequestRespawn")
 local revivalFeedbackRemote = deathRemotes:WaitForChild("RevivalFeedback")
+local requestPurchaseRemote = deathRemotes:FindFirstChild("RequestPurchase") or Instance.new("RemoteEvent")
+requestPurchaseRemote.Name = "RequestPurchase"
+requestPurchaseRemote.Parent = deathRemotes
+-- Bindable event for server-initiated revives (from DevProductService)
+local serverReviveBindable = deathRemotes:FindFirstChild("ServerRevive") or Instance.new("BindableEvent")
+serverReviveBindable.Name = "ServerRevive"
+serverReviveBindable.Parent = deathRemotes
 
 Players.CharacterAutoLoads = false
 
@@ -186,10 +193,19 @@ end
 
 
 local function forceRespawn(player)
+	if not player then return end
 	if not deadPlayers[player.UserId] then
 		return
 	end
 	handleRespawnRequest(player)
+end
+
+local function reviveAll(triggeringPlayer)
+	for _, p in ipairs(Players:GetPlayers()) do
+		if deadPlayers[p.UserId] then
+			handleRespawnRequest(p)
+		end
+	end
 end
 
 local function onPlayerAdded(player)
@@ -391,6 +407,18 @@ local function onPlayerRemoving(player)
 end
 
 requestRespawnRemote.OnServerEvent:Connect(handleRespawnRequest)
+
+-- Listen for server initiated revives (developer products)
+serverReviveBindable.Event:Connect(function(payload)
+	if typeof(payload) ~= "table" then return end
+	local t = payload.type
+	local p = payload.player
+	if t == "SELF_REVIVE" and p then
+		forceRespawn(p)
+	elseif t == "REVIVE_ALL" then
+		reviveAll(p)
+	end
+end)
 
 for _, player in pairs(Players:GetPlayers()) do
 	onPlayerAdded(player)

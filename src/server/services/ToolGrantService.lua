@@ -27,9 +27,9 @@ local MULTI_INSTANCE_TOOLS = {
 -- Track in-progress grants to avoid race-based duplicates
 local _inProgress = {}
 
-local toolsFolder = ReplicatedStorage:FindFirstChild("Tools")
+local toolsFolder = ReplicatedStorage:FindFirstChild("Tools") or ReplicatedStorage:FindFirstChild("Items")
 if not toolsFolder then
-	warn("[ToolGrantService] Tools folder not found in ReplicatedStorage - tool granting will fail")
+	warn("[ToolGrantService] Tools/Items folder not found in ReplicatedStorage - tool granting will fail")
 end
 
 -- Helper to check if a player already has a tool, either equipped (Character) or in Backpack
