@@ -41,12 +41,16 @@ end
 
 local function findVictoryGui(pg): ScreenGui?
 	local exact = (pg:FindFirstChild("VictoryGui") or pg:FindFirstChild("VictoryUI"))
-	if exact and exact:IsA("ScreenGui") then return exact end
+	if exact and exact:IsA("ScreenGui") then
+		return exact
+	end
 	-- Heuristic: any ScreenGui with name containing "victor"
 	for _, child in ipairs(pg:GetChildren()) do
 		if child:IsA("ScreenGui") then
 			local name = string.lower(child.Name)
-			if string.find(name, "victor") then return child end
+			if string.find(name, "victor") then
+				return child
+			end
 			-- Or any ScreenGui with a child TextLabel named Victory/Title
 			local tl = child:FindFirstChild("TextLabel") or child:FindFirstChild("Title")
 			if tl and tl:IsA("TextLabel") then
@@ -75,27 +79,69 @@ local function bindRefs(): Refs
 		refs.Arena.TimerText = refs.Arena.Gui:FindFirstChild("TimerText") :: TextLabel
 	end
 	if refs.Victory.Gui then
-		refs.Victory.TextLabel = (refs.Victory.Gui:FindFirstChild("TextLabel") or refs.Victory.Gui:FindFirstChild("Title")) :: TextLabel
-		refs.Victory.TextTimer = (refs.Victory.Gui:FindFirstChild("TextTimer") or refs.Victory.Gui:FindFirstChild("Timer")) :: TextLabel
-		refs.Victory.VictoryFrame = (refs.Victory.Gui:FindFirstChild("VictoryFrame") or refs.Victory.Gui:FindFirstChild("Frame")) :: Frame
+		refs.Victory.TextLabel = (
+			refs.Victory.Gui:FindFirstChild("TextLabel") or refs.Victory.Gui:FindFirstChild("Title")
+		) :: TextLabel
+		refs.Victory.TextTimer = (
+			refs.Victory.Gui:FindFirstChild("TextTimer") or refs.Victory.Gui:FindFirstChild("Timer")
+		) :: TextLabel
+		refs.Victory.VictoryFrame = (
+			refs.Victory.Gui:FindFirstChild("VictoryFrame") or refs.Victory.Gui:FindFirstChild("Frame")
+		) :: Frame
 		if refs.Victory.VictoryFrame then
-			refs.Victory.LobbyBTN = (refs.Victory.VictoryFrame:FindFirstChild("LobbyBTN") or refs.Victory.VictoryFrame:FindFirstChild("Lobby") or refs.Victory.VictoryFrame:FindFirstChild("LobbyButton")) :: TextButton
-			refs.Victory.ContinueBTN = (refs.Victory.VictoryFrame:FindFirstChild("ContinueBTN") or refs.Victory.VictoryFrame:FindFirstChild("Continue") or refs.Victory.VictoryFrame:FindFirstChild("ContinueButton")) :: TextButton
+			refs.Victory.LobbyBTN = (
+				refs.Victory.VictoryFrame:FindFirstChild("LobbyBTN")
+				or refs.Victory.VictoryFrame:FindFirstChild("Lobby")
+				or refs.Victory.VictoryFrame:FindFirstChild("LobbyButton")
+			) :: TextButton
+			refs.Victory.ContinueBTN = (
+				refs.Victory.VictoryFrame:FindFirstChild("ContinueBTN")
+				or refs.Victory.VictoryFrame:FindFirstChild("Continue")
+				or refs.Victory.VictoryFrame:FindFirstChild("ContinueButton")
+			) :: TextButton
 		end
 	end
 	if refs.Death.Gui then
-		refs.Death.DeathFrame = (refs.Death.Gui:FindFirstChild("DeathFrame") or refs.Death.Gui:FindFirstChild("Frame")) :: Frame
+		refs.Death.DeathFrame = (
+			refs.Death.Gui:FindFirstChild("DeathFrame") or refs.Death.Gui:FindFirstChild("Frame")
+		) :: Frame
+		-- Bind title/timer robustly whether they live at the root or under DeathFrame
+		local deathRoot = refs.Death.DeathFrame or refs.Death.Gui
+		if deathRoot then
+			refs.Death.TextLabel = (
+				refs.Death.Gui:FindFirstChild("TextLabel")
+				or deathRoot:FindFirstChild("TextLabel")
+			) :: TextLabel
+			refs.Death.TextTimer = (
+				refs.Death.Gui:FindFirstChild("TextTimer")
+				or deathRoot:FindFirstChild("TextTimer")
+				or deathRoot:FindFirstChild("Timer")
+			) :: TextLabel
+		end
 		if refs.Death.DeathFrame then
-			refs.Death.ReviveBTN = (refs.Death.DeathFrame:FindFirstChild("ReviveBTN") or refs.Death.DeathFrame:FindFirstChild("Revive") or refs.Death.DeathFrame:FindFirstChild("ReviveButton")) :: TextButton
-			refs.Death.LobbyBTN = (refs.Death.DeathFrame:FindFirstChild("LobbyBTN") or refs.Death.DeathFrame:FindFirstChild("Lobby") or refs.Death.DeathFrame:FindFirstChild("LobbyButton")) :: TextButton
-			refs.Death.ReviveAllBTN = (refs.Death.DeathFrame:FindFirstChild("ReviveAllBTN") or refs.Death.DeathFrame:FindFirstChild("RevivAllBTN")) :: TextButton
+			refs.Death.ReviveBTN = (
+				refs.Death.DeathFrame:FindFirstChild("ReviveBTN")
+				or refs.Death.DeathFrame:FindFirstChild("Revive")
+				or refs.Death.DeathFrame:FindFirstChild("ReviveButton")
+			) :: TextButton
+			refs.Death.LobbyBTN = (
+				refs.Death.DeathFrame:FindFirstChild("LobbyBTN")
+				or refs.Death.DeathFrame:FindFirstChild("Lobby")
+				or refs.Death.DeathFrame:FindFirstChild("LobbyButton")
+			) :: TextButton
+			refs.Death.ReviveAllBTN = (
+				refs.Death.DeathFrame:FindFirstChild("ReviveAllBTN")
+				or refs.Death.DeathFrame:FindFirstChild("RevivAllBTN")
+			) :: TextButton
 		end
 	end
 	return refs
 end
 
 local function waitForVictoryRefsAsync(self)
-	if self._waitingVictory then return end
+	if self._waitingVictory then
+		return
+	end
 	self._waitingVictory = true
 	task.spawn(function()
 		local pg = getPlayerGui()
@@ -103,10 +149,8 @@ local function waitForVictoryRefsAsync(self)
 		while os.clock() < deadline do
 			local gui = findVictoryGui(pg)
 			if gui then
-				-- Refresh refs and trigger a re-render
 				self.refs = bindRefs()
 				self._waitingVictory = false
-				-- Nudge store to re-render with same state
 				self._store:set({})
 				return
 			end
@@ -124,7 +168,6 @@ function UIManager.new(store: any, registry: any)
 	local self = setmetatable({}, UIManager)
 	self._store = store
 	self._registry = registry
-	-- Separate maids: one for global lifetime, one for per-binding subscriptions/buttons
 	self._maidGlobal = Maid.new()
 	self._maidBindings = Maid.new()
 	self.refs = bindRefs()
@@ -143,6 +186,13 @@ function UIManager:_wireButtons()
 			self._store:set({ victory = { visible = false } })
 		end))
 	end
+	if r.Death.Gui and r.Death.LobbyBTN then
+		self._maidBindings:give(r.Death.LobbyBTN.MouseButton1Click:Connect(function()
+			if self._registry.Arena.PostGameChoice then
+				self._registry.Arena.PostGameChoice:FireServer({ choice = "lobby" })
+			end
+		end))
+	end
 	if r.Victory.Gui and r.Victory.ContinueBTN then
 		self._maidBindings:give(r.Victory.ContinueBTN.MouseButton1Click:Connect(function()
 			if self._registry.Arena.PostGameChoice then
@@ -153,7 +203,8 @@ function UIManager:_wireButtons()
 	end
 	-- Wire Death UI developer product buttons centrally
 	if r.Death.Gui and r.Death.ReviveBTN then
-		local deathRemotes = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Death")
+		local deathRemotes = ReplicatedStorage:FindFirstChild("Remotes")
+			and ReplicatedStorage.Remotes:FindFirstChild("Death")
 		local requestPurchase = deathRemotes and deathRemotes:FindFirstChild("RequestPurchase")
 		if requestPurchase then
 			self._maidBindings:give(r.Death.ReviveBTN.MouseButton1Click:Connect(function()
@@ -171,16 +222,18 @@ end
 function UIManager:_subscribe()
 	local unsubscribe = self._store:subscribe(function(state)
 		local r = self.refs
-		local arenaState = state.arena or {}
-		local victoryState = state.victory or {}
-		local deathState = state.death or {}
-		local now = state.now or os.clock()
+		local arenaState 	= state.arena or   {}
+		local victoryState 	= state.victory or {}
+		local deathState 	= state.death or   {}
+		local now 			= state.now or os.clock()
 
-		-- Routing rules: Death UI overrides others; Arena hidden while death visible
-		local arenaForRender = { active = (arenaState.active == true) and (deathState.visible ~= true), endTime = arenaState.endTime }
-		local victoryForRender = { visible = (victoryState.visible == true) and (deathState.visible ~= true), message = victoryState.message }
+		local arenaForRender =
+			{ active = (arenaState.active == true) and (deathState.visible ~= true), endTime = arenaState.endTime }
+		local victoryForRender = {
+			visible = (victoryState.visible == true) and (deathState.visible ~= true),
+			message = victoryState.message,
+		}
 
-		-- If victory should be visible but we don't have refs yet, try to rebind or wait briefly for it
 		if victoryForRender.visible and (not r or not r.Victory or not r.Victory.Gui) then
 			local newRefs = bindRefs()
 			if newRefs and newRefs.Victory and newRefs.Victory.Gui then
@@ -191,8 +244,13 @@ function UIManager:_subscribe()
 					self._warnedVictoryMissing = true
 					local pg = getPlayerGui()
 					local names = {}
-					for _, c in ipairs(pg:GetChildren()) do table.insert(names, c.Name) end
-					print("[UIManager][warn] Victory visible but VictoryGui not found. PlayerGui children:", table.concat(names, ", "))
+					for _, c in ipairs(pg:GetChildren()) do
+						table.insert(names, c.Name)
+					end
+					print(
+						"[UIManager][warn] Victory visible but VictoryGui not found. PlayerGui children:",
+						table.concat(names, ", ")
+					)
 				end
 				-- Start an async wait to bind when it appears
 				waitForVictoryRefsAsync(self)
@@ -202,8 +260,13 @@ function UIManager:_subscribe()
 		end
 
 		-- Debug: log state changes succinctly
-		local dbgKey = string.format("arena:%s end:%s | victory:%s | death:%s",
-			 tostring(arenaForRender.active), tostring(arenaForRender.endTime), tostring(victoryForRender.visible), tostring(deathState.visible))
+		local dbgKey = string.format(
+			"arena:%s end:%s | victory:%s | death:%s",
+			tostring(arenaForRender.active),
+			tostring(arenaForRender.endTime),
+			tostring(victoryForRender.visible),
+			tostring(deathState.visible)
+		)
 		if self._lastDebugKey ~= dbgKey then
 			self._lastDebugKey = dbgKey
 			print("[UIManager]", dbgKey)
@@ -251,4 +314,3 @@ function UIManager:init()
 end
 
 return UIManager
-

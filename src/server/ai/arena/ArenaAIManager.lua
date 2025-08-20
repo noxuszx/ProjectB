@@ -59,6 +59,7 @@ function ArenaAIManager.new()
 
 	-- Core state
 	self.isActive = false
+	self.paused = false
 	self.creatures = {} -- Array of active creatures
 	self.creaturesByModel = {} -- Model -> creature lookup
 	self.playerTargets = {} -- Track which creatures target which players
@@ -84,6 +85,7 @@ function ArenaAIManager:start()
 
 	print("[ArenaAIManager] Starting arena AI system")
 	self.isActive = true
+	self.paused = false
 	self.lastUpdateTime = os.clock()
 	self.lastRetargetTime = os.clock()
 
@@ -105,6 +107,7 @@ function ArenaAIManager:stop()
 
 	print("[ArenaAIManager] Stopping arena AI system")
 	self.isActive = false
+	self.paused = false
 
 	if self.updateConnection then
 		self.updateConnection:Disconnect()
@@ -324,7 +327,7 @@ end
 -- ============================================
 
 function ArenaAIManager:update(deltaTime)
-	if not self.isActive or #self.creatures == 0 then
+	if not self.isActive or self.paused or #self.creatures == 0 then
 		return
 	end
 
@@ -379,6 +382,24 @@ function ArenaAIManager:updateCreatureBatch(deltaTime)
 			creature:update(deltaTime)
 		end
 	end
+end
+
+-- ============================================
+-- PAUSE / RESUME
+-- ============================================
+
+function ArenaAIManager:pause()
+	if not self.isActive or self.paused then return false end
+	self.paused = true
+	print("[ArenaAIManager] Paused")
+	return true
+end
+
+function ArenaAIManager:resume()
+	if not self.isActive or not self.paused then return false end
+	self.paused = false
+	print("[ArenaAIManager] Resumed")
+	return true
 end
 
 -- ============================================

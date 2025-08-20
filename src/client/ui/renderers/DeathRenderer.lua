@@ -6,9 +6,9 @@ local DeathRenderer = {}
 function DeathRenderer.render(refs, state, now)
 	if not refs or not refs.Gui then return end
 	local gui = refs.Gui
-	local title = refs.TextLabel or (refs.Gui and refs.Gui:FindFirstChild("TextLabel"))
-	local timer = refs.TextTimer or (refs.Gui and refs.Gui:FindFirstChild("TextTimer"))
-	local frame = refs.DeathFrame or (refs.Gui and refs.Gui:FindFirstChild("DeathFrame"))
+local frame = refs.DeathFrame or (refs.Gui and refs.Gui:FindFirstChild("DeathFrame"))
+local title = refs.TextLabel or (frame and frame:FindFirstChild("TextLabel")) or (refs.Gui and refs.Gui:FindFirstChild("TextLabel"))
+local timer = refs.TextTimer or (frame and frame:FindFirstChild("TextTimer")) or (refs.Gui and refs.Gui:FindFirstChild("TextTimer"))
 
 if state.visible then
 		if not gui.Enabled then print("[DeathRenderer] Enabling Death UI") end

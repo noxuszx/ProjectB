@@ -9,6 +9,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DragDropConfig        = require(ReplicatedStorage.Shared.config.DragDropConfig)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
+local SoundPlayer           = require(ReplicatedStorage.Shared.modules.SoundPlayer)
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local WeldEvent = Remotes:WaitForChild("WeldAction")
 
 -- Configuration
 local DEBUG = false
@@ -81,14 +85,11 @@ local function problemWeld(part)
 end
 
 local function isWeldableTarget(part)
-	return part:IsA("BasePart")
-		and part.CanCollide
-		and part.CanQuery
-		and (ALLOW_ANCHORED_TARGETS or not part.Anchored)
-		and not problemWeld(part)
+	-- "Weld to anything": allow any BasePart except player/creature parts.
+	-- Anchored targets are allowed.
+	return part and part:IsA("BasePart")
 		and not isPlayerCharacterPart(part)
 		and not isCreaturePart(part)
-		and CollectionServiceTags.isWeldable(part)
 end
 
 function WeldSystem.updateHoveredObject(isDragging, isDraggableObjectFunc)
@@ -130,8 +131,26 @@ local function findWeldTargets(sourceObject)
 		end
 	end
 
+	-- Fallback: allow welding to whatever is under the cursor within a reasonable range
+	local cursorTarget = mouse.Target
+	if cursorTarget and cursorTarget:IsA("BasePart") and isWeldableTarget(cursorTarget) then
+		local alreadyFound = false
+		for _, existing in pairs(targets) do
+			if existing.part == cursorTarget then
+				alreadyFound = true
+				break
+			end
+		end
+		if not alreadyFound then
+			local d = (cursorTarget.Position - sourcePart.Position).Magnitude
+			-- No distance limit: if user points at it, let them weld it
+			table.insert(targets, { part = cursorTarget, distance = d, method = "cursor" })
+			if DEBUG then print("DEBUG: Cursor fallback target:", cursorTarget.Name, "d:", math.floor(d * 100) / 100) end
+		end
+	end
+
 	-- Sort by distance (closest first)
-		table.sort(targets, function(a, b)
+	table.sort(targets, function(a, b)
 		return a.distance < b.distance
 	end)
 
@@ -153,78 +172,55 @@ function WeldSystem.weldObject(draggedObject, currentWeld)
 	end
 
 	local weldTargets = findWeldTargets(targetObject)
-
 	if #weldTargets == 0 then
 		print("No weldable objects found nearby - move closer to another object")
 		return currentWeld, (currentWeld ~= nil)
 	end
 
-	local existingWelds = {}
+	-- If already welded to anything and player hits weld again, request Detach on server
+	local foundDragDropWeld = nil
+	local weldedPartner = nil
+	-- Search on the representative part first
 	for _, child in pairs(sourcePart:GetChildren()) do
 		if child:IsA("WeldConstraint") and child.Name:find("DragDropWeld") then
-			table.insert(existingWelds, child)
+			foundDragDropWeld = child
+			weldedPartner = (child.Part0 == sourcePart) and child.Part1 or child.Part0
+			break
 		end
 	end
-
-	if #existingWelds > 0 then
-		for _, weld in pairs(existingWelds) do
-			local weldedPart = weld.Part0 == sourcePart and weld.Part1 or weld.Part0
-			for _, target in pairs(weldTargets) do
-				if target.part == weldedPart then
-					weld:Destroy()
-					print("Unwelded", targetObject.Name, "from", weldedPart.Name)
-					return currentWeld, (currentWeld ~= nil)
+	-- If not found and the target is a Model, search its BasePart descendants
+	if not foundDragDropWeld and targetObject and targetObject:IsA("Model") then
+		for _, d in ipairs(targetObject:GetDescendants()) do
+			if d:IsA("BasePart") then
+				for _, child in ipairs(d:GetChildren()) do
+					if child:IsA("WeldConstraint") and child.Name:find("DragDropWeld") then
+						foundDragDropWeld = child
+						weldedPartner = (child.Part0 == d) and child.Part1 or child.Part0
+						break
+					end
 				end
+				if foundDragDropWeld then break end
 			end
 		end
 	end
-
-	local bestTarget = weldTargets[1]
-	local weldTarget = bestTarget.part
-
-	-- Remove any existing DragDropWelds from the target object to prevent spam
-	for _, child in ipairs(sourcePart:GetChildren()) do
-		if child:IsA("WeldConstraint") and child.Name:find("DragDropWeld") then
-			child:Destroy()
-		end
-	end
-
-	local weldId = os.clock() .. "_" .. math.random(1000, 9999)
-	local weldName = "DragDropWeld_" .. weldId
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = sourcePart
-	weld.Part1 = weldTarget
-	weld.Parent = sourcePart
-	weld.Name = weldName
-
-	-- Auto-cleanup when either part is removed
-	local function teardown()
-		if weld.Parent then
-			weld:Destroy()
-		end
-	end
-	if weld.Part0 then
-		weld.Part0.AncestryChanged:Connect(function(_, parent)
-			if not parent then teardown() end
+	if foundDragDropWeld and weldedPartner then
+		WeldEvent:FireServer("Detach", foundDragDropWeld.Part0, foundDragDropWeld.Part1)
+		pcall(function()
+			SoundPlayer.playAt("weld.detach", sourcePart, { volume = 0.6 })
 		end)
-	end
-	if weld.Part1 then
-		weld.Part1.AncestryChanged:Connect(function(_, parent)
-			if not parent then teardown() end
-		end)
-	end
-
-	if DEBUG then
-		print("Welded", targetObject.Name, "to", weldTarget.Name, "via", bestTarget.method, "detection")
-		print("Distance:", math.floor(bestTarget.distance * 100) / 100, "studs")
-	end
-
-	if targetObject == draggedObject then
-		return weld, true
-	else
 		return currentWeld, (currentWeld ~= nil)
 	end
+
+	-- Otherwise Attach to the best target (closest)
+	local bestTarget = weldTargets[1]
+	local weldTarget = bestTarget.part
+	WeldEvent:FireServer("Attach", sourcePart, weldTarget)
+	pcall(function()
+		SoundPlayer.playAt("weld.attach", sourcePart, { volume = 0.6, rolloff = { min = 6, max = 50, emitter = 5 } })
+	end)
+
+	-- We no longer return a client weld instance; server will replicate the authoritative weld
+	return currentWeld, (currentWeld ~= nil)
 end
 function WeldSystem.getWeldedAssembly(root, isDraggableObjectFunc)
 	-- Resolve to a representative BasePart if a Model (or other instance) is passed

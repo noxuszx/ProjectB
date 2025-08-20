@@ -4,18 +4,28 @@ local PhysicsService = game:GetService("PhysicsService")
 pcall(function() PhysicsService:RegisterCollisionGroup("Item") end)
 pcall(function() PhysicsService:RegisterCollisionGroup("player") end)
 pcall(function() PhysicsService:RegisterCollisionGroup("Creature") end)
+pcall(function() PhysicsService:RegisterCollisionGroup("Admins") end)
 
 -- Set collision rules
 PhysicsService:CollisionGroupSetCollidable("Item", "player", false)
 PhysicsService:CollisionGroupSetCollidable("Creature", "player", true) -- Creatures can collide with players
 PhysicsService:CollisionGroupSetCollidable("Creature", "Item", true)   -- Creatures can collide with items
+-- Ensure carried Items do not collide with Admins either
+PhysicsService:CollisionGroupSetCollidable("Item", "Admins", false)
 
 local Players = game.Players
 
 local function setCharacterCollisionGroup(char: Model)
-	for _, d in ipairs(char:GetDescendants()) do
+	local count = 0
+for _, d in ipairs(char:GetDescendants()) do
 		if d:IsA("BasePart") then
-			d.CollisionGroup = "player"
+			-- Respect Admins group if already set elsewhere
+			if d.CollisionGroup == "Admins" then
+				-- keep Admins
+			else
+				d.CollisionGroup = "player"
+			end
+			count += 1
 		end
 	end
 	-- Keep it consistent for any future parts (e.g., accessories)

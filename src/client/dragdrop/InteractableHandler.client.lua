@@ -1,6 +1,7 @@
 local RS  = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local RP  = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local CS_tags 	 = require(RP.Shared.utilities.CollectionServiceTags)
 local WeldSystem = require(script.Parent.WeldSystem)
@@ -110,6 +111,41 @@ local function setAssemblyMassless(rootModel: Model, isMassless: boolean)
 	end
 end
 
+-- Whitelist for interaction rays: include only tagged interactables
+local interactionWhitelist = {}
+local lastWhitelistRefresh = 0
+
+local function rebuildInteractionWhitelist()
+	local containersSet = {}
+	local function addContainer(inst)
+		if not inst or not inst:IsDescendantOf(workspace) then return end
+		local container = inst:FindFirstAncestorOfClass("Model") or inst:FindFirstAncestorOfClass("Folder")
+		container = container or inst
+		containersSet[container] = true
+	end
+
+	for _, tag in ipairs({ CS_tags.DRAGGABLE, CS_tags.STORABLE }) do
+		for _, inst in ipairs(CollectionService:GetTagged(tag)) do
+			addContainer(inst)
+		end
+	end
+
+	interactionWhitelist = {}
+	for obj, _ in pairs(containersSet) do
+		table.insert(interactionWhitelist, obj)
+	end
+	lastWhitelistRefresh = os.clock()
+end
+
+-- Refresh when tags change (best-effort)
+CollectionService:GetInstanceAddedSignal(CS_tags.DRAGGABLE):Connect(rebuildInteractionWhitelist)
+CollectionService:GetInstanceRemovedSignal(CS_tags.DRAGGABLE):Connect(rebuildInteractionWhitelist)
+CollectionService:GetInstanceAddedSignal(CS_tags.STORABLE):Connect(rebuildInteractionWhitelist)
+CollectionService:GetInstanceRemovedSignal(CS_tags.STORABLE):Connect(rebuildInteractionWhitelist)
+
+-- Initial build
+rebuildInteractionWhitelist()
+
 UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
 	if gameProcessedEvent then
 		return
@@ -162,8 +198,23 @@ end)
 -- UIS.TouchStarted and UIS.TouchEnded connections disabled to prevent direct touch drag
 
 RS.RenderStepped:Connect(function(dT)
-	local ray = Ray.new(camera.CFrame.Position, camera.CFrame.LookVector * range)
-	local hitPart, position = workspace:FindPartOnRay(ray, player.Character)
+	-- Periodically refresh whitelist in case of dynamic spawns
+	if os.clock() - lastWhitelistRefresh > 1.5 then
+		rebuildInteractionWhitelist()
+	end
+
+	local vp = camera.ViewportSize
+	local rayUnit = camera:ViewportPointToRay(vp.X/2, vp.Y/2, 0)
+	local origin = rayUnit.Origin
+	local direction = rayUnit.Direction.Unit * range
+
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = interactionWhitelist
+	params.IgnoreWater = true
+
+	local result = workspace:Raycast(origin, direction, params)
+	local hitPart = result and result.Instance or nil
 
 	local targObj = nil
 
@@ -259,7 +310,7 @@ function LeftClick()
 			return
 		end
 
-		carrying = true
+carrying = true
 		if currTargs == nil then
 			return
 		end
@@ -287,17 +338,17 @@ function LeftClick()
 			setAssemblyMassless(currTargs, true)
 		end
 
-		if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
+if currTargs:IsA("MeshPart") or currTargs:IsA("Part") then
 			currTargs.CollisionGroup = "Item"
 		elseif currTargs:IsA("Tool") then
 			for _, d in ipairs(currTargs:GetDescendants()) do
-				if d:IsA("MeshPart") or d:IsA("Part") then
+if d:IsA("MeshPart") or d:IsA("Part") then
 					d.CollisionGroup = "Item"
 				end
 			end
 		elseif currTargs:IsA("Model") then
 			for _, d in ipairs(currTargs:GetDescendants()) do
-				if d:IsA("MeshPart") or d:IsA("Part") then
+if d:IsA("MeshPart") or d:IsA("Part") then
 					d.CollisionGroup = "Item"
 				end
 			end
@@ -326,7 +377,7 @@ function DropItem(AddForce: boolean?)
 		velocity = (targetPos - objectPosition) * throwBoost
 	end
 
-	carrying = false
+carrying = false
 	currentWeld = nil
 	WeldSystem.cleanup()
 
@@ -347,14 +398,14 @@ function DropItem(AddForce: boolean?)
 		task.wait(0.6) -- Wait slightly longer than server network ownership transfer
 
 		-- Reset collision group for the object and its descendants
-		if objectToReset and objectToReset.Parent then -- Check if object still exists
+if objectToReset and objectToReset.Parent then -- Check if object still exists
 			if objectToReset:IsA("MeshPart") or objectToReset:IsA("Part") then
 				-- Direct part - reset collision group
 				objectToReset.CollisionGroup = "Default"
 			else
 				-- For Tools and Models - reset collision group for all parts
 				for _, d in ipairs(objectToReset:GetDescendants()) do
-					if d:IsA("MeshPart") or d:IsA("Part") then
+if d:IsA("MeshPart") or d:IsA("Part") then
 						d.CollisionGroup = "Default"
 					end
 				end

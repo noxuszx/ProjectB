@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -14,6 +15,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Admin")
 local toggleRemote = remotes:WaitForChild("AdminUIToggle")
 local commandRemote = remotes:WaitForChild("AdminCommand")
 local stateSyncRemote = remotes:WaitForChild("AdminStateSync")
+local hideAllUIRemote = remotes:WaitForChild("HideAllUI")
 
 -- Get or create UI elements
 local adminUI = playerGui:FindFirstChild("AdminUI")
@@ -342,7 +344,7 @@ local adminState = {
 -- Initially hide the UI
 adminUI.Enabled = false
 
--- Toggle UI visibility
+-- Toggle Admin panel visibility only
 local function toggleUI()
     adminUI.Enabled = not adminUI.Enabled
     
@@ -364,6 +366,48 @@ local function toggleUI()
     end
 end
 
+-- Hide/show all UI (CoreGui + all ScreenGuis)
+local StarterGui = game:GetService("StarterGui")
+local allUIVisible = true
+
+local function setAllUIVisible(visible: boolean)
+    allUIVisible = visible
+    -- Core UI
+    pcall(function()
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, visible)
+    end)
+    -- Custom UI in PlayerGui
+    for _, child in ipairs(playerGui:GetChildren()) do
+        if child:IsA("ScreenGui") then
+            child.Enabled = visible
+        end
+    end
+end
+
+local function applyAllUIMode(mode: string)
+    if mode == "on" then
+        setAllUIVisible(true)
+    elseif mode == "off" then
+        setAllUIVisible(false)
+    else -- "toggle" or anything else
+        setAllUIVisible(not allUIVisible)
+    end
+end
+
+-- Safety hotkeys: F8 forces UI ON, F7 toggles all UI
+local RESTORE_KEY = Enum.KeyCode.F8
+local TOGGLE_ALL_KEY = Enum.KeyCode.F7
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == RESTORE_KEY then
+        setAllUIVisible(true)
+    elseif input.KeyCode == TOGGLE_ALL_KEY then
+        setAllUIVisible(not allUIVisible)
+    end
+end)
+
+---------------------------------------------------------------------
 -- Update button states based on admin state
 local function updateButtonStates()
     flyButton.Text = adminState.flying and "Unfly" or "Fly"
@@ -485,9 +529,14 @@ end)
 -- REMOTE EVENT HANDLERS -------------------------------------------
 ---------------------------------------------------------------------
 
--- Handle UI toggle from server
+-- Handle UI toggle from server (Admin Panel only)
 toggleRemote.OnClientEvent:Connect(function()
     toggleUI()
+end)
+
+-- Handle hide/show all UI from server
+hideAllUIRemote.OnClientEvent:Connect(function(mode)
+    applyAllUIMode(mode)
 end)
 
 -- Handle state sync from server

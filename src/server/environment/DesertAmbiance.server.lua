@@ -10,7 +10,6 @@ local AMBIANCE_CONFIG = {
     MAX_WAIT_TIME = 20,
     SOUNDS = {
         SAND_SLIDE = "sand-slide",
-        ANCIENT_MUSIC = "ancient-music",
         SMALL_ROCKS = {"small-rocks1", "small-rocks2", "small-rocks3"}
     },
     

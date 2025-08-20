@@ -20,25 +20,40 @@ function ArenaController:init()
 	local r = self._registry.Arena
 	if r.StartTimer then
 		r.StartTimer.OnClientEvent:Connect(function(data)
-			print("[ArenaController] StartTimer:", data and data.endTime)
-			self._store:set({ arena = { active = true, endTime = data.endTime } })
+			local endTime = data and data.endTime
+			local remaining = nil
+			pcall(function()
+				remaining = math.max(0, endTime - workspace:GetServerTimeNow())
+			end)
+			print("[ArenaController] StartTimer end=", endTime, " remaining=", remaining)
+			self._store:set({ arena = { active = true, endTime = endTime } })
 		end)
 	end
 	if r.Sync then
 		r.Sync.OnClientEvent:Connect(function(data)
-			print("[ArenaController] Sync:", data and data.endTime)
-			self._store:set({ arena = { active = true, endTime = data.endTime } })
+			local endTime = data and data.endTime
+			local remaining = nil
+			pcall(function()
+				remaining = math.max(0, endTime - workspace:GetServerTimeNow())
+			end)
+			print("[ArenaController] Sync end=", endTime, " remaining=", remaining)
+			self._store:set({ arena = { active = true, endTime = endTime } })
 		end)
 	end
 	if r.Resume then
 		r.Resume.OnClientEvent:Connect(function(data)
-			print("[ArenaController] Resume:", data and data.endTime)
-			self._store:set({ arena = { active = true, endTime = data.endTime } })
+			local endTime = data and data.endTime
+			local remaining = nil
+			pcall(function()
+				remaining = math.max(0, endTime - workspace:GetServerTimeNow())
+			end)
+			print("[ArenaController] Resume end=", endTime, " remaining=", remaining)
+			self._store:set({ arena = { active = true, endTime = endTime } })
 		end)
 	end
 	if r.Pause then
 		r.Pause.OnClientEvent:Connect(function()
-			print("[ArenaController] Pause")
+			print("[ArenaController] Pause (client)")
 			-- Keep active flag but freeze endTime by not updating it; renderer derives from now
 		end)
 	end

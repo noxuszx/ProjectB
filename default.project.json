@@ -172,6 +172,9 @@
           "PeriodChangedServer": {
             "$className": "BindableEvent"
           }
+        },
+        "WeldAction": {
+          "$className": "RemoteEvent"
         }
       }
     },

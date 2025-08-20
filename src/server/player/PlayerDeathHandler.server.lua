@@ -3,9 +3,12 @@
 
 local Players 			   = game:GetService("Players")
 local ReplicatedStorage    = game:GetService("ReplicatedStorage")
+local TeleportService      = game:GetService("TeleportService")
 local RagdollModule 	   = require(ReplicatedStorage.Shared.modules.RagdollModule)
 local CollectionServiceTags = require(ReplicatedStorage.Shared.utilities.CollectionServiceTags)
 local ToolGrantService      = require(script.Parent.Parent.services.ToolGrantService)
+local ArenaManager           = require(script.Parent.Parent.events.ArenaManager)
+local TeleportConfig         = require(ReplicatedStorage.Shared.config.TeleportConfig)
 
 local deathRemotes 		   = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
 local showUIRemote 		   = deathRemotes:WaitForChild("ShowUI")
@@ -19,6 +22,27 @@ local serverReviveBindable = deathRemotes:FindFirstChild("ServerRevive") or Inst
 serverReviveBindable.Name = "ServerRevive"
 serverReviveBindable.Parent = deathRemotes
 
+-- Optional: listen for Back to Lobby clicks from Victory/Death UI
+local arenaFolder = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Arena")
+local postGameChoice = arenaFolder and arenaFolder:FindFirstChild("PostGameChoice")
+if postGameChoice and postGameChoice:IsA("RemoteEvent") then
+	postGameChoice.OnServerEvent:Connect(function(player, payload)
+		if typeof(payload) == "table" and payload.choice == "lobby" then
+			local lobbyId = TeleportConfig and TeleportConfig.LobbyPlaceId or 0
+			if lobbyId == 0 then
+				warn("[PlayerDeathHandler] LobbyPlaceId not configured in TeleportConfig")
+				return
+			end
+			local ok, err = pcall(function()
+				TeleportService:TeleportAsync(lobbyId, { player })
+			end)
+			if not ok then
+				warn("[PlayerDeathHandler] TeleportAsync back to lobby failed for", player and player.Name, err)
+			end
+		end
+	end)
+end
+
 Players.CharacterAutoLoads = false
 
 local PlayerDeathHandler   = {}
@@ -27,6 +51,17 @@ local deadPlayers 		   = {}
 local deathTimers 		   = {}
 local ragdollPositions 	   = {}
 local revivalPrompts	   = {}
+local forcedTeleportScheduled = false -- prevent duplicate lobby teleports when timers fire
+
+-- Safely cancel a pending task.delay thread if still cancellable
+local function safeCancelTimer(timerThread)
+	if not timerThread then return end
+	-- Only attempt cancel if it's a coroutine and still suspended
+	local okStatus, status = pcall(coroutine.status, timerThread)
+	if okStatus and status == "suspended" then
+		pcall(task.cancel, timerThread)
+	end
+end
 
 -- Locate item template by name in ReplicatedStorage/Items (and subfolders)
 local function getItemTemplateByName(itemName)
@@ -121,6 +156,34 @@ local function areAllPlayersDead()
 	return totalPlayers > 0 and alivePlayers == 0
 end
 
+local function cancelAllDeathTimers()
+	for uid, timerThread in pairs(deathTimers) do
+		safeCancelTimer(timerThread)
+		deathTimers[uid] = nil
+	end
+	forcedTeleportScheduled = false
+end
+
+local function teleportAllPlayersToLobby()
+	local lobbyId = TeleportConfig and TeleportConfig.LobbyPlaceId or 0
+	if lobbyId == 0 then
+		warn("[PlayerDeathHandler] TeleportConfig.LobbyPlaceId is not set")
+		return
+	end
+	local list = {}
+	for _, plr in ipairs(Players:GetPlayers()) do table.insert(list, plr) end
+	if #list == 0 then return end
+	local ok, err = pcall(function()
+		TeleportService:TeleportPartyAsync(lobbyId, list)
+	end)
+	if not ok then
+		warn("[PlayerDeathHandler] TeleportPartyAsync failed:", err)
+		for _, p in ipairs(list) do
+			pcall(function() TeleportService:TeleportAsync(lobbyId, {p}) end)
+		end
+	end
+end
+
 
 local function handleRespawnRequest(player)
 	if not deadPlayers[player.UserId] then
@@ -137,9 +200,9 @@ local function handleRespawnRequest(player)
 		spawnPosition = ragdollPositions[player.UserId]
 	end
 
-	if deathTimers  [player.UserId] then
-		task.cancel (deathTimers[player.UserId])
-		deathTimers [player.UserId]  = nil
+	if deathTimers[player.UserId] then
+		safeCancelTimer(deathTimers[player.UserId])
+		deathTimers[player.UserId] = nil
 	end
 
 	deadPlayers		[player.UserId] = nil
@@ -147,6 +210,12 @@ local function handleRespawnRequest(player)
 	ragdollPositions[player.UserId] = nil
 	-- Clear any lingering heal cooldown on revive
 	player:SetAttribute("HealCooldownUntil", nil)
+	-- Notify Arena that this player is revived/alive again
+	pcall(function()
+		if ArenaManager and ArenaManager.NotifyPlayerRespawned then
+			ArenaManager.NotifyPlayerRespawned(player)
+		end
+	end)
 	
 	-- Clean up revival prompt
 	if revivalPrompts[player.UserId] then
@@ -211,15 +280,17 @@ end
 local function onPlayerAdded(player)
 	player:LoadCharacter()
 
-	local function onCharacterAdded(character)
-		local humanoid = character:WaitForChild("Humanoid")
-		humanoid.BreakJointsOnDeath = false
+		local function onCharacterAdded(character)
+			local humanoid = character:WaitForChild("Humanoid")
+			humanoid.BreakJointsOnDeath = false
 
-		deadPlayers[player.UserId] = nil
-		ragdolledPlayers[player.UserId] = nil
-		ragdollPositions[player.UserId] = nil
-		-- Clear any lingering heal cooldown on new character
-		player:SetAttribute("HealCooldownUntil", nil)
+			deadPlayers[player.UserId] = nil
+			ragdolledPlayers[player.UserId] = nil
+			ragdollPositions[player.UserId] = nil
+			-- Clear any lingering heal cooldown on new character
+			player:SetAttribute("HealCooldownUntil", nil)
+			-- Someone is alive again: cancel any global forced-return timers
+			cancelAllDeathTimers()
 		
 		-- Clean up revival prompt
 		if revivalPrompts[player.UserId] then
@@ -228,7 +299,7 @@ local function onPlayerAdded(player)
 		end
 
 		if deathTimers[player.UserId] then
-			task.cancel(deathTimers[player.UserId])
+			safeCancelTimer(deathTimers[player.UserId])
 			deathTimers[player.UserId] = nil
 		end
 
@@ -271,6 +342,12 @@ local function onPlayerAdded(player)
 			if success then
 				ragdolledPlayers[player.UserId] = true
 				deadPlayers[player.UserId] = true
+				-- Notify Arena that this player is downed (ragdolled)
+				pcall(function()
+					if ArenaManager and ArenaManager.NotifyPlayerDowned then
+						ArenaManager.NotifyPlayerDowned(player)
+					end
+				end)
 				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 				if humanoidRootPart then
 					ragdollPositions[player.UserId] = humanoidRootPart.Position
@@ -362,19 +439,27 @@ local function onPlayerAdded(player)
 				local allDead = areAllPlayersDead()
 
 				if allDead then
+					local seconds = (TeleportConfig and TeleportConfig.ForcedReturnSeconds) or 15
 					for _, deadPlayer in pairs(Players:GetPlayers()) do
 						if deadPlayers[deadPlayer.UserId] then
-							showUIRemote:FireClient(deadPlayer, 30)
+							showUIRemote:FireClient(deadPlayer, seconds)
 							if deathTimers[deadPlayer.UserId] then
-								task.cancel(deathTimers[deadPlayer.UserId])
+								safeCancelTimer(deathTimers[deadPlayer.UserId])
 							end
-							deathTimers[deadPlayer.UserId] = task.delay(30, function()
-								forceRespawn(deadPlayer)
+							deathTimers[deadPlayer.UserId] = task.delay(seconds, function()
+								if forcedTeleportScheduled then return end
+								-- Only proceed if everyone is still dead at timer end
+								if areAllPlayersDead() then
+									forcedTeleportScheduled = true
+									teleportAllPlayersToLobby()
+								end
 							end)
 						end
 					end
 				else
+					-- Someone is still alive: show no-timer Death UI for this player and cancel any running forced timers
 					showUIRemote:FireClient(player, 0)
+					cancelAllDeathTimers()
 				end
 			else
 				warn("[PlayerDeathHandler] Failed to ragdoll player:", player.Name)
@@ -401,7 +486,7 @@ local function onPlayerRemoving(player)
 	end
 
 	if deathTimers[player.UserId] then
-		task.cancel(deathTimers[player.UserId])
+		safeCancelTimer(deathTimers[player.UserId])
 		deathTimers[player.UserId] = nil
 	end
 end

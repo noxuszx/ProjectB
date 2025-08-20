@@ -26,7 +26,16 @@ function ArenaRenderer.render(refs, state, now)
 		end
 		if timerText then
 			local endTime = tonumber(state.endTime or 0) or 0
-			local remaining = math.max(0, endTime - (now or os.clock()))
+			local currentTime
+			local ok, serverNow = pcall(function()
+				return workspace:GetServerTimeNow()
+			end)
+			if ok and type(serverNow) == "number" then
+				currentTime = serverNow
+			else
+				currentTime = os.clock()
+			end
+			local remaining = math.max(0, endTime - currentTime)
 			timerText.Text = "SURVIVE FOR " .. formatTime(remaining)
 		end
 	else

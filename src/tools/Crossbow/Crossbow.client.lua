@@ -132,16 +132,23 @@ local function createTracer(startPos, hitPos)
 end
 
 local function playFireSound()
-    local zonePart = tool:FindFirstChild("Zone")
-    if zonePart and zonePart:FindFirstChild("Sound") then
-        local sound = zonePart.Sound:Clone()
-        sound.Name = "Shoot"
-        sound.Parent = zonePart
-        sound:Play()
-        sound.Ended:Connect(function()
-            sound:Destroy()
-        end)
+    -- Play the sound located under the "Sound" part inside the tool (recursive search)
+    local soundPart = tool:FindFirstChild("Sound", true)
+    if soundPart then
+        local sound = soundPart:FindFirstChildWhichIsA("Sound")
+        if sound then
+            -- Clone so repeated shots can overlap without cutting each other off
+            local clone = sound:Clone()
+            clone.Name = "Shoot"
+            clone.Parent = soundPart
+            clone:Play()
+            clone.Ended:Connect(function()
+                clone:Destroy()
+            end)
+            return
+        end
     end
+    -- If no Sound part is found, do nothing (intentional: no SoundManager fallback)
 end
 
 local function findTargetModel(hitPart)

@@ -425,6 +425,29 @@ function AdminCommands.RunCommand(plr: Player, msg: string)
         else
             warn("[AdminCommands] AdminUIToggle RemoteEvent not found")
         end
+    elseif cmd == "uishow" or cmd == "uihide" or cmd == "uitoggle" then
+        -- Hide/show all UI (CoreGui + ScreenGuis) on the client
+        -- Map command to mode string for client handler
+        local mode = "toggle"
+        if cmd == "uishow" then mode = "on" end
+        if cmd == "uihide" then mode = "off" end
+
+        -- Ensure the HideAllUI RemoteEvent exists under ReplicatedStorage.Remotes.Admin
+        local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
+        local adminFolder = remotesFolder and remotesFolder:FindFirstChild("Admin")
+        if not adminFolder then
+            warn("[AdminCommands] Remotes.Admin folder not found; cannot toggle UI")
+            return
+        end
+        local hideAllUI = adminFolder:FindFirstChild("HideAllUI")
+        if not hideAllUI then
+            hideAllUI = Instance.new("RemoteEvent")
+            hideAllUI.Name = "HideAllUI"
+            hideAllUI.Parent = adminFolder
+        end
+
+        hideAllUI:FireClient(plr, mode)
+        print(string.format("[AdminCommands] UI %s for %s", mode, plr.Name))
     end
 end
 

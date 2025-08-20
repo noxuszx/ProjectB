@@ -12,6 +12,14 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Admin")
 local commandRemote = remotes:WaitForChild("AdminCommand")
 local stateSyncRemote = remotes:WaitForChild("AdminStateSync")
 
+-- Ensure HideAllUI remote exists for UI visibility toggling
+local hideAllUIRemote = remotes:FindFirstChild("HideAllUI")
+if not hideAllUIRemote then
+    hideAllUIRemote = Instance.new("RemoteEvent")
+    hideAllUIRemote.Name = "HideAllUI"
+    hideAllUIRemote.Parent = remotes
+end
+
 ---------------------------------------------------------------------
 -- ADMIN VERIFICATION ----------------------------------------------
 ---------------------------------------------------------------------
