@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local Store = require(script.Parent.core.Store)
 local Maid = require(script.Parent.core.Maid)
@@ -307,7 +308,23 @@ function UIManager:_rebindOnRespawn()
 	end))
 end
 
+-- Hook client-side MarketplaceService prompt completion once and relay to server.
+function UIManager:_hookPurchaseRelayOnce()
+	if self._hookedPurchaseRelay then return end
+	self._hookedPurchaseRelay = true
+	local deathRemotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Death")
+	local purchasePromptResultRemote = deathRemotes:FindFirstChild("PurchasePromptResult") or Instance.new("RemoteEvent")
+	purchasePromptResultRemote.Name = "PurchasePromptResult"
+	purchasePromptResultRemote.Parent = deathRemotes
+	-- Client signature: (userId, productId, wasPurchased)
+	MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, wasPurchased)
+		-- Relay to server so it can clear pending/inProgress immediately on cancel
+		purchasePromptResultRemote:FireServer(productId, wasPurchased)
+	end)
+end
+
 function UIManager:init()
+	self:_hookPurchaseRelayOnce()
 	self:_wireButtons()
 	self:_subscribe()
 	self:_rebindOnRespawn()

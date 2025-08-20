@@ -1,4 +1,4 @@
--- Simple Flying Script - Press G to toggle
+-- Simple Flying Script with noclip-style movement while flying - Press G to toggle
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -15,6 +15,16 @@ local flySpeed = 80
 local flyAnimation = nil
 local flyAnimationTrack = nil
 
+-- Noclip support while flying
+local function setCharacterCollidable(enabled: boolean)
+    if not character then return end
+    for _, desc in ipairs(character:GetDescendants()) do
+        if desc:IsA("BasePart") then
+            desc.CanCollide = enabled
+        end
+    end
+end
+
 -- Toggle flying
 local function toggleFly()
     if not humanoid or humanoid.Health <= 0 then return end
@@ -26,6 +36,9 @@ local function toggleFly()
         bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = rootPart
+
+        -- Make character non-collidable (noclip effect)
+        setCharacterCollidable(false)
         
         -- Play fly animation
         if flyAnimation and humanoid then
@@ -38,6 +51,9 @@ local function toggleFly()
             bodyVelocity:Destroy()
             bodyVelocity = nil
         end
+
+        -- Restore collisions when stopping fly
+        setCharacterCollidable(true)
         
         -- Stop fly animation
         if flyAnimationTrack then
@@ -50,6 +66,9 @@ end
 -- Update movement
 local function updateMovement()
     if not flying or not bodyVelocity or not rootPart then return end
+
+    -- Enforce noclip while flying (covers accessories or new parts that appear)
+    setCharacterCollidable(false)
     
     local camera = workspace.CurrentCamera
     local moveVector = Vector3.new(0, 0, 0)
@@ -113,6 +132,8 @@ local function setupCharacter(newCharacter)
             flyAnimationTrack:Stop()
             flyAnimationTrack = nil
         end
+        -- Ensure collisions restored on death
+        setCharacterCollidable(true)
         flying = false
     end)
 end

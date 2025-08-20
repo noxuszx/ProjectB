@@ -17,12 +17,15 @@ if state.visible then
 		if title then title.Text = state.message or "YOU DIED" end
 		-- Handle countdown if a timeout was provided
 		if state.timeoutSeconds and state.timeoutSeconds > 0 then
+			-- Start or continue countdown from activation time; reset if none present
 			local activatedAt = refs._activatedAt or (now or os.clock())
 			refs._activatedAt = activatedAt
 			local elapsed = (now or os.clock()) - activatedAt
 			local remaining = math.max(0, math.floor(state.timeoutSeconds - elapsed))
 			if timer then timer.Text = string.format("Returning to lobby in: %ds", remaining) end
 		else
+			-- Switch to no-timer mode; clear activation so future timers restart fresh
+			refs._activatedAt = nil
 			if timer then timer.Text = "Other players are still alive" end
 		end
 else

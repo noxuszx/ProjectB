@@ -19,11 +19,20 @@ local ArenaSpawner = {}
 
 local function getTaggedSpawnMarkers()
 	local markers = {}
-	for _, inst in ipairs(CollectionService:GetTagged(CS_tags.ARENA_SPAWN)) do
+	local tagged = CollectionService:GetTagged(CS_tags.ARENA_SPAWN)
+	if #tagged == 0 then
+		warn("[ArenaSpawner] No ARENA_SPAWN-tagged markers found. Ensure markers are tagged and in Workspace.")
+	end
+	for _, inst in ipairs(tagged) do
 		if inst:IsA("BasePart") and inst:IsDescendantOf(Workspace) then
 			markers[inst.Name] = inst
+		else
+			warn("[ArenaSpawner] Ignoring non-BasePart or non-live marker:", inst:GetFullName())
 		end
 	end
+	local names = {}
+	for k in pairs(markers) do table.insert(names, k) end
+	print("[ArenaSpawner] Found markers:", table.concat(names, ", "))
 	return markers
 end
 
@@ -94,11 +103,13 @@ local function spawnOneAtMarker(markerInstance, creatureType)
 	end
 	
 	-- Spawn using the new Arena system
+	print(string.format("[ArenaSpawner] Spawning '%s' at %s (marker=%s)", tostring(arenaCreatureType), tostring(pos), tostring(markerInstance.Name)))
 	local creature = ArenaCreatureSpawner.spawnCreature(arenaCreatureType, pos)
 	if creature and creature.model then
 		tagArenaEnemy(creature.model)
 		return true
 	else
+		warn("[ArenaSpawner] Failed to spawn creature of type ", tostring(arenaCreatureType), " at marker ", tostring(markerInstance.Name))
 	end
 	return false
 end
@@ -110,17 +121,24 @@ local function spawnPhase(phaseName, phaseWaves, markerOrder)
 	local stagger = (ArenaConfig.SpawnStaggerSeconds and ArenaConfig.SpawnStaggerSeconds[phaseName]) or 0.2
 	
 	local plan = buildSpawnPlanRoundRobin(phaseWaves, markerOrder)
+	print(string.format("[ArenaSpawner] Phase '%s': plan size=%d, stagger=%.2fs", tostring(phaseName), #plan, stagger))
 
 	local spawned = 0
-	for _, item in ipairs(plan) do
+	for idx, item in ipairs(plan) do
+		print(string.format("[ArenaSpawner] (%s) #%d -> marker=%s type=%s", tostring(phaseName), idx, tostring(item.marker), tostring(item.creatureType)))
 		local marker = markers[item.marker]
 		if marker and marker:IsA("BasePart") then
 			if spawnOneAtMarker(marker, item.creatureType) then
 				spawned += 1
+			else
+				warn(string.format("[ArenaSpawner] (%s) Spawn failed at marker=%s type=%s", tostring(phaseName), tostring(item.marker), tostring(item.creatureType)))
+			end
+			if stagger and stagger > 0 then
 				task.wait(stagger)
 			end
 		end
 	end
+	print(string.format("[ArenaSpawner] Phase '%s' spawned count=%d", tostring(phaseName), spawned))
 	return spawned
 end
 

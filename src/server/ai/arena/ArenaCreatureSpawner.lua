@@ -73,23 +73,30 @@ local function getCreatureModel(creatureType)
 	-- Get the model from ReplicatedStorage
 	local npcsFolder = ReplicatedStorage:FindFirstChild("NPCs")
 	if not npcsFolder then
-		warn("[ArenaCreatureSpawner] NPCs folder not found in ReplicatedStorage")
+		warn("[ArenaCreatureSpawner] NPCs folder not found in ReplicatedStorage (expected ReplicatedStorage/NPCs)")
 		return nil
 	end
 	
 	local modelFolder = npcsFolder:FindFirstChild(config.ModelFolder)
 	if not modelFolder then
-		warn("[ArenaCreatureSpawner] Model folder not found:", config.ModelFolder)
+		warn("[ArenaCreatureSpawner] Model folder not found:", config.ModelFolder, " under ReplicatedStorage/NPCs")
+		local available = {}
+		for _, child in ipairs(npcsFolder:GetChildren()) do table.insert(available, child.Name) end
+		print("[ArenaCreatureSpawner] Available folders:", table.concat(available, ", "))
 		return nil
 	end
 	
 	local model = modelFolder:FindFirstChild(config.ModelName)
 	if not model then
-		warn("[ArenaCreatureSpawner] Model not found:", config.ModelName)
+		warn("[ArenaCreatureSpawner] Model not found:", config.ModelName, " under ", modelFolder:GetFullName())
+		local available = {}
+		for _, child in ipairs(modelFolder:GetChildren()) do table.insert(available, child.Name) end
+		print("[ArenaCreatureSpawner] Available models:", table.concat(available, ", "))
 		return nil
 	end
 	
 	local clonedModel = model:Clone()
+	print("[ArenaCreatureSpawner] Cloned model for ", creatureType, ": ", model:GetFullName())
 	return clonedModel
 end
 
@@ -151,6 +158,7 @@ function ArenaCreatureSpawner.spawnCreature(creatureType, position, options)
 	local success, result = pcall(function()
 		return prepareArenaModel(model, creatureType)
 	end)
+	print("[ArenaCreatureSpawner] prepareArenaModel success=", success, " result=", result)
 	
 	if not success then
 		warn("[ArenaCreatureSpawner] ERROR in prepareArenaModel:", result)
@@ -177,6 +185,7 @@ function ArenaCreatureSpawner.spawnCreature(creatureType, position, options)
 		arenaFolder.Name = "ArenaCreatures"
 		arenaFolder.Parent = Workspace
 	end
+print("[ArenaCreatureSpawner] Parenting model to ", arenaFolder:GetFullName())
 model.Parent = arenaFolder
 
 	-- Auto-bind SFX for arena scorpions (and future arena types if desired)
@@ -195,6 +204,7 @@ model.Parent = arenaFolder
 	local success, creature = pcall(function()
 		return ArenaCreature.new(model, creatureType, position)
 	end)
+	print("[ArenaCreatureSpawner] ArenaCreature.new success=", success, creature and ("type="..tostring(creatureType)) or tostring(creature))
 	
 	if not success then
 		warn("[ArenaCreatureSpawner] ERROR in ArenaCreature.new:", creature)
@@ -220,8 +230,6 @@ model.Parent = arenaFolder
 		warn("[ArenaCreatureSpawner] ArenaAIManager is not active - creature will not be managed")
 	end
 	
-	print(string.format("[ArenaCreatureSpawner] Spawned %s at (%.1f, %.1f, %.1f)", 
-		creatureType, position.X, position.Y, position.Z))
 	
 	return creature
 end

@@ -113,11 +113,16 @@ local waveTriggered = {
 -- Track last whole-second remaining to detect threshold crossings robustly
 local _lastRemainingSecs = nil
 
+-- Phase scheduler generation; used to invalidate scheduled tasks on resume
+local _phaseGen = 0
+
 local inArena = {}
 local downedCount = 0
 
-----------------------------------------------------------------------------------------
+-- Guard to keep the countdown loop alive across pauses/resumes
+local _loopRunning = false
 
+-- Remote helpers moved above loop to avoid race on first tick
 local function getArenaRemote(name)
 	local arenaFolder = ReplicatedStorage:FindFirstChild("Remotes")
 		and ReplicatedStorage.Remotes:FindFirstChild(ArenaConfig.Remotes.Folder)
@@ -129,10 +134,107 @@ end
 
 local function fireAll(remoteName, payload)
 	local r = getArenaRemote(remoteName)
-	if r then
+	if not r then
+		warn(string.format("[Arena][remote] Missing remote '%s' under Remotes/%s", tostring(remoteName), tostring(ArenaConfig.Remotes.Folder)))
+		return
+	end
+	local ok, err = pcall(function()
 		r:FireAllClients(payload)
+	end)
+	if not ok then
+		warn("[Arena][remote] FireAllClients failed for ", tostring(remoteName), ": ", tostring(err))
+	else
+		local okJson, json = pcall(function()
+			return game:GetService("HttpService"):JSONEncode(payload or {})
+		end)
+		print("[Arena][remote] Fired ", tostring(remoteName), " payload=", okJson and json or "(encode failed)")
 	end
 end
+
+local function ensureLoop()
+	if _loopRunning then
+		return
+	end
+	_loopRunning = true
+	print("[Arena][loop] ensureLoop: starting countdown coroutine (state=", tostring(currentState), ")")
+	task.spawn(function()
+		while arenaStarted do
+			if currentState == State.Paused then
+				-- While paused, just wait a bit and continue; do not exit the loop
+				task.wait(0.5)
+				continue
+			end
+			if currentState ~= State.Active then
+				-- Inactive/Victory etc. End loop
+				break
+			end
+
+			-- Compute remaining using server time, not os.clock()
+			local now = workspace:GetServerTimeNow()
+			local remaining = math.max(0, endTime - now)
+
+			local secs = math.floor(remaining + 0.5)
+			-- Robust threshold crossing detection so pauses don't skip spawns
+			local reinforceAt = ArenaConfig.PhaseTimes.Reinforcement
+			local elitesAt = ArenaConfig.PhaseTimes.Elites
+			if not waveTriggered.Phase2 and secs <= reinforceAt and (_lastRemainingSecs == nil or _lastRemainingSecs > reinforceAt) then
+				local spawner = require(script.Parent.ArenaSpawner)
+				print(string.format("[Arena][spawn] Reinforcement at %ds (prev=%s)", secs, tostring(_lastRemainingSecs)))
+				local ok, count = pcall(function()
+					return spawner.spawnSkeleton2Wave()
+				end)
+				if ok and (tonumber(count) or 0) > 0 then
+					waveTriggered.Phase2 = true
+				else
+					warn("[Arena][spawn] Reinforcement spawn failed or spawned 0; will re-check on next tick/resume.")
+				end
+			end
+			if not waveTriggered.Phase3 and secs <= elitesAt and (_lastRemainingSecs == nil or _lastRemainingSecs > elitesAt) then
+				local spawner = require(script.Parent.ArenaSpawner)
+				print(string.format("[Arena][spawn] Elites at %ds (prev=%s)", secs, tostring(_lastRemainingSecs)))
+				local ok, count = pcall(function()
+					return spawner.spawnScorpionElites()
+				end)
+				if ok and (tonumber(count) or 0) > 0 then
+					waveTriggered.Phase3 = true
+				else
+					warn("[Arena][spawn] Elites spawn failed or spawned 0; will re-check on next tick/resume.")
+				end
+			end
+			_lastRemainingSecs = secs
+
+			if secs % 3 == 0 then
+				print(
+					string.format(
+						"[Arena][sync] now=%.3f end=%.3f remaining=%ds state=%s",
+						now,
+						endTime,
+						secs,
+						tostring(currentState)
+					)
+				)
+				fireAll(ArenaConfig.Remotes.Sync, { endTime = endTime })
+			end
+
+			if remaining <= 0 then
+				print("[Arena][loop] Remaining <= 0, breaking to victory.")
+				break
+			end
+
+			task.wait(1)
+		end
+
+		if currentState == State.Active then
+			print("[Arena][loop] Calling victory() after timer reached zero.")
+			ArenaManager.victory()
+		else
+			print("[Arena][loop] Exiting countdown loop with state=", tostring(currentState), ", arenaStarted=", tostring(arenaStarted))
+		end
+		_loopRunning = false
+	end)
+end
+
+----------------------------------------------------------------------------------------
 
 local function getTreasureDoor()
 	-- Prefer an explicit path if provided, but ensure it's in the live world
@@ -277,6 +379,49 @@ function ArenaManager.getState()
 	return currentState
 end
 
+-- Schedules phase spawns using absolute server time. Resilient to pause/resume via generation invalidation.
+local function schedulePhaseSpawns()
+	_phaseGen += 1
+	local myGen = _phaseGen
+	local now = workspace:GetServerTimeNow()
+	local reinforceAt = ArenaConfig.PhaseTimes.Reinforcement
+	local elitesAt = ArenaConfig.PhaseTimes.Elites
+
+	local function schedule(delaySeconds, which)
+		if delaySeconds < 0 then delaySeconds = 0 end
+		task.delay(delaySeconds, function()
+			-- Invalidate on generation change or if arena no longer active
+			if myGen ~= _phaseGen or currentState ~= State.Active then return end
+			local spawner = require(script.Parent.ArenaSpawner)
+			if which == 2 and not waveTriggered.Phase2 then
+				print(string.format("[Arena][sched] Phase2 firing after %.2fs delay (gen=%d)", delaySeconds, myGen))
+				local ok, count = pcall(function() return spawner.spawnSkeleton2Wave() end)
+				if ok and (tonumber(count) or 0) > 0 then
+					waveTriggered.Phase2 = true
+				else
+					warn("[Arena][sched] Phase2 spawn failed or 0; loop will retry on next tick if possible")
+				end
+			elseif which == 3 and not waveTriggered.Phase3 then
+				print(string.format("[Arena][sched] Phase3 firing after %.2fs delay (gen=%d)", delaySeconds, myGen))
+				local ok, count = pcall(function() return spawner.spawnScorpionElites() end)
+				if ok and (tonumber(count) or 0) > 0 then
+					waveTriggered.Phase3 = true
+				else
+					warn("[Arena][sched] Phase3 spawn failed or 0; loop will retry on next tick if possible")
+				end
+			end
+		end)
+	end
+
+	-- compute absolute times relative to current endTime
+	local tNow = now
+	local d2 = (endTime - reinforceAt) - tNow
+	local d3 = (endTime - elitesAt) - tNow
+	print(string.format("[Arena][sched] Scheduling Phase2 in %.2fs, Phase3 in %.2fs (gen=%d)", d2, d3, myGen))
+	schedule(d2, 2)
+	schedule(d3, 3)
+end
+
 function ArenaManager.start()
 	if arenaStarted or not ArenaConfig.Enabled then
 		return false
@@ -289,6 +434,7 @@ function ArenaManager.start()
 endTime = startTime + remainingDuration
 waveTriggered = { Phase2 = false, Phase3 = false }
 _lastRemainingSecs = math.huge
+_phaseGen += 1 -- invalidate any prior schedules just in case
 print(
 	string.format(
 		"[Arena][start] dur=%ss start=%.3f end=%.3f players=%d",
@@ -326,63 +472,12 @@ print(
 	setSealEnabled(true)
 	fireAll(ArenaConfig.Remotes.StartTimer, { startTime = startTime, endTime = endTime })
 
-	task.spawn(function()
-		while currentState == State.Active do
-			if currentState == State.Paused then
-				task.wait(0.5)
-				continue
-			end
+	-- Start or ensure the countdown loop is running
+	ensureLoop()
+	-- Schedule absolute-time phase spawns
+	schedulePhaseSpawns()
 
-			-- Compute remaining using server time, not os.clock()
-			local now = workspace:GetServerTimeNow()
-			local remaining = math.max(0, endTime - now)
-
-			local secs = math.floor(remaining + 0.5)
-			-- Robust threshold crossing detection so pauses don't skip spawns
-			local reinforceAt = ArenaConfig.PhaseTimes.Reinforcement
-			local elitesAt = ArenaConfig.PhaseTimes.Elites
-			if not waveTriggered.Phase2 and secs <= reinforceAt and (_lastRemainingSecs == nil or _lastRemainingSecs > reinforceAt) then
-				local spawner = require(script.Parent.ArenaSpawner)
-				print(string.format("[Arena][spawn] Reinforcement at %ds (prev=%s)", secs, tostring(_lastRemainingSecs)))
-				pcall(function()
-					spawner.spawnSkeleton2Wave()
-				end)
-				waveTriggered.Phase2 = true
-			end
-			if not waveTriggered.Phase3 and secs <= elitesAt and (_lastRemainingSecs == nil or _lastRemainingSecs > elitesAt) then
-				local spawner = require(script.Parent.ArenaSpawner)
-				print(string.format("[Arena][spawn] Elites at %ds (prev=%s)", secs, tostring(_lastRemainingSecs)))
-				pcall(function()
-					spawner.spawnScorpionElites()
-				end)
-				waveTriggered.Phase3 = true
-			end
-			_lastRemainingSecs = secs
-
-			if secs % 3 == 0 then
-				print(
-					string.format(
-						"[Arena][sync] now=%.3f end=%.3f remaining=%ds state=%s",
-						now,
-						endTime,
-						secs,
-						tostring(currentState)
-					)
-				)
-				fireAll(ArenaConfig.Remotes.Sync, { endTime = endTime })
-			end
-
-			if remaining <= 0 then
-				break
-			end
-
-			task.wait(1)
-		end
-
-		if currentState == State.Active then
-			ArenaManager.victory()
-		end
-	end)
+	-- Initial wave at start
 	local spawner = require(script.Parent.ArenaSpawner)
 	pcall(function()
 		spawner.spawnSkeletonMummyWave()
@@ -416,6 +511,7 @@ endTime = startTime + remainingDuration
 -- Reset last-secs tracker to a sentinel so any missed thresholds can fire once after resume.
 -- waveTriggered flags prevent double-firing if a phase already triggered before the pause.
 _lastRemainingSecs = math.huge
+_phaseGen += 1 -- invalidate old schedules and reschedule for new endTime
 print(
 	string.format(
 		"[Arena][resume] start=%.3f end=%.3f remaining=%ds downed=%d",
@@ -430,6 +526,46 @@ pcall(function()
 	ai:resume()
 end)
 fireAll(ArenaConfig.Remotes.Resume, { startTime = startTime, endTime = endTime })
+
+-- Make sure countdown loop is running after resume
+ensureLoop()
+-- Schedule absolute-time phase spawns for the new endTime
+schedulePhaseSpawns()
+
+-- Immediately evaluate and trigger any missed waves after resume based on current remaining time
+-- This complements the main loop's threshold logic and reduces perceived delay after revive.
+local function trySpawnPhase(phase)
+	local spawner = require(script.Parent.ArenaSpawner)
+	if phase == 2 and not waveTriggered.Phase2 then
+		local ok, count = pcall(function()
+			return spawner.spawnSkeleton2Wave()
+		end)
+		if ok and (tonumber(count) or 0) > 0 then
+			waveTriggered.Phase2 = true
+		end
+	elseif phase == 3 and not waveTriggered.Phase3 then
+		local ok, count = pcall(function()
+			return spawner.spawnScorpionElites()
+		end)
+		if ok and (tonumber(count) or 0) > 0 then
+			waveTriggered.Phase3 = true
+		end
+	end
+end
+
+local reinforceAt = ArenaConfig.PhaseTimes.Reinforcement
+local elitesAt = ArenaConfig.PhaseTimes.Elites
+local now = workspace:GetServerTimeNow()
+local secs = math.floor(math.max(0, endTime - now) + 0.5)
+if secs <= reinforceAt and not waveTriggered.Phase2 then
+	print(string.format("[Arena][resume-check] Triggering Phase2 immediately at %ds", secs))
+	trySpawnPhase(2)
+end
+if secs <= elitesAt and not waveTriggered.Phase3 then
+	print(string.format("[Arena][resume-check] Triggering Phase3 immediately at %ds", secs))
+	trySpawnPhase(3)
+end
+
 return true
 end
 
@@ -438,6 +574,7 @@ function ArenaManager.victory()
 		return false
 	end
 	currentState = State.Victory
+	arenaStarted = false -- stop the countdown loop permanently
 
 	-- Fade out arena music
 	if arenaMusic and arenaMusic.IsPlaying then
@@ -479,10 +616,12 @@ function ArenaManager.victory()
 	-- Clean up arena spawner
 	local ArenaSpawner = require(script.Parent.ArenaSpawner)
 	if ArenaSpawner.cleanup then
+		print("[Arena][victory] Cleaning up spawner and creatures...")
 		ArenaSpawner.cleanup()
 	end
 
 	setSealEnabled(false)
+	print("[Arena][victory] Firing Victory remote with message:", ArenaConfig.UI.VictoryMessage)
 	fireAll(ArenaConfig.Remotes.Victory, { message = ArenaConfig.UI.VictoryMessage })
 	return true
 end

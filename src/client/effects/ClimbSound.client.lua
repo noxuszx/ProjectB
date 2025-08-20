@@ -52,7 +52,6 @@ local function isNearClimbable(rootPart: BasePart)
 	if USE_TAGGED_CLIMBABLE and CollectionService:HasTag(inst, CLIMBABLE_TAG) then
 		return true
 	end
-	-- Also allow ladders built from Mesh/Parts if named with token
 	local name = string.lower(inst.Name)
 	if string.find(name, "ladder", 1, true) then
 		return true
@@ -130,7 +129,7 @@ bindHumanoid(humanoid)
 player.CharacterAdded:Connect(function()
 	character, humanoid, root = getCharacter()
 	bindHumanoid(humanoid)
-	climbLoop = nil -- will recreate on demand
+	climbLoop = nil
 	keyHeldW = false
 	keyHeldS = false
 	climbing = false
@@ -146,7 +145,6 @@ RunService.Heartbeat:Connect(function()
 	if shouldPlay then
 		local s = ensureSound(root)
 		if not s.IsPlaying then
-			-- slight variance for less monotony
 			s.PlaybackSpeed = 0.97 + math.random() * 0.06
 			s:Play()
 		end

@@ -101,7 +101,24 @@ end
 
 local function backpackEquipped()
     local char = player.Character
-    return char and char:FindFirstChild("Backpack") ~= nil
+    if not char then return false end
+    -- Recognize all backpack variants: Base, Pro (both spellings), Prestige, and Sack
+    if char:FindFirstChild("Backpack")
+        or char:FindFirstChild("BackpackPro")
+        or char:FindFirstChild("BackPackPro")
+        or char:FindFirstChild("BackpackPrestige")
+        or char:FindFirstChild("Sack") then
+        return true
+    end
+    -- Fallback: any equipped Tool containing "backpack" or "sack" (case-insensitive)
+    local tool = char:FindFirstChildOfClass("Tool")
+    if tool then
+        local name = string.lower(tool.Name)
+        if string.find(name, "backpack", 1, true) or string.find(name, "sack", 1, true) then
+            return true
+        end
+    end
+    return false
 end
 
 local function canStore()

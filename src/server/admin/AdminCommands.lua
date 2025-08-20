@@ -21,6 +21,7 @@ local AdminCommands = {}
 
 local ADMIN_USER_IDS = {
     3255890550, -- << change to your Roblox account ID
+    5349432975, -- additional admin
 }
 
 local COMMAND_PREFIX = "/"  -- chat prefix for admin commands

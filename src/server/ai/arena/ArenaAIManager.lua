@@ -162,7 +162,6 @@ function ArenaAIManager:registerCreature(creature)
 		creature:setTarget(target)
 	end
 
-	print(string.format("[ArenaAIManager] Registered %s (Total: %d)", creature.creatureType, #self.creatures))
 
 	return true
 end

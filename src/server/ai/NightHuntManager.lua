@@ -319,9 +319,6 @@ end
 
 -- Handle period changes
 local function onPeriodChanged(newPeriod, currentTime)
-	if NightHuntConfig.Debug.LogPeriodChanges then
-		print("[NightHuntManager] Period changed to: " .. newPeriod)
-	end
 	
 	if newPeriod == "NIGHT" and not active then
 		NightHuntManager.start()

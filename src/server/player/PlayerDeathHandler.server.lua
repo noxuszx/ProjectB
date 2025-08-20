@@ -217,6 +217,14 @@ local function handleRespawnRequest(player)
 		end
 	end)
 	
+	-- Proactively stop global forced-return timers and update remaining dead players immediately
+	cancelAllDeathTimers()
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other and other.UserId and deadPlayers[other.UserId] then
+			showUIRemote:FireClient(other, 0)
+		end
+	end
+	
 	-- Clean up revival prompt
 	if revivalPrompts[player.UserId] then
 		revivalPrompts[player.UserId]:Destroy()
@@ -291,12 +299,18 @@ local function onPlayerAdded(player)
 			player:SetAttribute("HealCooldownUntil", nil)
 			-- Someone is alive again: cancel any global forced-return timers
 			cancelAllDeathTimers()
+			-- Also update remaining dead players to show no-timer UI, since not all are dead anymore
+			for _, other in ipairs(Players:GetPlayers()) do
+				if other and other.UserId and deadPlayers[other.UserId] then
+					showUIRemote:FireClient(other, 0)
+				end
+			end
 		
-		-- Clean up revival prompt
-		if revivalPrompts[player.UserId] then
-			revivalPrompts[player.UserId]:Destroy()
-			revivalPrompts[player.UserId] = nil
-		end
+			-- Clean up revival prompt
+			if revivalPrompts[player.UserId] then
+				revivalPrompts[player.UserId]:Destroy()
+				revivalPrompts[player.UserId] = nil
+			end
 
 		if deathTimers[player.UserId] then
 			safeCancelTimer(deathTimers[player.UserId])
